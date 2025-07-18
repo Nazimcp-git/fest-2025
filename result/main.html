@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Competition Analytics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f4f8;
+      color: #1f2937;
+    }
+    header {
+      background-color: #1e3a8a;
+      padding: 20px;
+      text-align: center;
+      color: white;
+    }
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+    .card {
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+      margin-bottom: 30px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    canvas {
+      max-width: 100%;
+    }
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .summary div {
+      flex: 1 1 200px;
+      background-color: #e0f2fe;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #0c4a6e;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Competition Analytics Dashboard</h1>
+  </header>
+
+  <div class="container">
+    <div class="card summary" id="summaryStats">
+      <div>Total Competitions: <span id="totalCompetitions">0</span></div>
+      <div>Total Results: <span id="totalResults">0</span></div>
+      <div>Total Sections: <span id="totalSections">0</span></div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Results by Category</h3>
+        <canvas id="categoryChart"></canvas>
+      </div>
+      <div class="card">
+        <h3>Results by Section</h3>
+        <canvas id="sectionChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
+      authDomain: "shopping-e284c.firebaseapp.com",
+      databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
+      projectId: "shopping-e284c",
+      storageBucket: "shopping-e284c.appspot.com",
+      messagingSenderId: "248274428739",
+      appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
+      measurementId: "G-ZXZCK9BW7T"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const totalCompetitionsEl = document.getElementById('totalCompetitions');
+    const totalResultsEl = document.getElementById('totalResults');
+    const totalSectionsEl = document.getElementById('totalSections');
+
+    const categoryCounts = {};
+    const sectionCounts = {};
+    let totalCompetitions = 0;
+    let totalResults = 0;
+    const sectionSet = new Set();
+
+    db.ref('competitions').once('value').then(snapshot => {
+      const data = snapshot.val();
+      totalCompetitions = Object.keys(data).length;
+
+      Object.values(data).forEach(entry => {
+        categoryCounts[entry.category] = (categoryCounts[entry.category] || 0) + entry.results.length;
+        entry.results.forEach(r => {
+          totalResults++;
+          sectionCounts[r.section] = (sectionCounts[r.section] || 0) + 1;
+          sectionSet.add(r.section);
+        });
+      });
+
+      totalCompetitionsEl.textContent = totalCompetitions;
+      totalResultsEl.textContent = totalResults;
+      totalSectionsEl.textContent = sectionSet.size;
+
+      drawChart('categoryChart', 'Results by Category', categoryCounts);
+      drawChart('sectionChart', 'Results by Section', sectionCounts);
+    });
+
+    function drawChart(canvasId, label, data) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(data),
+          datasets: [{
+            label: label,
+            data: Object.values(data),
+            backgroundColor: '#3b82f6'
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

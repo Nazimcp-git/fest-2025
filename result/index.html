@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Competition Results</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <style>
+    :root {
+      --bg: #f9fafb;
+      --card-bg: #ffffff;
+      --text: #1f2937;
+      --primary: #3b82f6;
+      --shadow: rgba(0, 0, 0, 0.06);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      padding: 40px 20px;
+      color: var(--text);
+    }
+    h1 {
+      text-align: center;
+      font-size: 2.2rem;
+      margin-bottom: 20px;
+    }
+    #search {
+      display: block;
+      margin: 0 auto 30px;
+      padding: 10px 16px;
+      width: 300px;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .card {
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 16px var(--shadow);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 10px;
+    }
+    .card-header h2 {
+      font-size: 1.4rem;
+      color: var(--primary);
+    }
+    .category-tag {
+      background-color: #e0e7ff;
+      color: #3730a3;
+      font-size: 0.85rem;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+    .results { display: flex; flex-direction: column; gap: 12px; }
+    .result {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background-color: #f3f4f6;
+    }
+    .grade-1 { background-color: #fee2e2; }  /* Red light */
+    .grade-2 { background-color: #dbeafe; }  /* Blue light */
+    .grade-3 { background-color: #fef9c3; }  /* Yellow light */
+    .grade-b { background-color: #dcfce7; }  /* Green light */
+    .label { font-weight: 600; }
+    .student-info { font-weight: 500; }
+    .section-tag {
+      font-size: 0.85rem;
+      background-color: #e5e7eb;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-left: 8px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Competition Results</h1>
+<input type="text" id="search" placeholder="Search by competition name..." />
+
+<div class="grid" id="results-container"></div>
+
+<script>
+  var firebaseConfig = {
+    apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
+      authDomain: "shopping-e284c.firebaseapp.com",
+      databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
+      projectId: "shopping-e284c",
+      storageBucket: "shopping-e284c.appspot.com",
+      messagingSenderId: "248274428739",
+      appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
+      measurementId: "G-ZXZCK9BW7T"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const resultsContainer = document.getElementById('results-container');
+  const searchInput = document.getElementById('search');
+  let allData = {};
+
+  function getPrizeClass(position) {
+    if (position.includes('1st')) return 'grade-1';
+    if (position.includes('2nd')) return 'grade-2';
+    if (position.includes('3rd')) return 'grade-3';
+    if (position.includes('B Grade')) return 'grade-b';
+    return '';
+  }
+
+  function renderResults(data) {
+    resultsContainer.innerHTML = '';
+    Object.entries(data).forEach(([key, entry]) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const resultsHTML = entry.results.map(r => `
+        <div class="result ${getPrizeClass(r.position)}">
+          <div class="label">${r.position}</div>
+          <div class="student-info">${r.name} <span class="section-tag">Section ${r.section}</span></div>
+        </div>
+      `).join('');
+
+      card.innerHTML = `
+        <div class="card-header">
+          <h2>${entry.title}</h2>
+          <span class="category-tag">${entry.category}</span>
+        </div>
+        <div class="results">${resultsHTML}</div>
+      `;
+
+      resultsContainer.appendChild(card);
+    });
+  }
+
+  function loadResults() {
+    db.ref('competitions').once('value').then(snapshot => {
+      allData = snapshot.val() || {};
+      renderResults(allData);
+    });
+  }
+
+  searchInput.addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    const filtered = Object.fromEntries(
+      Object.entries(allData).filter(([_, val]) =>
+        val.title.toLowerCase().includes(term)
+      )
+    );
+    renderResults(filtered);
+  });
+
+  loadResults();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Competition Analytics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f4f8;
+      color: #1f2937;
+    }
+    header {
+      background-color: #1e3a8a;
+      padding: 20px;
+      text-align: center;
+      color: white;
+    }
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+    .card {
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+      margin-bottom: 30px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    canvas {
+      max-width: 100%;
+    }
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .summary div {
+      flex: 1 1 200px;
+      background-color: #e0f2fe;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #0c4a6e;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Competition Analytics Dashboard</h1>
+  </header>
+
+  <div class="container">
+    <div class="card summary">
+      <div>Total Competitions: <span>10</span></div>
+      <div>Total Results: <span>60</span></div>
+      <div>Total Sections: <span>6</span></div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Results by Category</h3>
+        <canvas id="categoryChart"></canvas>
+      </div>
+      <div class="card">
+        <h3>Results by Section</h3>
+        <canvas id="sectionChart"></canvas>
+      </div>
+      <div class="card">
+        <h3>Category Based on Sections</h3>
+        <canvas id="categorySectionChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    new Chart(document.getElementById('categoryChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Sub-Junior', 'Junior', 'Senior'],
+        datasets: [{
+          label: 'Results by Category',
+          data: [15, 25, 20],
+          backgroundColor: '#3b82f6'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    new Chart(document.getElementById('sectionChart'), {
+      type: 'bar',
+      data: {
+        labels: ['A', 'B', 'C', 'D', 'E', 'F'],
+        datasets: [{
+          label: 'Results by Section',
+          data: [10, 12, 8, 9, 11, 10],
+          backgroundColor: '#10b981'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    new Chart(document.getElementById('categorySectionChart'), {
+      type: 'bar',
+      data: {
+        labels: ['A', 'B', 'C', 'D', 'E', 'F'],
+        datasets: [
+          {
+            label: 'Sub-Junior',
+            data: [2, 3, 1, 2, 4, 3],
+            backgroundColor: '#fbbf24'
+          },
+          {
+            label: 'Junior',
+            data: [3, 4, 2, 3, 2, 1],
+            backgroundColor: '#3b82f6'
+          },
+          {
+            label: 'Senior',
+            data: [1, 2, 2, 4, 3, 3],
+            backgroundColor: '#8b5cf6'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: { stacked: true },
+          y: { beginAtZero: true, stacked: true }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
