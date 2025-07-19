@@ -1,157 +1,165 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Competition Analytics</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f0f4f8;
-      color: #1f2937;
-    }
-    header {
-      background-color: #1e3a8a;
-      padding: 20px;
-      text-align: center;
-      color: white;
-    }
-    h1 {
-      margin: 0;
-      font-size: 2rem;
-    }
-    .container {
-      max-width: 1200px;
-      margin: 30px auto;
-      padding: 0 20px;
-    }
-    .card {
-      background: white;
-      padding: 24px;
-      border-radius: 16px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.05);
-      margin-bottom: 30px;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
+      font-family: 'Inter', sans-serif;
     }
     canvas {
-      max-width: 100%;
-    }
-    .summary {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 20px;
-    }
-    .summary div {
-      flex: 1 1 200px;
-      background-color: #e0f2fe;
-      padding: 20px;
-      border-radius: 12px;
-      text-align: center;
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #0c4a6e;
+      max-height: 280px;
     }
   </style>
 </head>
-<body>
-  <header>
-    <h1>Competition Analytics Dashboard</h1>
+<body class="bg-slate-50 text-slate-800">
+  <!-- Header -->
+  <header class="bg-indigo-700 py-6 shadow-md">
+    <h1 class="text-3xl font-bold text-white text-center tracking-tight">📊 Competition Analytics Dashboard</h1>
   </header>
 
-  <div class="container">
-    <div class="card summary" id="summaryStats">
-      <div>Total Competitions: <span id="totalCompetitions">0</span></div>
-      <div>Total Results: <span id="totalResults">0</span></div>
-      <div>Total Sections: <span id="totalSections">0</span></div>
-    </div>
+  <!-- Container -->
+  <main class="max-w-7xl mx-auto px-6 py-10">
+    <!-- Summary Cards -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div class="bg-gradient-to-br from-indigo-100 to-indigo-200 text-indigo-800 rounded-xl p-6 shadow-lg text-center font-semibold text-lg hover:scale-[1.02] transition-transform duration-200">
+        Total Competitions <br><span class="text-3xl font-bold block mt-1">10</span>
+      </div>
+      <div class="bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-800 rounded-xl p-6 shadow-lg text-center font-semibold text-lg hover:scale-[1.02] transition-transform duration-200">
+        Total Results <br><span class="text-3xl font-bold block mt-1">60</span>
+      </div>
+      <div class="bg-gradient-to-br from-yellow-100 to-yellow-200 text-yellow-800 rounded-xl p-6 shadow-lg text-center font-semibold text-lg hover:scale-[1.02] transition-transform duration-200">
+        Total Sections <br><span class="text-3xl font-bold block mt-1">6</span>
+      </div>
+    </section>
 
-    <div class="grid">
-      <div class="card">
-        <h3>Results by Category</h3>
+    <!-- Charts -->
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <!-- Chart 1 -->
+      <div class="bg-white p-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
+        <h2 class="text-xl font-semibold mb-4 text-slate-700">Results by Category</h2>
         <canvas id="categoryChart"></canvas>
       </div>
-      <div class="card">
-        <h3>Results by Section</h3>
+
+      <!-- Chart 2 -->
+      <div class="bg-white p-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
+        <h2 class="text-xl font-semibold mb-4 text-slate-700">Results by Section</h2>
         <canvas id="sectionChart"></canvas>
       </div>
-    </div>
-  </div>
 
+      <!-- Chart 3 -->
+      <div class="bg-white p-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
+        <h2 class="text-xl font-semibold mb-4 text-slate-700">Category Based on Sections</h2>
+        <canvas id="categorySectionChart"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <!-- Chart.js Setup -->
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
-      authDomain: "shopping-e284c.firebaseapp.com",
-      databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
-      projectId: "shopping-e284c",
-      storageBucket: "shopping-e284c.appspot.com",
-      messagingSenderId: "248274428739",
-      appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
-      measurementId: "G-ZXZCK9BW7T"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    const totalCompetitionsEl = document.getElementById('totalCompetitions');
-    const totalResultsEl = document.getElementById('totalResults');
-    const totalSectionsEl = document.getElementById('totalSections');
-
-    const categoryCounts = {};
-    const sectionCounts = {};
-    let totalCompetitions = 0;
-    let totalResults = 0;
-    const sectionSet = new Set();
-
-    db.ref('competitions').once('value').then(snapshot => {
-      const data = snapshot.val();
-      totalCompetitions = Object.keys(data).length;
-
-      Object.values(data).forEach(entry => {
-        categoryCounts[entry.category] = (categoryCounts[entry.category] || 0) + entry.results.length;
-        entry.results.forEach(r => {
-          totalResults++;
-          sectionCounts[r.section] = (sectionCounts[r.section] || 0) + 1;
-          sectionSet.add(r.section);
-        });
-      });
-
-      totalCompetitionsEl.textContent = totalCompetitions;
-      totalResultsEl.textContent = totalResults;
-      totalSectionsEl.textContent = sectionSet.size;
-
-      drawChart('categoryChart', 'Results by Category', categoryCounts);
-      drawChart('sectionChart', 'Results by Section', sectionCounts);
-    });
-
-    function drawChart(canvasId, label, data) {
-      const ctx = document.getElementById(canvasId).getContext('2d');
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: Object.keys(data),
-          datasets: [{
-            label: label,
-            data: Object.values(data),
-            backgroundColor: '#3b82f6'
-          }]
+    const globalOptions = {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding: 20,
+            boxWidth: 16,
+            font: { size: 14 }
+          }
         },
-        options: {
-          responsive: true,
-          scales: {
-            y: { beginAtZero: true }
+        tooltip: {
+          backgroundColor: '#1e293b',
+          titleFont: { weight: 'bold' },
+          bodyFont: { size: 14 },
+          padding: 12,
+          cornerRadius: 8
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: '#e2e8f0',
+            drawBorder: false
+          },
+          ticks: {
+            stepSize: 5
+          }
+        },
+        x: {
+          grid: {
+            display: false
           }
         }
-      });
-    }
+      }
+    };
+
+    new Chart(document.getElementById('categoryChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Sub-Junior', 'Junior', 'Senior'],
+        datasets: [{
+          label: 'Results',
+          data: [15, 25, 20],
+          backgroundColor: ['#facc15', '#3b82f6', '#8b5cf6'],
+          borderRadius: 8
+        }]
+      },
+      options: globalOptions
+    });
+
+    new Chart(document.getElementById('sectionChart'), {
+      type: 'bar',
+      data: {
+        labels: ['A', 'B', 'C', 'D', 'E', 'F'],
+        datasets: [{
+          label: 'Results',
+          data: [10, 12, 8, 9, 11, 10],
+          backgroundColor: '#10b981',
+          borderRadius: 8
+        }]
+      },
+      options: globalOptions
+    });
+
+    new Chart(document.getElementById('categorySectionChart'), {
+      type: 'bar',
+      data: {
+        labels: ['A', 'B', 'C', 'D', 'E', 'F'],
+        datasets: [
+          {
+            label: 'Sub-Junior',
+            data: [2, 3, 1, 2, 4, 3],
+            backgroundColor: '#fbbf24',
+            borderRadius: 6
+          },
+          {
+            label: 'Junior',
+            data: [3, 4, 2, 3, 2, 1],
+            backgroundColor: '#3b82f6',
+            borderRadius: 6
+          },
+          {
+            label: 'Senior',
+            data: [1, 2, 2, 4, 3, 3],
+            backgroundColor: '#8b5cf6',
+            borderRadius: 6
+          }
+        ]
+      },
+      options: {
+        ...globalOptions,
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, beginAtZero: true, grid: { color: '#e5e7eb' } }
+        }
+      }
+    });
   </script>
 </body>
 </html>

@@ -126,29 +126,31 @@
   }
 
   function renderResults(data) {
-    resultsContainer.innerHTML = '';
-    Object.entries(data).forEach(([key, entry]) => {
-      const card = document.createElement('div');
-      card.className = 'card';
+  resultsContainer.innerHTML = '';
+  const entries = Object.entries(data).reverse(); // 🔁 Reverse to show latest first
+  entries.forEach(([key, entry]) => {
+    const card = document.createElement('div');
+    card.className = 'card';
 
-      const resultsHTML = entry.results.map(r => `
-        <div class="result ${getPrizeClass(r.position)}">
-          <div class="label">${r.position}</div>
-          <div class="student-info">${r.name} <span class="section-tag">Section ${r.section}</span></div>
-        </div>
-      `).join('');
+    const resultsHTML = entry.results.map(r => `
+      <div class="result ${getPrizeClass(r.position)}">
+        <div class="label">${r.position}</div>
+        <div class="student-info">${r.name} <span class="section-tag">Section ${r.section}</span></div>
+      </div>
+    `).join('');
 
-      card.innerHTML = `
-        <div class="card-header">
-          <h2>${entry.title}</h2>
-          <span class="category-tag">${entry.category}</span>
-        </div>
-        <div class="results">${resultsHTML}</div>
-      `;
+    card.innerHTML = `
+      <div class="card-header">
+        <h2>${entry.title}</h2>
+        <span class="category-tag">${entry.category}</span>
+      </div>
+      <div class="results">${resultsHTML}</div>
+    `;
 
-      resultsContainer.appendChild(card);
-    });
-  }
+    resultsContainer.appendChild(card);
+  });
+}
+
 
   function loadResults() {
     db.ref('competitions').once('value').then(snapshot => {
