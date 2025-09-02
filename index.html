@@ -369,6 +369,11 @@ body::before {
     margin-top: 2rem;
     font-size: 0.9rem;
 }
+@media (max-width: 768px) {
+    .section-title, .hero-content h1 { font-size: 2.5rem; }
+    .about-section-grid { grid-template-columns: 1fr; text-align: center; }
+    .about-logo { margin-bottom: 2rem; text-align: center; }
+}
 .adout-logo{
   text-align: right;
 }
@@ -377,13 +382,6 @@ body::before {
   text-align: center;
 }
 }
-/* --- RESPONSIVE ADJUSTMENTS --- */
-@media (max-width: 768px) {
-    .section-title, .hero-content h1 { font-size: 2.5rem; }
-    .about-section-grid { grid-template-columns: 1fr; text-align: center; }
-    .about-logo { margin-bottom: 2rem; }
-}
-
 </style>
 <body>
   
@@ -404,7 +402,7 @@ body::before {
     <section class="section">
         <div class="container reveal-on-scroll">
             <div class="about-section-grid">
-                <div class="about-logo" style="text-align: right;">
+                <div class="about-logo">
                     <img src="https://i.ibb.co/6r1F0f1/logo-png.png" alt="Poru '25 Logo">
                 </div>
                 <div class="about-text">
