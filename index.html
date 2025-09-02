@@ -3,268 +3,502 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Art Fest Celebration</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
-</head>
-
-<body class="bg-white text-gray-800">
-
-  <!-- Confetti Container -->
-  <div id="confetti-container"></div>
-
+  <title>Poru '25 | The Vibrant Art Fest</title>
   
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<style>
+/*------------------------------------------------------------------
+[Master Stylesheet - V5 The Polished Final]
+
+Project:    Poru '25 - Refined Design
+Author:     Gemini (as a Pro Web Designer)
+Version:    5.0
+-------------------------------------------------------------------*/
+
+:root {
+  --blue: #007aff;
+  --magenta: #BF55EC;
+  --orange: #FF9F43;
+  
+  --gradient-main: linear-gradient(90deg, var(--blue), var(--magenta), var(--orange));
+  
+  --dark-bg: #121212;
+  --dark-surface: #1E1E1E;
+  --dark-border: #2c2c2c;
+  --text-light: #F8F9FA;
+  --text-muted: #a0a0a0;
+  
+  --font-sans: 'Inter', sans-serif;
+}
+
+::selection {
+  background-color: var(--magenta);
+  color: var(--dark-bg);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--dark-bg);
+  color: var(--text-muted);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* --- SUBTLE BACKGROUND PATTERN --- */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 2rem 2rem;
+    z-index: -1;
+    opacity: 0.5;
+}
 
 
-  <!-- Hero Section -->
-  <header class="hero-header">
-    <div class="hero-overlay">
-      <h1 class="hero-title">Logo</h1>
-      <p class="hero-subtitle">Motto</p>
-      <button id="celebrate-btn" class="celebrate-btn">Celebrate 🎉</button>
-    </div>
-  </header>
+/* --- UTILITIES & GLOBAL STYLES --- */
+.container {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
 
-  <!-- About Section -->
-  <section class="section about">
-    <div class="container text-center">
-      <h2 class="section-title animate-on-scroll">About Fest</h2>
-      <p class="section-text animate-on-scroll">
-        Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.
-      </p>
-    </div>
-
-    <div class="stats-container">
-  <div class="stat-card peach">
-    <i class="fa-solid fa-graduation-cap stat-bg-icon"></i>
-    <div class="stat-content">
-      <div class="highlight">4k</div>
-      <div class="label">Candidates</div>
-    </div>
-  </div>
-  <div class="stat-card teal">
-    <i class="fa-solid fa-university stat-bg-icon"></i>
-    <div class="stat-content">
-      <div class="highlight">35+</div>
-      <div class="label">Institutions</div>
-    </div>
-  </div>
-  <div class="stat-card blue">
-    <i class="fa-solid fa-stethoscope stat-bg-icon"></i>
-    <div class="stat-content">
-      <div class="highlight">407</div>
-      <div class="label">Programs</div>
-    </div>
-  </div>
-  <div class="stat-card pink">
-    <i class="fa-solid fa-map stat-bg-icon"></i>
-    <div class="stat-content">
-      <div class="highlight">20+</div>
-      <div class="label">States</div>
-    </div>
-  </div>
-</div>
+.section {
+  padding: 6rem 0;
+  position: relative;
+  overflow: hidden;
+}
+.section-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+.section-title {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--text-light);
+  margin-bottom: 0.5rem;
+}
+.section-subtitle {
+  font-size: 1.1rem;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+.gradient-text {
+    background: var(--gradient-main);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
 
 
-</section>
+/* --- ANIMATIONS --- */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(30px) scale(0.98);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
 
-  <!-- Grand Total with Progress Bars -->
-  <section class="section bg-light" id="results">
-    <div class="text-center mb-32">
-      <h2 class="section-title animate-on-scroll">Grand Total</h2>
-      <p class="section-subtext animate-on-scroll">Grand total of Poru'25 with progress visualization</p>
-    </div>
+/* --- BUTTONS --- */
+.btn {
+  display: inline-block;
+  padding: 0.875rem 2rem;
+  border-radius: 8px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
 
-<div class="cards-container">
-        <div class="team-card card-1">
-            <h1 class="team-name">Iris</h1>
-            <div class="team-score">score: 00 | 0st prize</div>
-        </div>
-        
-        <div class="team-card card-2">
-            <h1 class="team-name">Terrenova</h1>
-            <div class="team-score">score: 00 | 0nd prize</div>
-        </div>
-        
-        <div class="team-card card-3">
-            <h1 class="team-name">Hemera</h1>
-            <div class="team-score">score: 00 | 0rd prize</div>
-        </div>
-        
-        <div class="team-card card-4">
-            <h1 class="team-name">Calypso</h1>
-            <div class="team-score">score: 00 | 0th prize</div>
-        </div>
-    </div>
+.btn-primary {
+  background: var(--gradient-main);
+  background-size: 200% auto;
+  color: var(--text-light);
+}
 
-  </section>
+.btn-primary:hover {
+  background-position: right center;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
 
-  <!-- Photo Slider Section -->
-  <section class="section bg-white">
-    <div class="text-center mb-32">
-      <h2 class="section-title animate-on-scroll">Festival Moments</h2>
-      <p class="section-subtext animate-on-scroll">Captured memories from <b>Poru 2k25</b></p>
-    </div>
-    <div class="slider-container">
-      <div class="slider">
-        <div class="slide active">
-          <img src="https://source.unsplash.com/random/800x500/?festival,art" alt="Festival Image 1">
-        </div>
-        <div class="slide">
-          <img src="https://source.unsplash.com/random/800x500/?art,celebration" alt="Festival Image 2">
-        </div>
-        <div class="slide">
-          <img src="https://source.unsplash.com/random/800x500/?painting,event" alt="Festival Image 3">
-        </div>
-        <div class="slide">
-          <img src="https://source.unsplash.com/random/800x500/?drawing,competition" alt="Festival Image 4">
-        </div>
-      </div>
-      <div class="slider-nav">
-        <button class="slider-btn prev-btn"><i class="fas fa-chevron-left"></i></button>
-        <div class="slider-dots"></div>
-        <button class="slider-btn next-btn"><i class="fas fa-chevron-right"></i></button>
-      </div>
-    </div>
-  </section>
+/* --- HERO SECTION --- */
+.hero-section {
+  padding: 8rem 0;
+  text-align: center;
+  position: relative;
+}
+.hero-glow {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 600px; height: 600px;
+    background: var(--gradient-main);
+    border-radius: 50%;
+    filter: blur(150px);
+    transform: translate(-50%, -50%);
+    animation: glow-rotate 20s infinite linear;
+    opacity: 0.3;
+}
+@keyframes glow-rotate {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
 
-  <!-- Top Scorer -->
-  <section class="section bg-light">
-    <div class="text-center mb-32">
-      <h2 class="section-title animate-on-scroll">Top Scorers</h2>
-      <p class="section-subtext animate-on-scroll">Top performers of Poru'25</p>
-    </div>
-    <div class="scorer-grid">
-      <div class="scorer-card animate-on-scroll">
-        <div class="avatar-container">
-          <img class="avatar" src="" />
-          <div class="crown"><i class="fas fa-crown"></i></div>
-        </div>
-        <h4>Haseeb - Aliya</h4>
-        <p class="points">96 Points</p>
-        <div class="scorer-badge">Champion</div>
-      </div>
-      <div class="scorer-card animate-on-scroll">
-        <div class="avatar-container">
-          <img class="avatar" src="" />
-        </div>
-        <h4>Irfan - Thanawiyya</h4>
-        <p class="points">62 Points</p>
-        <div class="scorer-badge silver">2nd Place</div>
-      </div>
-      <div class="scorer-card animate-on-scroll">
-        <div class="avatar-container">
-          <img class="avatar" src="" />
-        </div>
-        <h4>Rabeeb Ap - Thaniya</h4>
-        <p class="points">55 Points</p>
-        <div class="scorer-badge bronze">3rd Place</div>
-      </div>
-      <div class="scorer-card animate-on-scroll">
-        <div class="avatar-container">
-          <img class="avatar" src="" />
-        </div>
-        <h4>Musthafa T - Uoola</h4>
-        <p class="points">54 Points</p>
-        <div class="scorer-badge">4th Place</div>
-      </div>
-    </div>
-  </section>
+.hero-content h1 {
+  font-size: 4.5rem;
+  font-weight: 800;
+  color: var(--text-light);
+  line-height: 1.1;
+  margin: 0 0 1.5rem;
+}
+.hero-content p {
+  font-size: 1.2rem;
+  line-height: 1.7;
+  margin: 0 auto 2.5rem;
+  max-width: 600px;
+}
 
-  <!-- Countdown Section -->
-  <section class="section bg-white">
-    <div class="text-center mb-32">
-      <h2 class="section-title animate-on-scroll">DNIC Art Fest 2k25 CountDown</h2>
-      <p class="section-subtext animate-on-scroll">Mark your calendars for August 15th!</p>
-    </div>
-    <div class="countdown-container animate-on-scroll">
-      <div class="countdown-box">
-        <span id="days">00</span>
-        <p>Days</p>
-      </div>
-      <div class="countdown-box">
-        <span id="hours">00</span>
-        <p>Hours</p>
-      </div>
-      <div class="countdown-box">
-        <span id="minutes">00</span>
-        <p>Minutes</p>
-      </div>
-      <div class="countdown-box">
-        <span id="seconds">00</span>
-        <p>Seconds</p>
-      </div>
-    </div>
-    <div class="text-center mt-12">
-      <button class="register-btn">Register Now</button>
-    </div>
-  </section>
+/* --- ABOUT SECTION --- */
+.about-section-grid {
+    display: grid;
+    grid-template-columns: 30% 1fr;
+    align-items: center;
+    gap: 4rem;
+}
+.about-logo img {
+    max-width: 100%;
+    text-align: right;
+    align-items: ;
+    filter: drop-shadow(0 0 30px rgba(255,255,255,0.1));
+}
+.about-text h2 {
+    margin-top: 0;
+}
+.about-text p {
+    line-height: 1.8;
+    font-size: 1.1rem;
+}
 
-  <!-- Closing Section -->
-  <section class="closing-section">
-    <div class="closing-content">
-      <h2 class="closing-title">Poru'25 Moments Capture</h2>
-      <p class="closing-text">Join us for an unforgettable celebration of art and creativity</p>
-      <div class="closing-buttons">
-        <a href="#" class="btn gallery-btn">Gallery</a>
-        <a href="#" class="btn register-btn">Register Now</a>
-      </div>
-    </div>
-  </section>
+/* --- COUNTDOWN SECTION --- */
+.countdown-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 2rem;
+    text-align: center;
+}
+.countdown-item .countdown-number {
+    font-size: 4rem;
+    font-weight: 700;
+    line-height: 1;
+}
+.countdown-item .countdown-label {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
 
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="footer-content">
-      <div class="footer-section about">
-        <h3 class="footer-title">About Poru 2K25</h3>
-        <p>Annual art festival celebrating creativity and talent at Darunnajath Islamic Complex, Vallappuzha, Palakkad.</p>
-        <div class="contact">
-          <span><i class="fas fa-envelope"></i> info@darunnajath.in</span>
-          <span><i class="fas fa-phone"></i> +91 98765 43210</span>
+
+/* --- LEADERBOARD SECTION --- */
+.leaderboard-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+}
+.leaderboard-card {
+  background-color: var(--dark-surface);
+  border: 1px solid var(--dark-border);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+.leaderboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+.leaderboard-card .rank {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  color: var(--dark-bg);
+  margin-bottom: 1.5rem;
+}
+.leaderboard-card.rank-1 .rank { background-color: var(--orange); }
+.leaderboard-card.rank-2 .rank { background-color: #c0c0c0; } /* Silver */
+.leaderboard-card.rank-3 .rank { background-color: #cd7f32; } /* Bronze */
+.leaderboard-card.rank-4 .rank { background-color: var(--blue); }
+
+.leaderboard-card .name {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-light);
+  margin: 0 0 0.5rem;
+}
+.leaderboard-card .score {
+  font-size: 1rem;
+}
+
+/* --- QUICK LINKS (ACTION CARDS) --- */
+.action-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+.action-card {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background-color: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    padding: 2rem;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+.action-card:hover {
+    transform: translateY(-5px);
+    background-color: #252525;
+}
+.action-card .action-icon {
+    font-size: 1.5rem;
+    color: var(--text-light);
+    padding: 1rem;
+    border-radius: 50%;
+    background-color: var(--dark-border);
+}
+.action-card h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--text-light);
+}
+
+/* --- GALLERY SECTION --- */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+.gallery-item {
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  aspect-ratio: 1/1;
+}
+.gallery-item::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--gradient-main);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+.gallery-item:hover::after {
+    opacity: 0.5;
+}
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.gallery-item:hover img {
+    transform: scale(1.05);
+}
+
+/* --- FOOTER --- */
+.main-footer {
+    padding: 4rem 0;
+    background-color: #000;
+    text-align: center;
+}
+.footer-logo {
+    font-weight: 700;
+    font-size: 1.8rem;
+    color: var(--text-light);
+    margin-bottom: 1.5rem;
+}
+.social-links a {
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    margin: 0 0.75rem;
+    transition: color 0.2s ease;
+}
+.social-links a:hover {
+    color: var(--blue);
+}
+.copyright {
+    margin-top: 2rem;
+    font-size: 0.9rem;
+}
+
+/* --- RESPONSIVE ADJUSTMENTS --- */
+@media (max-width: 768px) {
+    .section-title, .hero-content h1 { font-size: 2.5rem; }
+    .about-section-grid { grid-template-columns: 1fr; text-align: center; }
+    .about-logo { margin-bottom: 2rem; }
+}
+
+</style>
+<body>
+  
+  <main>
+    <section class="hero-section">
+      <div class="hero-glow"></div>
+      <div class="container">
+        <div class="hero-content">
+          <h1><span class="gradient-text">Creativity Unleashed.</span><br> Welcome to Poru '25.</h1>
+          <p>The year's most vibrant festival is here. Experience a symphony of color, talent, and passion from artists across the nation.</p>
+          <div class="hero-buttons">
+            <a href="#" class="btn btn-primary">Explore Now</a>
+          </div>
         </div>
       </div>
-      
-      <div class="footer-section links">
-        <h3 class="footer-title">Quick Links</h3>
-        <ul>
-          <li><a href="#">Home</a></li>
-          <li><a href="#about">About</a></li>
-          <li><a href="#results">Results</a></li>
-          <li><a href="#slider">Gallery</a></li>
-          <li><a href="#">Register</a></li>
-        </ul>
-      </div>
-      
-      <div class="footer-section social">
-        <h3 class="footer-title">Connect With Us</h3>
-        <div class="footer-icons">
-          <a href="#"><i class="fab fa-facebook-f"></i></a>
-          <a href="#"><i class="fab fa-instagram"></i></a>
-          <a href="#"><i class="fab fa-twitter"></i></a>
-          <a href="#"><i class="fab fa-youtube"></i></a>
+    </section>
+
+    <section class="section">
+        <div class="container reveal-on-scroll">
+            <div class="about-section-grid">
+                <div class="about-logo" style="text-align: right;">
+                    <img src="https://i.ibb.co/6r1F0f1/logo-png.png" alt="Poru '25 Logo">
+                </div>
+                <div class="about-text">
+                    <h2 class="section-title">About The Festival</h2>
+                    <p>Poru '25 is more than an event; it's a vibrant celebration of artistry and culture at the heart of our community. We bring together emerging talents and seasoned professionals to showcase their work, share their passion, and inspire the next generation of creators in a spectacle of creativity and collaboration.</p>
+                </div>
+            </div>
         </div>
-        <div class="newsletter">
-          <input type="email" placeholder="Your Email">
-          <button>Subscribe</button>
-        </div>
-      </div>
-    </div>
+    </section>
     
-    <div class="footer-bottom">
-      <h1>Organized By</h1>
-      <h3 style="color: white;">Staff & Step Mates</h3>
-      <hr style="width: 15%; height: auto;">
+    <section class="section countdown-section" style="background-color: var(--dark-surface);">
+        <div class="container">
+            <div class="section-header reveal-on-scroll">
+                <h2 class="section-title">The Celebration Begins In</h2>
+            </div>
+            <div class="countdown-grid reveal-on-scroll">
+                <div class="countdown-item"><div class="countdown-number gradient-text" id="days">00</div><div class="countdown-label">Days</div></div>
+                <div class="countdown-item"><div class="countdown-number gradient-text" id="hours">00</div><div class="countdown-label">Hours</div></div>
+                <div class="countdown-item"><div class="countdown-number gradient-text" id="minutes">00</div><div class="countdown-label">Minutes</div></div>
+                <div class="countdown-item"><div class="countdown-number gradient-text" id="seconds">00</div><div class="countdown-label">Seconds</div></div>
+            </div>
+        </div>
+    </section>
 
-      <p>&copy; 2025 Poru 2K25 - All Rights Reserved.</p>
-      <p>Website Developed By <strong>Sibhathulla Mkd & Irshad</strong></p>
+    <section class="section leaderboard-section" id="leaderboard">
+        <div class="container">
+            <div class="section-header reveal-on-scroll">
+                <h2 class="section-title">Team Standings</h2>
+                <p class="section-subtitle">Follow the intense competition and see which team will rise to claim the championship title at Poru '25.</p>
+            </div>
+            <div class="leaderboard-panel reveal-on-scroll">
+                <div class="leaderboard-card rank-1"><span class="rank">1st Place</span><h3 class="name">Hemera</h3><p class="score">96 Points</p></div>
+                <div class="leaderboard-card rank-2"><span class="rank">2nd Place</span><h3 class="name">Terenova</h3><p class="score">82 Points</p></div>
+                <div class="leaderboard-card rank-3"><span class="rank">3rd Place</span><h3 class="name">Iris</h3><p class="score">75 Points</p></div>
+                <div class="leaderboard-card rank-4"><span class="rank">4th Place</span><h3 class="name">Calypso</h3><p class="score">71 Points</p></div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="section action-section" style="background-color: var(--dark-surface);">
+        <div class="container">
+             <div class="section-header reveal-on-scroll">
+                <h2 class="section-title">Navigate The Festival</h2>
+            </div>
+            <div class="action-grid reveal-on-scroll">
+                <a href="#" class="action-card"><div class="action-icon"><i class="fas fa-clipboard-list"></i></div><h3>Visit Score Board</h3></a>
+                <a href="#" class="action-card"><div class="action-icon"><i class="fas fa-user"></i></div><h3>Check Your Profile</h3></a>
+                <a href="#" class="action-card"><div class="action-icon"><i class="fas fa-images"></i></div><h3>Explore Gallery</h3></a>
+            </div>
+        </div>
+    </section>
+
+    <section class="section gallery-section">
+        <div class="container">
+            <div class="section-header reveal-on-scroll">
+                <h2 class="section-title">Festival in Focus</h2>
+                <p class="section-subtitle">A glimpse into the vibrant moments that define our festival.</p>
+            </div>
+            <div class="gallery-grid">
+                <div class="gallery-item reveal-on-scroll"><img src="https://source.unsplash.com/random/600x600/?art,festival" alt="Gallery image"></div>
+                <div class="gallery-item reveal-on-scroll"><img src="https://source.unsplash.com/random/600x600/?music,concert" alt="Gallery image"></div>
+                <div class="gallery-item reveal-on-scroll"><img src="https://source.unsplash.com/random/600x600/?dance,performance" alt="Gallery image"></div>
+            </div>
+        </div>
+    </section>
+  </main>
+  
+  <footer class="main-footer">
+    <div class="container footer-content">
+        <div class="footer-logo gradient-text">Poru '25</div>
+        <div class="social-links">
+            <a href="#"><i class="fab fa-facebook-f"></i></a>
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="fab fa-twitter"></i></a>
+            <a href="#"><i class="fab fa-youtube"></i></a>
+        </div>
+        <p class="copyright">&copy; 2025 Poru '25. All Rights Reserved.</p>
     </div>
   </footer>
 
-  <script src="script.js"></script>
-  
-  <!-- Mouse Effect -->
-  <div class="mouse-dot"></div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const revealObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal-on-scroll').forEach(el => {
+        revealObserver.observe(el);
+    });
+
+    function setupCountdown() {
+        const countdownDate = new Date('December 31, 2025 23:59:59').getTime();
+        const daysEl = document.getElementById('days');
+        const hoursEl = document.getElementById('hours');
+        const minutesEl = document.getElementById('minutes');
+        const secondsEl = document.getElementById('seconds');
+
+        if (!daysEl || !hoursEl || !minutesEl || !secondsEl) return;
+
+        const timer = setInterval(() => {
+            const now = new Date().getTime();
+            const distance = countdownDate - now;
+
+            if (distance < 0) {
+                clearInterval(timer);
+                // Optionally handle countdown completion
+                return;
+            }
+
+            daysEl.innerText = Math.floor(distance / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
+            hoursEl.innerText = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
+            minutesEl.innerText = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+            secondsEl.innerText = Math.floor((distance % (1000 * 60)) / 1000).toString().padStart(2, '0');
+        }, 1000);
+    }
+    setupCountdown();
+});
+</script>
 </body>
 </html>
