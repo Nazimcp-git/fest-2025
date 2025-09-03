@@ -23,7 +23,7 @@
 
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png"> ```
+<link rel="apple-touch-icon" href="/apple-touch-icon.png"> 
 
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,13 +33,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 </head>
 <style>
-/*------------------------------------------------------------------
-[Master Stylesheet - V5 The Polished Final]
-
-Project:    Poru '25 - Refined Design
-Author:     Gemini (as a Pro Web Designer)
-Version:    5.0
--------------------------------------------------------------------*/
 
 :root {
   --blue: #007aff;
@@ -136,7 +129,7 @@ body::before {
 /* --- BUTTONS --- */
 .btn {
   display: inline-block;
-  padding: 0.875rem 2rem;
+  padding: 0.6rem 2rem;
   border-radius: 8px;
   font-weight: 500;
   text-decoration: none;
@@ -204,7 +197,7 @@ body::before {
     max-width: 100%;
     text-align: right;
     align-items: ;
-    filter: drop-shadow(0 0 30px rgba(255,255,255,0.1));
+    filter: drop-shadow(0 0 30px rgba(255,255,255,0.3));
 }
 .about-text h2 {
     margin-top: 0;
@@ -375,7 +368,7 @@ body::before {
     .about-logo { margin-bottom: 2rem; text-align: center; }
 }
 .adout-logo{
-  text-align: right;
+  text-align: center;
 }
 @media only screen and (max-width: 600px) {
   .adout-logo{
@@ -434,10 +427,10 @@ body::before {
                 <p class="section-subtitle">Follow the intense competition and see which team will rise to claim the championship title at Poru '25.</p>
             </div>
             <div class="leaderboard-panel reveal-on-scroll">
-                <div class="leaderboard-card rank-1"><span class="rank">1st Place</span><h3 class="name">Hemera</h3><p class="score">96 Points</p></div>
-                <div class="leaderboard-card rank-2"><span class="rank">2nd Place</span><h3 class="name">Terenova</h3><p class="score">82 Points</p></div>
-                <div class="leaderboard-card rank-3"><span class="rank">3rd Place</span><h3 class="name">Iris</h3><p class="score">75 Points</p></div>
-                <div class="leaderboard-card rank-4"><span class="rank">4th Place</span><h3 class="name">Calypso</h3><p class="score">71 Points</p></div>
+                <div class="leaderboard-card rank-1"><span class="rank">1st Team</span><h3 class="name">Hemera</h3><p class="score">-- Points</p></div>
+                <div class="leaderboard-card rank-2"><span class="rank">2nd Team</span><h3 class="name">Terenova</h3><p class="score">-- Points</p></div>
+                <div class="leaderboard-card rank-3"><span class="rank">3rd Team</span><h3 class="name">Iris</h3><p class="score">-- Points</p></div>
+                <div class="leaderboard-card rank-4"><span class="rank">4th Team</span><h3 class="name">Calypso</h3><p class="score">-- Points</p></div>
             </div>
         </div>
     </section>
@@ -448,9 +441,9 @@ body::before {
                 <h2 class="section-title">Navigate The Festival</h2>
             </div>
             <div class="action-grid reveal-on-scroll">
-                <a href="#" class="action-card"><div class="action-icon"><i class="fas fa-clipboard-list"></i></div><h3>Visit Score Board</h3></a>
-                <a href="#" class="action-card"><div class="action-icon"><i class="fas fa-user"></i></div><h3>Check Your Profile</h3></a>
-                <a href="#" class="action-card"><div class="action-icon"><i class="fas fa-images"></i></div><h3>Explore Gallery</h3></a>
+                <a href="/results/" class="action-card"><div class="action-icon"><i class="fas fa-clipboard-list"></i></div><h3>Visit Score Board</h3></a>
+                <a href="/results/#/search" class="action-card"><div class="action-icon"><i class="fas fa-user"></i></div><h3>Check Your Profile</h3></a>
+                <a href="/gallery/" class="action-card"><div class="action-icon"><i class="fas fa-images"></i></div><h3>Explore Gallery</h3></a>
             </div>
         </div>
     </section>
@@ -499,7 +492,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function setupCountdown() {
-        const countdownDate = new Date('December 31, 2025 23:59:59').getTime();
+        const countdownDate = new Date('September 26, 2025 23:59:59').getTime();
         const daysEl = document.getElementById('days');
         const hoursEl = document.getElementById('hours');
         const minutesEl = document.getElementById('minutes');
