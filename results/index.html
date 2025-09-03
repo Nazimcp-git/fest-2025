@@ -238,11 +238,7 @@
                 <a href="#/leaderboard" class="nav-link text-gray-600 hover:bg-indigo-600 hover:text-white ${baseClasses}">Leaderboard</a>
                 <a href="#/search" class="nav-link text-gray-600 hover:bg-indigo-600 hover:text-white ${baseClasses}">Search</a>
             `;
-            const authLinks = currentUser ?
-                `<a href="#/admin" class="nav-link text-gray-600 hover:bg-indigo-600 hover:text-white ${baseClasses}">Admin</a>
-                 <button id="logout-btn" class="${isMobile ? 'w-full text-left ' : ''} bg-red-500 text-white ${baseClasses}">Logout</button>` :
-                `<a href="#/admin" class="nav-link text-gray-600 hover:bg-indigo-600 hover:text-white ${baseClasses}">Admin Login</a>`;
-            return links + authLinks;
+            
         };
 
         const renderLoader = () => `<div class="flex justify-center items-center p-16"><div class="loader"></div></div>`;
