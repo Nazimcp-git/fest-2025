@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Management Portal</title>
+    
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter for a clean UI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .admin-tab.active { 
+            border-color: #4f46e5; 
+            color: #4f46e5; 
+            background-color: #eef2ff; 
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+
+    <div id="app" class="min-h-screen">
+        <!-- App content will be rendered here -->
+    </div>
+
+    <!-- Firebase SDKs (Version 8.10.0) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+    <script type="module">
+        // --- FIREBASE CONFIGURATION ---
+        // IMPORTANT: Use the EXACT SAME Firebase config from your main fest website.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
+            authDomain: "shopping-e284c.firebaseapp.com",
+            databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
+            projectId: "shopping-e284c",
+            storageBucket: "shopping-e284c.appspot.com",
+            messagingSenderId: "248274428739",
+            appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
+            measurementId: "G-ZXZCK9BW7T"
+        };
+
+        // --- INITIALIZE FIREBASE ---
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        // --- APPLICATION STATE ---
+        let appData = { students: {}, teams: {} };
+        let activeTab = 'assign'; // 'assign' or 'leaderboard'
+
+        // --- HELPER FUNCTIONS ---
+        function getDataAsArray(entity) {
+            if (!appData[entity]) return [];
+            return Object.entries(appData[entity]).map(([id, value]) => ({ id, ...value }));
+        }
+
+        // --- RENDER FUNCTIONS ---
+        function renderApp() {
+            const appContainer = document.getElementById('app');
+            let content = '';
+            if (activeTab === 'assign') {
+                content = renderAssignClassPage();
+            } else {
+                content = renderLeaderboardPage();
+            }
+
+            appContainer.innerHTML = `
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <header class="mb-8">
+                        <h1 class="text-4xl font-bold text-gray-900">Best Class Award Portal</h1>
+                        <p class="mt-2 text-lg text-gray-600">Manage class assignments and view the class leaderboard.</p>
+                    </header>
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav id="admin-tabs" class="-mb-px flex space-x-8" aria-label="Tabs">
+                            <button data-tab="assign" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'assign' ? 'active' : ''}">Assign Classes</button>
+                            <button data-tab="leaderboard" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'leaderboard' ? 'active' : ''}">Class Leaderboard</button>
+                        </nav>
+                    </div>
+                    <main>
+                        ${content}
+                    </main>
+                </div>
+            `;
+        }
+
+        function renderAssignClassPage() {
+            const students = getDataAsArray('students').sort((a, b) => {
+                // Sort numerically by chest number
+                const numA = parseInt(String(a.chestNo).match(/\d+/) || 0);
+                const numB = parseInt(String(b.chestNo).match(/\d+/) || 0);
+                if (numA !== numB) return numA - numB;
+                return String(a.chestNo).localeCompare(String(b.chestNo));
+            });
+
+            if (students.length === 0) {
+                return `<div class="bg-white p-8 rounded-lg shadow-md text-center"><p class="text-gray-600">No student data found. Please add students in the main fest admin panel first.</p></div>`;
+            }
+
+            return `
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold">Student List</h2>
+                            <p class="text-gray-600 mt-1">Enter the class for each student below.</p>
+                        </div>
+                        <button id="save-all-classes-btn" class="bg-green-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-green-700">
+                            <i class="fas fa-save mr-2"></i>Save All Changes
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                             <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chest No</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                                </tr>
+                            </thead>
+                            <tbody id="student-list-body" class="bg-white divide-y divide-gray-200">
+                                ${students.map(student => `
+                                    <tr id="student-row-${student.id}" data-student-id="${student.id}">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${student.chestNo}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">${student.name}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${appData.teams[student.teamId]?.name || 'N/A'}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">${student.totalPoints || 0}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <input type="text" id="class-input-${student.id}" class="p-1 border border-gray-300 rounded-md w-24 class-input" value="${student.class || ''}" placeholder="e.g., 10A">
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderLeaderboardPage() {
+            const classScores = {};
+            const students = getDataAsArray('students');
+
+            students.forEach(student => {
+                if (student.class) {
+                    const className = student.class.trim().toUpperCase();
+                    if (!classScores[className]) {
+                        classScores[className] = 0;
+                    }
+                    classScores[className] += student.totalPoints || 0;
+                }
+            });
+
+            const leaderboard = Object.entries(classScores)
+                .map(([className, totalPoints]) => ({ className, totalPoints }))
+                .sort((a, b) => b.totalPoints - a.totalPoints);
+            
+            if (leaderboard.length === 0) {
+                return `<div class="bg-white p-8 rounded-lg shadow-md text-center"><p class="text-gray-600">No classes have been assigned yet, or assigned classes have no points.</p></div>`;
+            }
+
+            return `
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-6">Class Leaderboard</h2>
+                     <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                             <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class Name</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Points</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                ${leaderboard.map((item, index) => `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">${item.className}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-extrabold text-gray-800">${item.totalPoints}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- EVENT LISTENERS ---
+        document.addEventListener('click', async (e) => {
+            if (e.target.matches('.admin-tab')) {
+                activeTab = e.target.dataset.tab;
+                renderApp();
+            }
+
+            if (e.target.id === 'save-all-classes-btn') {
+                const button = e.target;
+                const updates = {};
+                const studentRows = document.querySelectorAll('#student-list-body tr');
+
+                studentRows.forEach(row => {
+                    const studentId = row.dataset.studentId;
+                    const input = row.querySelector('.class-input');
+                    const newClassName = input.value.trim().toUpperCase();
+                    // Only update if the class has changed
+                    if (appData.students[studentId].class !== newClassName) {
+                        updates[`/students/${studentId}/class`] = newClassName;
+                    }
+                });
+
+                if (Object.keys(updates).length === 0) {
+                    alert("No changes to save.");
+                    return;
+                }
+
+                button.textContent = 'Saving...';
+                button.disabled = true;
+
+                try {
+                    await db.ref().update(updates);
+                    button.textContent = 'All Saved!';
+                    button.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    button.classList.add('bg-indigo-600');
+                     setTimeout(() => {
+                        button.textContent = 'Save All Changes';
+                        button.classList.add('bg-green-600', 'hover:bg-green-700');
+                        button.classList.remove('bg-indigo-600');
+                        button.disabled = false;
+                    }, 2000);
+                } catch (error) {
+                    console.error("Error saving all classes:", error);
+                    button.textContent = 'Error!';
+                     button.disabled = false;
+                }
+            }
+        });
+
+        // --- INITIALIZATION ---
+        db.ref().on('value', snapshot => {
+            const data = snapshot.val() || {};
+            appData = {
+                students: data.students || {},
+                teams: data.teams || {}
+            };
+            renderApp();
+        });
+
+    </script>
+</body>
+</html>
+
