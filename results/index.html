@@ -55,7 +55,8 @@
         #mobile-nav-container.open {
             max-height: 500px; /* Adjust as needed */
         }
-
+        #modal-container.hidden { display: none; }
+        .team-card-clickable { cursor: pointer; }
 .remoss{
             padding: 30px 50px;
         }
@@ -100,13 +101,13 @@
         // IMPORTANT: Replace with your actual Firebase project configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
-  authDomain: "shopping-e284c.firebaseapp.com",
-  databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
-  projectId: "shopping-e284c",
-  storageBucket: "shopping-e284c.appspot.com",
-  messagingSenderId: "248274428739",
-  appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
-  measurementId: "G-ZXZCK9BW7T"
+            authDomain: "shopping-e284c.firebaseapp.com",
+            databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
+            projectId: "shopping-e284c",
+            storageBucket: "shopping-e284c.appspot.com",
+            messagingSenderId: "248274428739",
+            appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
+            measurementId: "G-ZXZCK9BW7T"
         };
 
         // --- CONSTANTS ---
@@ -122,6 +123,7 @@
         let appData = { teams: {}, students: {}, programs: {}, results: {}, pointsConfig: {} };
         let isInitialLoad = true;
         let tempParticipants = []; // For the new admin results form
+        let activeAdminTab = 'results'; // State for remembering the active admin tab
 
         // --- UI COMPONENTS & TEMPLATES ---
         const AppShell = (content) => `
@@ -129,7 +131,7 @@
                 <nav class="bg-white shadow-md sticky top-0 z-50">
                     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div class="flex items-center justify-between h-16">
-                            <a href="#/" class="font-bold text-xl text-indigo-600"><i class="fas fa-trophy mr-2"></i>Fest Results</a>
+                            <a href="#/" class="font-bold text-xl text-indigo-600"><i class="fas fa-trophy mr-2"></i>PORU 2K25</a>
                             <div class="hidden md:block">
                                 <div id="desktop-nav" class="ml-10 flex items-baseline space-x-4">
                                     ${generateNavLinks()}
@@ -153,6 +155,7 @@
                 </main>
                         <p style="text-align:center; color: gray; margin-bottom: 10px; font-size: 14px;">© Copyright Owned Nazim Cp</p>
                 
+                <div id="modal-container" class="hidden"></div>
             </div>
         `;
 
@@ -248,7 +251,10 @@
         function attachPageEventListeners(path){
             if (path.startsWith('/admin')) {
                 document.getElementById('admin-tabs')?.addEventListener('click', e => {
-                    if (e.target.matches('.admin-tab')) renderAdminTab(e.target.dataset.tab);
+                    if (e.target.matches('.admin-tab')) {
+                        activeAdminTab = e.target.dataset.tab;
+                        renderAdminTab(activeAdminTab);
+                    }
                 });
                 const adminContent = document.getElementById('admin-tab-content');
                 adminContent?.addEventListener('submit', handleAdminFormSubmit);
@@ -314,7 +320,7 @@
                                     const colors = ['text-yellow-400', 'text-gray-400', 'text-yellow-600', 'text-blue-400'];
                                     const icons = ['fa-crown', 'fa-medal', 'fa-award', 'fa-star'];
                                     return `
-                                    <div class="bg-white shadow-lg rounded-xl p-6 transform hover:scale-105 transition-transform duration-300">
+                                    <div class="bg-white shadow-lg rounded-xl p-6 transform hover:scale-105 transition-transform duration-300 team-card-clickable" data-team-id="${team.id}">
                                         <div class="flex items-center justify-between">
                                             <h2 class="text-xl font-bold text-gray-800">${team.name}</h2>
                                             ${index < 4 ? `<i class="fas ${icons[index]} text-2xl ${colors[index]}"></i>` : ''}
@@ -740,13 +746,13 @@
         }
 
         async function renderAdminDashboard() {
-            setTimeout(() => renderAdminTab('results'), 0); // Load initial tab
+            setTimeout(() => renderAdminTab(activeAdminTab), 0); // Use state variable
             return `
                  <div class="page space-y-8">
                     <h1 class="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
                     <div class="border-b border-gray-200">
                         <nav id="admin-tabs" class="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
-                            <button data-tab="results" class="admin-tab active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Upload Results</button>
+                            <button data-tab="results" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Upload Results</button>
                             <button data-tab="publish" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Publish</button>
                             <button data-tab="announce" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Announce Live</button>
                             <button data-tab="preview" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Score Preview</button>
@@ -766,7 +772,8 @@
         async function renderAdminTab(tabName) {
             const container = document.getElementById('admin-tab-content');
             if (!container) return;
-            container.innerHTML = renderLoader();
+            // No loader for instant feel
+            // container.innerHTML = renderLoader();
 
             document.querySelectorAll('.admin-tab').forEach(tab => {
                 tab.classList.toggle('active', tab.dataset.tab === tabName);
@@ -1292,72 +1299,75 @@
             const printBtn = e.target.closest('.print-btn');
             const printAllReadyBtn = e.target.closest('#print-all-ready-btn');
 
-            const currentTab = document.querySelector('.admin-tab.active')?.dataset.tab;
-            const reRenderCurrentTab = () => {
-                if (currentTab) renderAdminTab(currentTab);
+            const currentTab = activeAdminTab;
+            
+            // Optimistic UI update for Announce Live
+            if ((currentTab === 'announce' || currentTab === 'publish') && (publishBtn || unpublishBtn || markReadyBtn || unmarkReadyBtn)) {
+                 const button = publishBtn || unpublishBtn || markReadyBtn || unmarkReadyBtn;
+                 const card = button.closest('.border.rounded-lg');
+                 if(card) {
+                     card.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease, max-height 0.3s ease, padding 0.3s ease, margin 0.3s ease';
+                     card.style.opacity = '0';
+                     card.style.transform = 'scale(0.95)';
+                     card.style.maxHeight = '0px';
+                     card.style.paddingTop = '0';
+                     card.style.paddingBottom = '0';
+                     card.style.marginTop = '0';
+                     card.style.marginBottom = '0';
+                     card.style.borderWidth = '0';
+
+                     setTimeout(() => card.remove(), 300);
+                 }
             }
+
 
             if (deleteBtn) {
                 const { id, collection } = deleteBtn.dataset;
                 if (confirm(`Are you sure you want to delete this item from ${collection}? This action cannot be undone.`)) {
-                    try {
-                        const itemToDelete = appData[collection][id];
-                        await db.ref(`${collection}/${id}`).remove();
+                    const itemToDelete = appData[collection][id];
+                    // Optimistic UI update for delete
+                    const itemEl = deleteBtn.closest('.flex.justify-between')?.parentElement || deleteBtn.closest('.border.rounded-lg');
+                    if(itemEl) itemEl.remove();
+
+                    db.ref(`${collection}/${id}`).remove().then(() => {
                         if ((collection === 'results' && itemToDelete && itemToDelete.status === 'published') || collection === 'students') {
-                            await recalculateAllPoints();
+                            recalculateAllPoints();
                         }
-                    } catch (error) {
-                        alert("Could not delete the item. " + error.message);
-                    } finally {
-                        reRenderCurrentTab();
-                    }
+                    }).catch(error => alert("Could not delete the item. " + error.message));
                 }
+                return; // Prevent further actions
             }
 
             if(printBtn) {
                 printResult(printBtn.dataset.id);
+                 return;
             }
             if(printAllReadyBtn) {
                 printReadyResults();
+                return;
             }
 
             if (publishBtn) {
-                try {
-                    await db.ref(`results/${publishBtn.dataset.id}`).update({ status: 'published' });
-                    await recalculateAllPoints();
-                } catch (error) { alert("Could not publish result: " + error.message); }
-                finally { reRenderCurrentTab(); }
+                db.ref(`results/${publishBtn.dataset.id}`).update({ status: 'published' }).then(recalculateAllPoints);
             }
             if (unpublishBtn) {
-                 try {
-                    await db.ref(`results/${unpublishBtn.dataset.id}`).update({ status: 'pending' });
-                    await recalculateAllPoints();
-                } catch (error) { alert("Could not unpublish result: " + error.message); }
-                finally { reRenderCurrentTab(); }
+                 db.ref(`results/${unpublishBtn.dataset.id}`).update({ status: 'pending' }).then(recalculateAllPoints);
             }
             if(markReadyBtn) {
-                try { await db.ref(`results/${markReadyBtn.dataset.id}`).update({ status: 'ready' }); }
-                catch(e) { alert("Error: " + e.message); }
-                finally { reRenderCurrentTab(); }
+                db.ref(`results/${markReadyBtn.dataset.id}`).update({ status: 'ready' });
             }
             if(unmarkReadyBtn) {
-                 try { await db.ref(`results/${unmarkReadyBtn.dataset.id}`).update({ status: 'pending' }); }
-                 catch(e) { alert("Error: " + e.message); }
-                 finally { reRenderCurrentTab(); }
+                 db.ref(`results/${unmarkReadyBtn.dataset.id}`).update({ status: 'pending' });
             }
             if (publishAllBtn) {
                 if (confirm('Are you sure you want to publish all results marked as "Ready"?')) {
-                    try {
-                        const updates = {};
-                        getDataAsArray('results').forEach(r => {
-                            if (r.status === 'ready') updates[`/results/${r.id}/status`] = 'published';
-                        });
-                        if (Object.keys(updates).length > 0) {
-                            await db.ref().update(updates);
-                            await recalculateAllPoints();
-                        }
-                    } catch (error) { alert("Could not publish all: " + error.message); }
-                    finally { reRenderCurrentTab(); }
+                    const updates = {};
+                    getDataAsArray('results').forEach(r => {
+                        if (r.status === 'ready') updates[`/results/${r.id}/status`] = 'published';
+                    });
+                    if (Object.keys(updates).length > 0) {
+                        db.ref().update(updates).then(recalculateAllPoints);
+                    }
                 }
             }
         }
@@ -1609,7 +1619,7 @@
         async function renderNotFoundPage() {
             return `<div class="text-center"><h1 class="text-4xl font-bold">404 - Not Found</h1><p class="mt-4">The page you are looking for does not exist.</p></div>`;
         }
-
+        
         function renderAnnounceLivePage() {
             const readyResults = getDataAsArray('results').filter(r => r.status === 'ready').sort((a,b) => a.category.localeCompare(b.category) || a.programName.localeCompare(b.programName));
 
@@ -1678,6 +1688,16 @@
                 }
             }
             
+            const teamCard = e.target.closest('.team-card-clickable');
+            if (teamCard) {
+                openTeamModal(teamCard.dataset.teamId);
+            }
+
+            const closeModalBtn = e.target.closest('.close-modal-btn');
+            if (closeModalBtn) {
+                closeModal();
+            }
+
             if (e.target.closest('.nav-link') || e.target.closest('#logout-btn')) {
                  document.getElementById('mobile-nav-container')?.classList.remove('open');
             }
@@ -1698,6 +1718,66 @@
                 }
             }
         });
+        
+        function openTeamModal(teamId) {
+            const team = appData.teams[teamId];
+            if (!team) return;
+
+            // Recalculate full team details
+            let totalPoints = 0;
+            const categoryPoints = {};
+            CATEGORIES.forEach(c => categoryPoints[c] = 0);
+
+            Object.values(appData.students || {}).forEach(student => {
+                if(student.teamId === teamId) {
+                    const points = student.totalPoints || 0;
+                    totalPoints += points;
+                    if(student.category && categoryPoints.hasOwnProperty(student.category)) {
+                        categoryPoints[student.category] += points;
+                    }
+                }
+            });
+
+            const allTeams = getDataAsArray('teams').map(t => {
+                const points = Object.values(appData.students || {}).filter(s => s.teamId === t.id).reduce((sum, s) => sum + (s.totalPoints || 0), 0);
+                return {...t, totalPoints: points};
+            }).sort((a,b) => b.totalPoints - a.totalPoints);
+            const rank = allTeams.findIndex(t => t.id === teamId) + 1;
+
+
+            const modalHTML = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-8 relative transform transition-all" style="animation: fadeIn 0.3s ease-out;">
+                        <button class="close-modal-btn absolute top-4 right-4 text-gray-400 hover:text-gray-800 text-2xl">&times;</button>
+                        <div class="text-center">
+                            <h2 class="text-3xl font-bold text-gray-900">${team.name}</h2>
+                            <p class="text-lg text-gray-500 mt-1">Rank: #${rank}</p>
+                            <p class="text-7xl font-extrabold text-indigo-600 my-4">${totalPoints}</p>
+                        </div>
+                        <div class="mt-8 border-t pt-6">
+                            <h3 class="text-xl font-bold text-center mb-4">Category Points</h3>
+                            <div class="space-y-2">
+                                ${CATEGORIES.map(cat => `
+                                    <div class="flex justify-between items-center bg-gray-50 p-3 rounded-md">
+                                        <span class="font-semibold text-gray-700">${cat}</span>
+                                        <span class="font-bold text-lg text-indigo-600">${categoryPoints[cat]}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.innerHTML = modalHTML;
+            modalContainer.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.classList.add('hidden');
+            modalContainer.innerHTML = '';
+        }
 
         // --- AUTH & INIT ---
         auth.onAuthStateChanged(user => {
@@ -1715,4 +1795,3 @@
     </script>
 </body>
 </html>
-
