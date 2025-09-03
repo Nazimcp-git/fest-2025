@@ -1,29 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fest Results Portal</title>
-    <meta name="title" content="Poru '25 | The Vibrant Art Fest at Darunnajath Islamic Complex">
-    <meta name="description"
-        content="Experience creativity unleashed at Poru '25, the year's most vibrant art festival. Join thousands of artists and enthusiasts at Darunnajath Islamic Complex, Vallappuzha, for a symphony of color, talent, and passion.">
-    <meta name="keywords"
-        content="poru25, poru 25, art fest, darunnajath islamic complex vallappuzha, nadiavallappuzha, dnic vallappzuha, dnic art fest, islamic art fest, kerala art festival, vallappuzha events">
-    <meta name="author" content="Nazim">
-    <meta name="robots" content="index, follow">
-    <link rel="shortcut icon" href="logo.png" type="image/x-icon">
-
-
-
+    
     <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-
+    
     <!-- Google Fonts: Inter for a clean UI -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
+    
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -36,41 +25,16 @@
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
         }
-
-        .page {
-            animation: fadeIn 0.5s ease-in-out;
-        }
-
+        .page { animation: fadeIn 0.5s ease-in-out; }
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-
         /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
         /* Loader Style */
         .loader {
             border: 4px solid #f3f3f3;
@@ -80,67 +44,35 @@
             height: 40px;
             animation: spin 1s linear infinite;
         }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .admin-tab.active {
-            border-color: #4f46e5;
-            color: #4f46e5;
-            background-color: #eef2ff;
-        }
-
-        .category-filter-btn.active {
-            background-color: #4f46e5;
-            color: white;
-        }
-
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .admin-tab.active { border-color: #4f46e5; color: #4f46e5; background-color: #eef2ff; }
+        .category-filter-btn.active { background-color: #4f46e5; color: white; }
         #mobile-nav-container {
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.3s ease-out;
         }
-
         #mobile-nav-container.open {
-            max-height: 500px;
-            /* Adjust as needed */
+            max-height: 500px; /* Adjust as needed */
         }
-
-        #modal-container.hidden {
-            display: none;
-        }
-
-        .team-card-clickable {
-            cursor: pointer;
-        }
-
-        .remoss {
+        #modal-container.hidden { display: none; }
+        .team-card-clickable { cursor: pointer; }
+.remoss{
             padding: 30px 50px;
         }
-
         @media only screen and (max-width: 600px) {
-            .remoss {
-                padding: 10px 20px;
-            }
-        }
-
+  .remoss {
+    padding: 10px 20px;
+  }
+}
         /* Print Styles */
         @media print {
-            body>*:not(#print-area) {
+            body > *:not(#print-area) {
                 display: none !important;
             }
-
             #print-area {
                 display: block !important;
             }
-
             @page {
                 size: A4;
                 margin: 2cm;
@@ -148,16 +80,13 @@
         }
     </style>
 </head>
-
 <body class="antialiased text-gray-800">
 
     <!-- Main Application Container -->
     <div id="app" class="min-h-screen">
-        <div class="flex items-center justify-center min-h-screen">
-            <div class="loader"></div>
-        </div>
+        <div class="flex items-center justify-center min-h-screen"><div class="loader"></div></div>
     </div>
-
+    
     <!-- Hidden container for printing -->
     <div id="print-area" class="hidden"></div>
 
@@ -219,6 +148,7 @@
                         <!-- Mobile nav content is injected here -->
                     </div>
                 </nav>
+                
                 <main id="main-content" class="py-10 flex-grow remoss">
                     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 px-6">
                         ${content}
@@ -238,16 +168,16 @@
                 <a href="#/leaderboard" class="nav-link text-gray-600 hover:bg-indigo-600 hover:text-white ${baseClasses}">Leaderboard</a>
                 <a href="#/search" class="nav-link text-gray-600 hover:bg-indigo-600 hover:text-white ${baseClasses}">Search</a>
             `;
-            const authLinks = currentUser ?
+            const authLinks = currentUser ? 
                 `<a href="#/admin" class="nav-link text-gray-600 hover:bg-indigo-600 hover:text-white ${baseClasses}">Admin</a>
                  <button id="logout-btn" class="${isMobile ? 'w-full text-left ' : ''} bg-red-500 text-white ${baseClasses}">Logout</button>` :
                 `<a href="#/admin" class="nav-link text-gray-600 hover:bg-indigo-600 hover:text-white ${baseClasses}">Admin Login</a>`;
             return links + authLinks;
         };
-
+        
         const renderLoader = () => `<div class="flex justify-center items-center p-16"><div class="loader"></div></div>`;
         const categoryOptions = () => `<option value="">Select Category</option>` + CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
-
+        
         // --- DATA HANDLING ---
         function syncData() {
             db.ref().on('value', snapshot => {
@@ -260,7 +190,7 @@
                     pointsConfig: data.pointsConfig || { first: 5, second: 3, third: 2, a_grade: 1, b_grade: 0 }
                 };
                 if (isInitialLoad) {
-                    router();
+                    router(); 
                     isInitialLoad = false;
                 } else {
                     router(true);
@@ -280,12 +210,18 @@
         async function router(isUpdate = false) {
             const path = window.location.hash.slice(1) || '/';
             const appContainer = document.getElementById('app');
-
+            
             if (!isUpdate) {
-                appContainer.innerHTML = AppShell(renderLoader());
+                 appContainer.innerHTML = AppShell(renderLoader());
             } else {
-                const desktopNav = document.getElementById('desktop-nav');
-                if (desktopNav) desktopNav.innerHTML = generateNavLinks();
+                 const desktopNav = document.getElementById('desktop-nav');
+                 if(desktopNav) desktopNav.innerHTML = generateNavLinks();
+                 
+                 // If the update is for an admin tab, re-render it without full page reload
+                 if(path.startsWith('/admin') && document.getElementById('admin-tabs')) {
+                    renderAdminTab(activeAdminTab);
+                    return;
+                 }
             }
 
             const mainContent = appContainer.querySelector('#main-content');
@@ -299,7 +235,7 @@
                 link.classList.toggle('text-white', isActive);
                 link.classList.toggle('text-gray-600', !isActive);
             });
-
+            
             let pageFunction;
             if (path.startsWith('/student/')) {
                 const studentId = path.split('/')[2];
@@ -319,7 +255,7 @@
             attachPageEventListeners(path);
         }
 
-        function attachPageEventListeners(path) {
+        function attachPageEventListeners(path){
             if (path.startsWith('/admin')) {
                 document.getElementById('admin-tabs')?.addEventListener('click', e => {
                     if (e.target.matches('.admin-tab')) {
@@ -330,18 +266,32 @@
                 const adminContent = document.getElementById('admin-tab-content');
                 adminContent?.addEventListener('submit', handleAdminFormSubmit);
                 adminContent?.addEventListener('change', handleAdminFormChange);
+                adminContent?.addEventListener('click', e => {
+                    if (e.target.closest('.team-card-clickable')) {
+                        openTeamModal(e.target.closest('.team-card-clickable').dataset.teamId);
+                    }
+                    if (e.target.closest('.close-modal-btn')) {
+                        closeModal();
+                    }
+                });
                 adminContent?.addEventListener('click', handleAdminListClick);
                 adminContent?.addEventListener('click', e => {
                     if (e.target.id === 'add-participant-btn') addParticipantToTempList();
                     if (e.target.matches('.remove-participant-btn')) removeParticipantFromTempList(e.target.dataset.index);
                     if (e.target.id === 'download-student-template') downloadTemplate('student');
                     if (e.target.id === 'download-program-template') downloadTemplate('program');
+                    
+                    // Listener for the status filter
+                    if (e.target.matches('#status-filter-container .category-filter-btn')) {
+                        const status = e.target.dataset.status;
+                        renderAdminTab('status', status);
+                    }
                 });
             }
-            if (path === '/search') {
+             if (path === '/search') {
                 document.getElementById('profile-search-form')?.addEventListener('submit', handleProfileSearch);
             }
-            if (path === '/results') {
+            if (path === '/results'){
                 document.getElementById('results-search-form')?.addEventListener('submit', e => {
                     e.preventDefault();
                     const searchInput = document.getElementById('results-search-input');
@@ -349,48 +299,48 @@
                     renderResultsPage(searchInput.value).then(html => mainContent.innerHTML = html);
                 });
             }
-            if (path === '/leaderboard') {
-                document.getElementById('leaderboard-filter-container')?.addEventListener('click', e => {
-                    if (e.target.classList.contains('category-filter-btn')) {
-                        const mainContent = document.getElementById('main-content');
-                        renderLeaderboardPage(e.target.dataset.category).then(html => mainContent.innerHTML = html);
+            if (path === '/leaderboard'){
+                 document.getElementById('leaderboard-filter-container')?.addEventListener('click', e => {
+                    if(e.target.classList.contains('category-filter-btn')){
+                         const mainContent = document.getElementById('main-content');
+                         renderLeaderboardPage(e.target.dataset.category).then(html => mainContent.innerHTML = html);
                     }
-                });
+                 });
             }
         }
-
+        
         async function renderHomePage() {
-            const teamsArray = getDataAsArray('teams');
+             const teamsArray = getDataAsArray('teams');
+             
+             teamsArray.forEach(team => {
+                 team.totalPoints = 0;
+                 team.categoryPoints = {};
+                 CATEGORIES.forEach(c => team.categoryPoints[c] = 0);
+             });
 
-            teamsArray.forEach(team => {
-                team.totalPoints = 0;
-                team.categoryPoints = {};
-                CATEGORIES.forEach(c => team.categoryPoints[c] = 0);
-            });
-
-            Object.values(appData.students || {}).forEach(student => {
-                const team = teamsArray.find(t => t.id === student.teamId);
-                if (team) {
-                    const points = student.totalPoints || 0;
-                    team.totalPoints += points;
-                    if (student.category && team.categoryPoints.hasOwnProperty(student.category)) {
+             Object.values(appData.students || {}).forEach(student => {
+                 const team = teamsArray.find(t => t.id === student.teamId);
+                 if (team) {
+                     const points = student.totalPoints || 0;
+                     team.totalPoints += points;
+                     if(student.category && team.categoryPoints.hasOwnProperty(student.category)){
                         team.categoryPoints[student.category] += points;
-                    }
-                }
-            });
+                     }
+                 }
+             });
 
-            teamsArray.sort((a, b) => b.totalPoints - a.totalPoints);
-
-            return `
+             teamsArray.sort((a,b) => b.totalPoints - a.totalPoints);
+            
+             return `
                 <div class="page space-y-12">
                     <div>
                         <h1 class="text-3xl font-bold text-gray-900 mb-6">Team Standings</h1>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             ${teamsArray.length === 0 ? `<p class="text-gray-500 col-span-full">No teams data yet.</p>` :
-                    teamsArray.map((team, index) => {
-                        const colors = ['text-yellow-400', 'text-gray-400', 'text-yellow-600', 'text-blue-400'];
-                        const icons = ['fa-crown', 'fa-medal', 'fa-award', 'fa-star'];
-                        return `
+                                teamsArray.map((team, index) => {
+                                    const colors = ['text-yellow-400', 'text-gray-400', 'text-yellow-600', 'text-blue-400'];
+                                    const icons = ['fa-crown', 'fa-medal', 'fa-award', 'fa-star'];
+                                    return `
                                     <div class="bg-white shadow-lg rounded-xl p-6 transform hover:scale-105 transition-transform duration-300 team-card-clickable" data-team-id="${team.id}">
                                         <div class="flex items-center justify-between">
                                             <h2 class="text-xl font-bold text-gray-800">${team.name}</h2>
@@ -399,8 +349,8 @@
                                         <p class="text-5xl font-extrabold text-indigo-600 mt-4">${team.totalPoints}</p>
                                         <p class="text-gray-500 mt-1">Total Points</p>
                                     </div>`;
-                    }).join('')
-                }
+                                }).join('')
+                            }
                         </div>
                     </div>
                     <div>
@@ -428,9 +378,9 @@
         }
 
         async function renderResultsPage(searchTerm = '') {
-            const results = getDataAsArray('results').filter(r => r.status === 'published').sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-            const filteredResults = results.filter(r =>
-                (r.programName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+             const results = getDataAsArray('results').filter(r => r.status === 'published').sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+             const filteredResults = results.filter(r => 
+                (r.programName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                 (r.category || '').toLowerCase().includes(searchTerm.toLowerCase())
             );
 
@@ -452,17 +402,17 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${filteredResults.length === 0 ? `<p class="text-gray-500 text-center py-8 col-span-full">No results found.</p>` :
-                    filteredResults.map(result => {
-                        const positions = { first: [], second: [], third: [] };
-                        const grades = { a_grade: [], b_grade: [] };
-                        (result.participants || []).forEach(p => {
-                            if (p.position && positions[p.position]) positions[p.position].push(p);
-                            if (p.grade && grades[p.grade]) {
-                                if (!p.position || p.position === 'none') grades[p.grade].push(p);
-                            }
-                        });
+                            filteredResults.map(result => {
+                                const positions = { first: [], second: [], third: [] };
+                                const grades = { a_grade: [], b_grade: [] };
+                                (result.participants || []).forEach(p => {
+                                    if(p.position && positions[p.position]) positions[p.position].push(p);
+                                    if(p.grade && grades[p.grade]) {
+                                        if(!p.position || p.position === 'none') grades[p.grade].push(p);
+                                    }
+                                });
 
-                        return `
+                                return `
                                 <div class="bg-white shadow-lg rounded-xl p-6 flex flex-col">
                                     <div class="border-b pb-4 mb-4 border-gray-200">
                                         <p class="text-xs font-semibold uppercase text-indigo-600">${result.category}</p>
@@ -475,9 +425,9 @@
                                                 <h3 class="font-bold text-md mb-2 ${positionInfo[pos].color}"><i class="fas ${positionInfo[pos].icon} mr-2"></i>${positionInfo[pos].label}</h3>
                                                 <ul class="space-y-1 pl-2">
                                                 ${participants.map(p => {
-                            const student = appData.students[p.studentId];
-                            const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : '';
-                            return `
+                                                    const student = appData.students[p.studentId];
+                                                    const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : '';
+                                                    return `
                                                     <li class="text-sm">
                                                         <a href="#/student/${p.studentId}" class="text-gray-700 hover:text-indigo-600 hover:underline">${p.name}</a>
                                                         ${teamName ? `<span class="text-gray-500 text-xs ml-1">(${teamName})</span>` : ''}
@@ -493,28 +443,28 @@
                                                 <h3 class="font-bold text-md mb-2 text-gray-600"><i class="fas fa-graduation-cap mr-2"></i>Grade Winners</h3>
                                                 <ul class="space-y-1 pl-2">
                                                     ${grades.a_grade.map(p => {
-                                const student = appData.students[p.studentId];
-                                const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : '';
-                                return `<li class="text-sm"><a href="#/student/${p.studentId}" class="text-gray-700 hover:text-indigo-600 hover:underline">${p.name}</a> ${teamName ? `<span class="text-gray-500 text-xs ml-1">(${teamName})</span>` : ''} <span class="ml-2 text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full">A Grade</span></li>`
-                            }).join('')}
+                                                        const student = appData.students[p.studentId];
+                                                        const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : '';
+                                                        return `<li class="text-sm"><a href="#/student/${p.studentId}" class="text-gray-700 hover:text-indigo-600 hover:underline">${p.name}</a> ${teamName ? `<span class="text-gray-500 text-xs ml-1">(${teamName})</span>` : ''} <span class="ml-2 text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full">A Grade</span></li>`
+                                                    }).join('')}
                                                     ${grades.b_grade.map(p => {
-                                const student = appData.students[p.studentId];
-                                const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : '';
-                                return `<li class="text-sm"><a href="#/student/${p.studentId}" class="text-gray-700 hover:text-indigo-600 hover:underline">${p.name}</a> ${teamName ? `<span class="text-gray-500 text-xs ml-1">(${teamName})</span>` : ''} <span class="ml-2 text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">B Grade</span></li>`
-                            }).join('')}
+                                                        const student = appData.students[p.studentId];
+                                                        const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : '';
+                                                        return `<li class="text-sm"><a href="#/student/${p.studentId}" class="text-gray-700 hover:text-indigo-600 hover:underline">${p.name}</a> ${teamName ? `<span class="text-gray-500 text-xs ml-1">(${teamName})</span>` : ''} <span class="ml-2 text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">B Grade</span></li>`
+                                                    }).join('')}
                                                 </ul>
                                             </div>
                                         ` : ''}
                                     </div>
                                 </div>
                                 `
-                    }).join('')
-                }
+                            }).join('')
+                        }
                     </div>
                 </div>
             `;
         }
-
+        
         async function renderSearchPage() {
             return `
                 <div class="page max-w-lg mx-auto">
@@ -538,7 +488,7 @@
                 ? studentsArray
                 : studentsArray.filter(s => s.category === activeCategory);
 
-            filteredStudents.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+            filteredStudents.sort((a,b) => (b.totalPoints || 0) - (a.totalPoints || 0));
 
             return `
                 <div class="page">
@@ -578,43 +528,43 @@
                 </div>
             `;
         }
-
+        
         async function renderStudentPage(studentId) {
-            const student = appData.students[studentId];
-            if (!student) return `<p>Student not found.</p>`;
+             const student = appData.students[studentId];
+             if (!student) return `<p>Student not found.</p>`;
 
-            const teamName = appData.teams[student.teamId]?.name || 'N/A';
-            const results = getDataAsArray('results').filter(r => r.status === 'published');
-            const achievements = [];
+             const teamName = appData.teams[student.teamId]?.name || 'N/A';
+             const results = getDataAsArray('results').filter(r => r.status === 'published');
+             const achievements = [];
 
-            const prizeLabels = { first: '1st Place', second: '2nd Place', third: '3rd Place', a_grade: 'A Grade', b_grade: 'B Grade' };
+             const prizeLabels = { first: '1st Place', second: '2nd Place', third: '3rd Place', a_grade: 'A Grade', b_grade: 'B Grade' };
 
-            results.forEach(result => {
+             results.forEach(result => {
                 (result.participants || []).forEach(p => {
-                    if (p.studentId === studentId) {
+                    if(p.studentId === studentId) {
                         let achievementText = '';
                         let totalPoints = 0;
-                        if (p.position && p.position !== 'none') {
+                        if(p.position && p.position !== 'none') {
                             achievementText += prizeLabels[p.position];
                             totalPoints += appData.pointsConfig[p.position] || 0;
                         }
-                        if (p.grade && p.grade !== 'none') {
-                            if (achievementText) achievementText += ' • ';
+                        if(p.grade && p.grade !== 'none') {
+                            if(achievementText) achievementText += ' • ';
                             achievementText += prizeLabels[p.grade];
                             totalPoints += appData.pointsConfig[p.grade] || 0;
                         }
 
                         achievements.push({
-                            programName: result.programName,
-                            category: result.category,
-                            prize: achievementText,
-                            points: totalPoints
-                        });
+                             programName: result.programName,
+                             category: result.category,
+                             prize: achievementText,
+                             points: totalPoints
+                         });
                     }
                 });
-            });
+             });
 
-            return `
+             return `
                 <div class="page bg-white shadow-lg rounded-xl p-6 sm:p-8">
                     <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 mb-8">
                         <div class="bg-indigo-500 text-white w-20 h-20 rounded-full flex items-center justify-center text-4xl font-bold flex-shrink-0">
@@ -633,7 +583,7 @@
                     <h2 class="text-2xl font-bold text-gray-800 mt-10 mb-4">Achievements</h2>
                     <div class="space-y-4">
                         ${achievements.length === 0 ? `<p class="text-gray-500">No achievements recorded yet.</p>` :
-                    achievements.map(ach => `
+                            achievements.map(ach => `
                                 <div class="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
                                     <div>
                                         <p class="font-semibold text-lg text-gray-800">${ach.programName}</p>
@@ -645,7 +595,7 @@
                                     </div>
                                 </div>
                             `).join('')
-                }
+                        }
                     </div>
                 </div>
             `;
@@ -659,7 +609,7 @@
 
             const allResults = appData.results || {};
             const pointsConf = appData.pointsConfig;
-
+            
             for (const resultId in allResults) {
                 const result = allResults[resultId];
                 // Include 'published' AND 'ready' results
@@ -674,11 +624,11 @@
                         currentPoints += pointsConf[p.grade];
                     }
                     if (studentPoints.hasOwnProperty(p.studentId)) {
-                        studentPoints[p.studentId] += currentPoints;
+                       studentPoints[p.studentId] += currentPoints;
                     }
                 });
             }
-
+            
             // Now process this into teams and students arrays for rendering
             const teamsArray = JSON.parse(JSON.stringify(getDataAsArray('teams')));
             const studentsArray = JSON.parse(JSON.stringify(getDataAsArray('students')));
@@ -686,7 +636,7 @@
             studentsArray.forEach(student => {
                 student.totalPoints = studentPoints[student.id] || 0;
             });
-
+            
             teamsArray.forEach(team => {
                 team.totalPoints = 0;
                 team.categoryPoints = {};
@@ -699,13 +649,13 @@
                     const points = student.totalPoints || 0;
                     team.totalPoints += points;
                     if (student.category && team.categoryPoints.hasOwnProperty(student.category)) {
-                        team.categoryPoints[student.category] += points;
+                       team.categoryPoints[student.category] += points;
                     }
                 }
             });
 
-            teamsArray.sort((a, b) => b.totalPoints - a.totalPoints);
-            studentsArray.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+            teamsArray.sort((a,b) => b.totalPoints - a.totalPoints);
+            studentsArray.sort((a,b) => (b.totalPoints || 0) - (a.totalPoints || 0));
 
             return { teamsArray, studentsArray };
         }
@@ -723,9 +673,9 @@
                         <h1 class="text-3xl font-bold text-gray-900 mb-6">Provisional Team Standings</h1>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             ${teamsArray.map((team, index) => {
-                const colors = ['text-yellow-400', 'text-gray-400', 'text-yellow-600', 'text-blue-400'];
-                const icons = ['fa-crown', 'fa-medal', 'fa-award', 'fa-star'];
-                return `
+                                    const colors = ['text-yellow-400', 'text-gray-400', 'text-yellow-600', 'text-blue-400'];
+                                    const icons = ['fa-crown', 'fa-medal', 'fa-award', 'fa-star'];
+                                    return `
                                     <div class="bg-white shadow-lg rounded-xl p-6">
                                         <div class="flex items-center justify-between">
                                             <h2 class="text-xl font-bold text-gray-800">${team.name}</h2>
@@ -734,8 +684,8 @@
                                         <p class="text-5xl font-extrabold text-indigo-600 mt-4">${team.totalPoints}</p>
                                         <p class="text-gray-500 mt-1">Total Points</p>
                                     </div>`;
-            }).join('')
-                }
+                                }).join('')
+                            }
                         </div>
                     </div>
                     <div>
@@ -797,9 +747,9 @@
             if (!currentUser) return renderAdminLoginPage();
             return renderAdminDashboard();
         }
-
+        
         async function renderAdminLoginPage() {
-            return `
+             return `
                 <div class="page flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
                     <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg">
                         <div><h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Admin Portal Login</h2></div>
@@ -823,6 +773,7 @@
                     <h1 class="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
                     <div class="border-b border-gray-200">
                         <nav id="admin-tabs" class="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
+                            <button data-tab="status" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Program Status</button>
                             <button data-tab="results" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Upload Results</button>
                             <button data-tab="publish" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Publish</button>
                             <button data-tab="announce" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Announce Live</button>
@@ -839,8 +790,8 @@
                 </div>
             `;
         }
-
-        async function renderAdminTab(tabName) {
+        
+        async function renderAdminTab(tabName, filterParam = 'All') {
             const container = document.getElementById('admin-tab-content');
             if (!container) return;
             // No loader for instant feel
@@ -849,11 +800,14 @@
             document.querySelectorAll('.admin-tab').forEach(tab => {
                 tab.classList.toggle('active', tab.dataset.tab === tabName);
             });
-
+            
             let content = '';
             const teams = getDataAsArray('teams');
-
-            switch (tabName) {
+            
+            switch(tabName) {
+                 case 'status':
+                    content = renderProgramStatusPage(filterParam);
+                    break;
                 case 'results':
                     tempParticipants = []; // Reset on tab load
                     content = `
@@ -892,7 +846,7 @@
                     `;
                     break;
                 case 'publish':
-                    const allResults = getDataAsArray('results').sort((a, b) => b.timestamp - a.timestamp);
+                    const allResults = getDataAsArray('results').sort((a,b) => b.timestamp - a.timestamp);
                     const pointsConf = appData.pointsConfig;
                     content = `
                         <div class="bg-white p-6 rounded-xl shadow-lg">
@@ -905,46 +859,46 @@
                              </div>
                              <div id="publish-list" class="space-y-6">
                              ${allResults.length === 0 ? `<p class="text-gray-500 text-center py-4">No results have been uploaded yet.</p>` :
-                            allResults.map(result => {
-                                const teamPointsSummary = {};
-                                (result.participants || []).forEach(p => {
-                                    const student = appData.students[p.studentId];
-                                    if (!student || !student.teamId) return;
-                                    const teamId = student.teamId;
+                                allResults.map(result => {
+                                    const teamPointsSummary = {};
+                                    (result.participants || []).forEach(p => {
+                                        const student = appData.students[p.studentId];
+                                        if (!student || !student.teamId) return;
+                                        const teamId = student.teamId;
 
-                                    if (!teamPointsSummary[teamId]) {
-                                        teamPointsSummary[teamId] = { points: 0, teamName: appData.teams[teamId]?.name || 'Unknown' };
-                                    }
-                                    let currentPoints = 0;
-                                    if (p.position && p.position !== 'none') currentPoints += pointsConf[p.position] || 0;
-                                    if (p.grade && p.grade !== 'none') currentPoints += pointsConf[p.grade] || 0;
-                                    teamPointsSummary[teamId].points += currentPoints;
-                                });
-                                const sortedSummary = Object.values(teamPointsSummary).sort((a, b) => b.points - a.points);
+                                        if (!teamPointsSummary[teamId]) {
+                                            teamPointsSummary[teamId] = { points: 0, teamName: appData.teams[teamId]?.name || 'Unknown' };
+                                        }
+                                        let currentPoints = 0;
+                                        if (p.position && p.position !== 'none') currentPoints += pointsConf[p.position] || 0;
+                                        if (p.grade && p.grade !== 'none') currentPoints += pointsConf[p.grade] || 0;
+                                        teamPointsSummary[teamId].points += currentPoints;
+                                    });
+                                    const sortedSummary = Object.values(teamPointsSummary).sort((a,b) => b.points - a.points);
+                                    
+                                    let statusBadge, actionButtons;
 
-                                let statusBadge, actionButtons;
-
-                                switch (result.status) {
-                                    case 'published':
-                                        statusBadge = `<span class="text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full">Published</span>`;
-                                        actionButtons = `
+                                    switch(result.status) {
+                                        case 'published':
+                                            statusBadge = `<span class="text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full">Published</span>`;
+                                            actionButtons = `
                                                 <button class="unpublish-btn bg-yellow-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-yellow-600" data-id="${result.id}">Unpublish</button>
                                                 <button class="print-btn bg-gray-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-gray-600" data-id="${result.id}"><i class="fas fa-print"></i></button>
                                             `;
-                                        break;
-                                    case 'ready':
-                                        statusBadge = `<span class="text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">Ready to Publish</span>`;
-                                        actionButtons = `
+                                            break;
+                                        case 'ready':
+                                            statusBadge = `<span class="text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">Ready to Publish</span>`;
+                                            actionButtons = `
                                                 <button class="unmark-ready-btn bg-gray-400 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-gray-500" data-id="${result.id}">Unmark</button>
                                                 <button class="publish-btn bg-green-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-green-600" data-id="${result.id}">Publish</button>
                                             `;
-                                        break;
-                                    default: // pending
-                                        statusBadge = `<span class="text-xs font-semibold text-white bg-gray-500 px-2 py-1 rounded-full">Pending</span>`;
-                                        actionButtons = `<button class="mark-ready-btn bg-blue-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-blue-600" data-id="${result.id}">Mark as Ready</button>`;
-                                }
+                                            break;
+                                        default: // pending
+                                            statusBadge = `<span class="text-xs font-semibold text-white bg-gray-500 px-2 py-1 rounded-full">Pending</span>`;
+                                            actionButtons = `<button class="mark-ready-btn bg-blue-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-blue-600" data-id="${result.id}">Mark as Ready</button>`;
+                                    }
 
-                                return `
+                                    return `
                                     <div class="border rounded-lg p-4 ${result.status === 'published' ? 'bg-green-50' : (result.status === 'ready' ? 'bg-blue-50' : 'bg-gray-50')}">
                                         <div class="flex justify-between items-start mb-4">
                                             <div>
@@ -969,8 +923,8 @@
                                         </div>
                                     </div>
                                     `
-                            }).join('')
-                        }
+                                }).join('')
+                             }
                              </div>
                         </div>
                     `;
@@ -1019,7 +973,7 @@
                             </div>
                         </div>`;
                     break;
-                case 'teams':
+                 case 'teams':
                     content = `
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg">
@@ -1034,7 +988,7 @@
                         </div>`;
                     break;
                 case 'programs':
-                    content = `
+                     content = `
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                              <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg order-2 lg:order-1">
                                 <h2 class="text-2xl font-bold mb-6">All Programs</h2>
@@ -1069,7 +1023,7 @@
                             </div>
                         </div>`;
                     break;
-                case 'points':
+                 case 'points':
                     content = `
                         <div class="max-w-lg mx-auto bg-white p-6 rounded-xl shadow-lg">
                             <h2 class="text-2xl font-bold mb-6">Points Configuration</h2>
@@ -1089,16 +1043,16 @@
             }
 
             container.innerHTML = content;
-
+            
             if (tabName === 'results') loadRecentResults();
             if (['students', 'teams', 'programs'].includes(tabName)) loadItemsList(tabName);
         }
 
         function loadRecentResults() {
             const container = document.getElementById('recent-results-list');
-            if (!container) return;
-            const results = getDataAsArray('results').sort((a, b) => b.timestamp - a.timestamp);
-            if (results.length === 0) {
+            if(!container) return;
+            const results = getDataAsArray('results').sort((a,b) => b.timestamp - a.timestamp);
+            if(results.length === 0) {
                 container.innerHTML = `<p class="text-gray-500 text-center py-4">No results have been added yet.</p>`;
                 return;
             }
@@ -1117,11 +1071,11 @@
 
         function loadItemsList(collectionName) {
             const container = document.getElementById('items-list');
-            if (!container) return;
+            if(!container) return;
             const items = getDataAsArray(collectionName).sort((a, b) => (a.name > b.name) ? 1 : -1);
-            if (items.length === 0) {
-                container.innerHTML = `<p class="text-gray-500 text-center py-4">No ${collectionName} have been added yet.</p>`;
-                return;
+            if(items.length === 0) {
+                 container.innerHTML = `<p class="text-gray-500 text-center py-4">No ${collectionName} have been added yet.</p>`;
+                 return;
             }
             container.innerHTML = items.map(item => `
                 <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
@@ -1139,15 +1093,15 @@
         }
 
         async function handleAdminFormChange(e) {
-            if (e.target.id === 'res-category' || e.target.id === 'res-program') {
+            if(e.target.id === 'res-category' || e.target.id === 'res-program') {
                 const category = document.getElementById('res-category').value;
                 const programSelect = document.getElementById('res-program');
                 const studentSelect = document.getElementById('res-student-select');
                 const addBtn = document.getElementById('add-participant-btn');
 
                 // Populate programs
-                if (e.target.id === 'res-category') {
-                    if (!category) {
+                if(e.target.id === 'res-category') {
+                    if(!category) {
                         programSelect.innerHTML = '<option>Select Category First</option>';
                         programSelect.disabled = true;
                     } else {
@@ -1192,14 +1146,14 @@
 
                             const newStudents = {};
                             let skippedCount = 0;
-
+                            
                             jsonData.forEach(row => {
                                 const chestNo = String(row.ChestNo || '').trim();
                                 const name = String(row.Name || '').trim();
                                 const category = String(row.Category || '').trim();
                                 const teamName = String(row.TeamName || '').trim();
                                 const teamId = teamMap[teamName.toLowerCase()];
-
+                                
                                 if (chestNo && name && category && teamId && CATEGORIES.includes(category) && !allStudents.some(s => s.chestNo === chestNo)) {
                                     const key = db.ref('students').push().key;
                                     newStudents[key] = { chestNo, name, category, teamId, totalPoints: 0, createdAt: Date.now() };
@@ -1211,20 +1165,20 @@
                             if (Object.keys(newStudents).length > 0) await db.ref('students').update(newStudents);
                             messageEl.textContent = `Added ${Object.keys(newStudents).length} students. Skipped ${skippedCount} invalid/duplicate rows.`;
                         } else { // program
-                            const newPrograms = {};
-                            let skippedPrograms = 0;
-                            jsonData.forEach(row => {
-                                const name = String(row.ProgramName || '').trim();
-                                const category = String(row.Category || '').trim();
-                                if (name && category && CATEGORIES.includes(category)) {
-                                    const key = db.ref('programs').push().key;
-                                    newPrograms[key] = { name, category, createdAt: Date.now() };
-                                } else {
-                                    skippedPrograms++;
-                                }
-                            });
-                            if (Object.keys(newPrograms).length > 0) await db.ref('programs').update(newPrograms);
-                            messageEl.textContent = `Added ${Object.keys(newPrograms).length} programs. Skipped ${skippedPrograms} invalid rows.`;
+                             const newPrograms = {};
+                             let skippedPrograms = 0;
+                             jsonData.forEach(row => {
+                                 const name = String(row.ProgramName || '').trim();
+                                 const category = String(row.Category || '').trim();
+                                 if(name && category && CATEGORIES.includes(category)) {
+                                     const key = db.ref('programs').push().key;
+                                     newPrograms[key] = { name, category, createdAt: Date.now() };
+                                 } else {
+                                     skippedPrograms++;
+                                 }
+                             });
+                             if (Object.keys(newPrograms).length > 0) await db.ref('programs').update(newPrograms);
+                             messageEl.textContent = `Added ${Object.keys(newPrograms).length} programs. Skipped ${skippedPrograms} invalid rows.`;
                         }
                         resolve();
                     } catch (err) {
@@ -1235,18 +1189,18 @@
                 reader.readAsArrayBuffer(file);
             });
         }
-
+        
         async function handleAdminFormSubmit(e) {
             e.preventDefault();
             const form = e.target;
             const messageEl = form.querySelector('#form-message') || form.querySelector('#bulk-form-message');
             if (messageEl) messageEl.textContent = '';
-
+            
             const activeTabEl = document.querySelector('.admin-tab.active');
             const activeTabName = activeTabEl ? activeTabEl.dataset.tab : null;
 
             try {
-                switch (form.id) {
+                switch(form.id) {
                     case 'add-team-form':
                         await db.ref('teams').push({ name: form.querySelector('#team-name').value, createdAt: Date.now() });
                         if (messageEl) messageEl.textContent = 'Team added successfully!';
@@ -1271,9 +1225,9 @@
                         break;
                     case 'add-program-form':
                         await db.ref('programs').push({
-                            name: form.querySelector('#program-name').value,
-                            category: form.querySelector('#program-category').value,
-                            createdAt: Date.now()
+                             name: form.querySelector('#program-name').value,
+                             category: form.querySelector('#program-category').value,
+                             createdAt: Date.now()
                         });
                         if (messageEl) messageEl.textContent = 'Program added successfully!';
                         form.reset();
@@ -1296,7 +1250,7 @@
                             throw new Error("Program and at least one participant are required.");
                         }
                         const program = appData.programs[programId];
-
+                        
                         const finalParticipants = tempParticipants.map((p, index) => {
                             const position = document.getElementById(`pos-select-${index}`).value;
                             const grade = document.getElementById(`grade-select-${index}`).value;
@@ -1336,12 +1290,12 @@
             } finally {
                 setTimeout(() => {
                     const currentMessageEl = document.querySelector(`#${form.id} #form-message, #${form.id} #bulk-form-message`);
-                    if (currentMessageEl && !currentMessageEl.textContent.includes('Added')) currentMessageEl.textContent = '';
+                    if(currentMessageEl && !currentMessageEl.textContent.includes('Added')) currentMessageEl.textContent = '';
                 }, 3000);
             }
         }
-
-        async function handleProfileSearch(e) {
+        
+         async function handleProfileSearch(e) {
             e.preventDefault();
             const chestNoInput = document.getElementById('chest-no-input');
             const errorEl = document.getElementById('search-error');
@@ -1359,7 +1313,7 @@
                 errorEl.textContent = `No student found with Chest No. "${chestNo}".`;
             }
         }
-
+        
         async function handleAdminListClick(e) {
             const deleteBtn = e.target.closest('.delete-btn');
             const publishBtn = e.target.closest('.publish-btn');
@@ -1371,24 +1325,24 @@
             const printAllReadyBtn = e.target.closest('#print-all-ready-btn');
 
             const currentTab = activeAdminTab;
-
+            
             // Optimistic UI update for Announce Live
             if ((currentTab === 'announce' || currentTab === 'publish') && (publishBtn || unpublishBtn || markReadyBtn || unmarkReadyBtn)) {
-                const button = publishBtn || unpublishBtn || markReadyBtn || unmarkReadyBtn;
-                const card = button.closest('.border.rounded-lg');
-                if (card) {
-                    card.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease, max-height 0.3s ease, padding 0.3s ease, margin 0.3s ease';
-                    card.style.opacity = '0';
-                    card.style.transform = 'scale(0.95)';
-                    card.style.maxHeight = '0px';
-                    card.style.paddingTop = '0';
-                    card.style.paddingBottom = '0';
-                    card.style.marginTop = '0';
-                    card.style.marginBottom = '0';
-                    card.style.borderWidth = '0';
+                 const button = publishBtn || unpublishBtn || markReadyBtn || unmarkReadyBtn;
+                 const card = button.closest('.border.rounded-lg');
+                 if(card) {
+                     card.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease, max-height 0.3s ease, padding 0.3s ease, margin 0.3s ease';
+                     card.style.opacity = '0';
+                     card.style.transform = 'scale(0.95)';
+                     card.style.maxHeight = '0px';
+                     card.style.paddingTop = '0';
+                     card.style.paddingBottom = '0';
+                     card.style.marginTop = '0';
+                     card.style.marginBottom = '0';
+                     card.style.borderWidth = '0';
 
-                    setTimeout(() => card.remove(), 300);
-                }
+                     setTimeout(() => card.remove(), 300);
+                 }
             }
 
 
@@ -1398,7 +1352,7 @@
                     const itemToDelete = appData[collection][id];
                     // Optimistic UI update for delete
                     const itemEl = deleteBtn.closest('.flex.justify-between')?.parentElement || deleteBtn.closest('.border.rounded-lg');
-                    if (itemEl) itemEl.remove();
+                    if(itemEl) itemEl.remove();
 
                     db.ref(`${collection}/${id}`).remove().then(() => {
                         if ((collection === 'results' && itemToDelete && itemToDelete.status === 'published') || collection === 'students') {
@@ -1409,11 +1363,11 @@
                 return; // Prevent further actions
             }
 
-            if (printBtn) {
+            if(printBtn) {
                 printResult(printBtn.dataset.id);
-                return;
+                 return;
             }
-            if (printAllReadyBtn) {
+            if(printAllReadyBtn) {
                 printReadyResults();
                 return;
             }
@@ -1422,13 +1376,13 @@
                 db.ref(`results/${publishBtn.dataset.id}`).update({ status: 'published' }).then(recalculateAllPoints);
             }
             if (unpublishBtn) {
-                db.ref(`results/${unpublishBtn.dataset.id}`).update({ status: 'pending' }).then(recalculateAllPoints);
+                 db.ref(`results/${unpublishBtn.dataset.id}`).update({ status: 'pending' }).then(recalculateAllPoints);
             }
-            if (markReadyBtn) {
+            if(markReadyBtn) {
                 db.ref(`results/${markReadyBtn.dataset.id}`).update({ status: 'ready' });
             }
-            if (unmarkReadyBtn) {
-                db.ref(`results/${unmarkReadyBtn.dataset.id}`).update({ status: 'pending' });
+            if(unmarkReadyBtn) {
+                 db.ref(`results/${unmarkReadyBtn.dataset.id}`).update({ status: 'pending' });
             }
             if (publishAllBtn) {
                 if (confirm('Are you sure you want to publish all results marked as "Ready"?')) {
@@ -1442,7 +1396,7 @@
                 }
             }
         }
-
+        
         async function recalculateAllPoints() {
             const studentPoints = {};
             for (const studentId in appData.students) {
@@ -1451,21 +1405,21 @@
 
             const allResults = appData.results || {};
             const pointsConf = appData.pointsConfig;
-
+            
             for (const resultId in allResults) {
                 const result = allResults[resultId];
                 if (result.status !== 'published' || !result.participants) continue;
 
                 result.participants.forEach(p => {
                     let currentPoints = 0;
-                    if (p.position && p.position !== 'none' && pointsConf[p.position]) {
+                    if(p.position && p.position !== 'none' && pointsConf[p.position]){
                         currentPoints += pointsConf[p.position];
                     }
-                    if (p.grade && p.grade !== 'none' && pointsConf[p.grade]) {
+                    if(p.grade && p.grade !== 'none' && pointsConf[p.grade]){
                         currentPoints += pointsConf[p.grade];
                     }
-                    if (studentPoints.hasOwnProperty(p.studentId)) {
-                        studentPoints[p.studentId] += currentPoints;
+                    if(studentPoints.hasOwnProperty(p.studentId)){
+                       studentPoints[p.studentId] += currentPoints;
                     }
                 });
             }
@@ -1474,14 +1428,14 @@
             for (const studentId in studentPoints) {
                 finalUpdates[`/students/${studentId}/totalPoints`] = studentPoints[studentId];
             }
-
+            
             return db.ref().update(finalUpdates);
         }
 
         function addParticipantToTempList() {
             const studentSelect = document.getElementById('res-student-select');
             const studentId = studentSelect.value;
-            if (!studentId) return;
+            if(!studentId) return;
 
             if (tempParticipants.some(p => p.studentId === studentId)) {
                 alert('This student is already in the list.');
@@ -1517,7 +1471,7 @@
             XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
             XLSX.writeFile(wb, filename);
         }
-
+        
         function printReadyResults() {
             const readyResults = getDataAsArray('results').filter(r => r.status === 'ready').sort((a, b) => a.category.localeCompare(b.category) || a.programName.localeCompare(b.programName));
 
@@ -1550,12 +1504,12 @@
                                 </thead>
                                 <tbody>
                                 ${(result.participants || []).map(p => {
-                const student = appData.students[p.studentId];
-                const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : 'N/A';
-                let positionText = p.position && p.position !== 'none' ? prizeLabels[p.position] : '-';
-                let gradeText = p.grade && p.grade !== 'none' ? prizeLabels[p.grade] : '-';
+                                    const student = appData.students[p.studentId];
+                                    const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : 'N/A';
+                                    let positionText = p.position && p.position !== 'none' ? prizeLabels[p.position] : '-';
+                                    let gradeText = p.grade && p.grade !== 'none' ? prizeLabels[p.grade] : '-';
 
-                return `
+                                    return `
                                     <tr style="border-bottom: 1px solid #eee;">
                                         <td style="padding: 8px; border: 1px solid #ccc;">${student.chestNo}</td>
                                         <td style="padding: 8px; border: 1px solid #ccc;">${p.name}</td>
@@ -1563,7 +1517,7 @@
                                         <td style="padding: 8px; border: 1px solid #ccc;">${positionText}</td>
                                         <td style="padding: 8px; border: 1px solid #ccc;">${gradeText}</td>
                                     </tr>`
-            }).join('')}
+                                }).join('')}
                                 </tbody>
                             </table>
                         </div>
@@ -1576,25 +1530,33 @@
             window.print();
             printArea.innerHTML = '';
         }
-
+        
         function printResult(resultId) {
             const result = appData.results[resultId];
             if (!result) return;
-
+            
             const positionInfo = {
                 first: { label: '1st Place' },
                 second: { label: '2nd Place' },
                 third: { label: '3rd Place' }
             };
+            
+            const positionOrder = ['first', 'second', 'third'];
+            const sortedParticipants = [...(result.participants || [])].sort((a,b) => {
+                const posA = positionOrder.indexOf(a.position);
+                const posB = positionOrder.indexOf(b.position);
+                if (posA === -1 && posB > -1) return 1;
+                if (posA > -1 && posB === -1) return -1;
+                if (posA > -1 && posB > -1) return posA - posB;
+                return 0; // if both are grade-only or have no position
+            });
 
             const positions = { first: [], second: [], third: [] };
             const grades = { a_grade: [], b_grade: [] };
-            (result.participants || []).forEach(p => {
+            sortedParticipants.forEach(p => {
                 if (p.position && positions[p.position]) positions[p.position].push(p);
                 if (p.grade && grades[p.grade] && (!p.position || p.position === 'none')) grades[p.grade].push(p);
             });
-
-            const positionOrder = ['first', 'second', 'third'];
 
             const printHTML = `
                 <div style="font-family: sans-serif; width: 210mm; min-height: 297mm; padding: 2cm; box-sizing: border-box;">
@@ -1608,24 +1570,24 @@
                     </div>
                     <div style="font-size: 12pt;">
                     ${positionOrder.map(pos => {
-                const participants = positions[pos];
-                if (!participants || participants.length === 0) return '';
-                return `
+                        const participants = positions[pos];
+                        if (!participants || participants.length === 0) return '';
+                        return `
                         <div style="margin-bottom: 1.5rem;">
                              <h4 style="font-size: 14pt; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem; margin-bottom: 1rem;">${positionInfo[pos].label}</h4>
                              <table style="width: 100%; border-collapse: collapse;">
                                 ${participants.map(p => {
-                    const student = appData.students[p.studentId];
-                    const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : 'N/A';
-                    const grade = p.grade && p.grade !== 'none' ? p.grade.replace('_', ' ').toUpperCase() : '';
-                    return `
+                                    const student = appData.students[p.studentId];
+                                    const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : 'N/A';
+                                    const grade = p.grade && p.grade !== 'none' ? p.grade.replace('_', ' ').toUpperCase() : '';
+                                    return `
                                     <tr style="border-bottom: 1px solid #eee;">
                                         <td style="padding: 0.5rem;">${student.chestNo}</td>
                                         <td style="padding: 0.5rem; font-weight: bold;">${p.name}</td>
                                         <td style="padding: 0.5rem;">${teamName}</td>
                                         <td style="padding: 0.5rem; text-align: right; font-weight: bold;">${grade}</td>
                                     </tr>`
-                }).join('')}
+                                }).join('')}
                              </table>
                         </div>
                     `}).join('')}
@@ -1634,17 +1596,17 @@
                              <h4 style="font-size: 14pt; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem; margin-bottom: 1rem;">Grade Winners</h4>
                              <table style="width: 100%; border-collapse: collapse;">
                                 ${[...grades.a_grade, ...grades.b_grade].map(p => {
-                    const student = appData.students[p.studentId];
-                    const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : 'N/A';
-                    const grade = p.grade.replace('_', ' ').toUpperCase();
-                    return `
+                                     const student = appData.students[p.studentId];
+                                     const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : 'N/A';
+                                     const grade = p.grade.replace('_', ' ').toUpperCase();
+                                     return `
                                      <tr style="border-bottom: 1px solid #eee;">
                                          <td style="padding: 0.5rem;">${student.chestNo}</td>
                                          <td style="padding: 0.5rem; font-weight: bold;">${p.name}</td>
                                          <td style="padding: 0.5rem;">${teamName}</td>
                                          <td style="padding: 0.5rem; text-align: right; font-weight: bold;">${grade}</td>
                                      </tr>`
-                }).join('')}
+                                 }).join('')}
                              </table>
                         </div>
                     `: ''}
@@ -1662,7 +1624,7 @@
 
         function renderParticipantsList() {
             const container = document.getElementById('participants-list');
-            if (!container) return;
+            if(!container) return;
             container.innerHTML = tempParticipants.map((p, index) => `
                 <div class="p-3 bg-gray-100 rounded-lg space-y-2">
                     <div class="flex justify-between items-center">
@@ -1690,9 +1652,9 @@
         async function renderNotFoundPage() {
             return `<div class="text-center"><h1 class="text-4xl font-bold">404 - Not Found</h1><p class="mt-4">The page you are looking for does not exist.</p></div>`;
         }
-
+        
         function renderAnnounceLivePage() {
-            const readyResults = getDataAsArray('results').filter(r => r.status === 'ready').sort((a, b) => a.category.localeCompare(b.category) || a.programName.localeCompare(b.programName));
+            const readyResults = getDataAsArray('results').filter(r => r.status === 'ready').sort((a,b) => a.category.localeCompare(b.category) || a.programName.localeCompare(b.programName));
 
             const prizeLabels = { first: '1st Place', second: '2nd Place', third: '3rd Place', a_grade: 'A Grade', b_grade: 'B Grade' };
 
@@ -1704,7 +1666,7 @@
                     </div>
                     <div class="space-y-6">
                     ${readyResults.length === 0 ? `<p class="text-gray-500 text-center py-8 text-xl">No results are currently ready for announcement.</p>` :
-                    readyResults.map(result => `
+                        readyResults.map(result => `
                             <div class="bg-white shadow-2xl rounded-xl p-8 border-t-4 border-indigo-500">
                                 <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                                     <div class="text-center md:text-left">
@@ -1719,31 +1681,109 @@
                                     <h3 class="text-2xl font-bold mb-4 text-gray-800">Winners List</h3>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-lg">
                                         ${(result.participants || []).map(p => {
-                        const student = appData.students[p.studentId];
-                        const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : 'N/A';
-                        let achievementText = '';
-                        if (p.position && p.position !== 'none') achievementText += prizeLabels[p.position];
-                        if (p.grade && p.grade !== 'none') {
-                            if (achievementText) achievementText += ' • ';
-                            achievementText += prizeLabels[p.grade];
-                        }
-                        return `
+                                            const student = appData.students[p.studentId];
+                                            const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : 'N/A';
+                                            let achievementText = '';
+                                            if(p.position && p.position !== 'none') achievementText += prizeLabels[p.position];
+                                            if(p.grade && p.grade !== 'none') {
+                                                if(achievementText) achievementText += ' • ';
+                                                achievementText += prizeLabels[p.grade];
+                                            }
+                                            return `
                                             <div class="bg-gray-50 p-3 rounded-md">
                                                 <p class="font-bold text-gray-900">${p.name} <span class="text-gray-500 font-medium">(${student.chestNo})</span></p>
                                                 <p class="text-indigo-700 font-semibold">${achievementText}</p>
                                                 <p class="text-sm text-gray-600">${teamName}</p>
                                             </div>
                                             `
-                    }).join('')}
+                                        }).join('')}
                                     </div>
                                 </div>
                             </div>
                         `).join('')
-                }
+                    }
                     </div>
                 </div>
             `;
         }
+
+        function renderProgramStatusPage(activeStatus = 'All') {
+            const allPrograms = getDataAsArray('programs').sort((a,b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+            const allResults = getDataAsArray('results');
+
+            let programStatuses = allPrograms.map(program => {
+                const result = allResults.find(r => r.programId === program.id);
+                let status = 'Not Entered';
+                if (result) {
+                    if (result.status === 'published') {
+                        status = 'Published';
+                    } else if (result.status === 'ready') {
+                        status = 'Ready to Publish';
+                    } else {
+                        status = 'Pending'; // 'pending' or any other status
+                    }
+                }
+                return { ...program, status };
+            });
+
+            // Filter the programs based on the active status filter
+            if (activeStatus !== 'All') {
+                programStatuses = programStatuses.filter(p => p.status === activeStatus);
+            }
+
+            const statusBadge = (status) => {
+                switch(status) {
+                    case 'Published':
+                        return `<span class="text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full">${status}</span>`;
+                    case 'Ready to Publish':
+                        return `<span class="text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">${status}</span>`;
+                    case 'Pending':
+                        return `<span class="text-xs font-semibold text-white bg-gray-500 px-2 py-1 rounded-full">${status}</span>`;
+                    default: // Not Entered
+                        return `<span class="text-xs font-semibold text-white bg-red-500 px-2 py-1 rounded-full">${status}</span>`;
+                }
+            };
+
+            const filterButtons = ['All', 'Published', 'Ready to Publish', 'Pending', 'Not Entered'];
+
+            return `
+                <div class="page">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-6">Program Status Overview</h1>
+                    
+                    <div id="status-filter-container" class="mb-6 flex flex-wrap gap-2">
+                        ${filterButtons.map(status => `
+                            <button data-status="${status}" class="category-filter-btn px-4 py-2 text-sm font-medium rounded-full transition-colors ${activeStatus === status ? 'active' : 'bg-white text-gray-700'}">${status}</button>
+                        `).join('')}
+                    </div>
+
+                    <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                 <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Program Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${programStatuses.length === 0 
+                                        ? `<tr><td colspan="3" class="text-center py-8 text-gray-500">No programs match this filter.</td></tr>` 
+                                        : programStatuses.map(program => `
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${program.name}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${program.category}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm">${statusBadge(program.status)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
 
         // --- EVENT LISTENERS ---
         document.addEventListener('click', e => {
@@ -1754,11 +1794,11 @@
             if (mobileMenuBtn) {
                 const mobileNavContainer = document.getElementById('mobile-nav-container');
                 mobileNavContainer.classList.toggle('open');
-                if (mobileNavContainer.classList.contains('open')) {
+                if(mobileNavContainer.classList.contains('open')){
                     mobileNavContainer.innerHTML = `<div class="pt-2 pb-3 space-y-1">${generateNavLinks(true)}</div>`;
                 }
             }
-
+            
             const teamCard = e.target.closest('.team-card-clickable');
             if (teamCard) {
                 openTeamModal(teamCard.dataset.teamId);
@@ -1770,10 +1810,10 @@
             }
 
             if (e.target.closest('.nav-link') || e.target.closest('#logout-btn')) {
-                document.getElementById('mobile-nav-container')?.classList.remove('open');
+                 document.getElementById('mobile-nav-container')?.classList.remove('open');
             }
         });
-
+        
         document.addEventListener('submit', async e => {
             if (e.target.id === 'login-form') {
                 e.preventDefault();
@@ -1789,7 +1829,7 @@
                 }
             }
         });
-
+        
         function openTeamModal(teamId) {
             const team = appData.teams[teamId];
             if (!team) return;
@@ -1800,10 +1840,10 @@
             CATEGORIES.forEach(c => categoryPoints[c] = 0);
 
             Object.values(appData.students || {}).forEach(student => {
-                if (student.teamId === teamId) {
+                if(student.teamId === teamId) {
                     const points = student.totalPoints || 0;
                     totalPoints += points;
-                    if (student.category && categoryPoints.hasOwnProperty(student.category)) {
+                    if(student.category && categoryPoints.hasOwnProperty(student.category)) {
                         categoryPoints[student.category] += points;
                     }
                 }
@@ -1811,8 +1851,8 @@
 
             const allTeams = getDataAsArray('teams').map(t => {
                 const points = Object.values(appData.students || {}).filter(s => s.teamId === t.id).reduce((sum, s) => sum + (s.totalPoints || 0), 0);
-                return { ...t, totalPoints: points };
-            }).sort((a, b) => b.totalPoints - a.totalPoints);
+                return {...t, totalPoints: points};
+            }).sort((a,b) => b.totalPoints - a.totalPoints);
             const rank = allTeams.findIndex(t => t.id === teamId) + 1;
 
 
@@ -1865,5 +1905,5 @@
 
     </script>
 </body>
-
 </html>
+
