@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PORU Art Fest - Image Gallery</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- 1. Global Styles & Variables --- */
+        :root {
+            --primary-bg: #1a1a1a;
+            --text-color: #e0e0e0;
+            --accent-color: #e6c300;
+            --font-family: 'Inter', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 40px;
+        }
+
+        /* --- 2. Header Styling --- */
+        .main-header {
+            text-align: center;
+            padding: 4rem 1rem 3rem;
+        }
+
+        .main-header h1 {
+            font-size: 3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            letter-spacing: 2px;
+        }
+
+        .main-header p {
+            font-size: 1.2rem;
+            font-weight: 300;
+            color: var(--accent-color);
+        }
+
+        /* --- 3. Gallery Grid Layout --- */
+        .gallery-container {
+            display: grid;
+            gap: 15px;
+            padding: 15px;
+            max-width: 1800px;
+            margin: 0 auto;
+            /* Default to the most complex grid for desktop-first approach */
+            grid-template-columns: repeat(6, 1fr);
+            grid-auto-rows: minmax(150px, auto);
+        }
+
+        /* --- 4. Gallery Item Styling --- */
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease-in-out;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.05);
+        }
+
+        /* --- 5. Desktop Mosaic Pattern (6 Columns) --- */
+        /* This is the intricate pattern for large screens */
+        .gallery-item:nth-child(1) { grid-column: span 2; grid-row: span 2; }
+        .gallery-item:nth-child(2) { grid-column: span 1; grid-row: span 1; }
+        .gallery-item:nth-child(3) { grid-column: span 1; grid-row: span 2; }
+        .gallery-item:nth-child(4) { grid-column: span 2; grid-row: span 1; }
+        .gallery-item:nth-child(5) { grid-column: span 1; grid-row: span 1; }
+        .gallery-item:nth-child(6) { grid-column: span 2; grid-row: span 2; }
+        .gallery-item:nth-child(7) { grid-column: span 1; grid-row: span 1; }
+        .gallery-item:nth-child(8) { grid-column: span 1; grid-row: span 1; }
+        .gallery-item:nth-child(9) { grid-column: span 1; grid-row: span 2; }
+        .gallery-item:nth-child(10) { grid-column: span 2; grid-row: span 1; }
+        .gallery-item:nth-child(11) { grid-column: span 3; grid-row: span 2; }
+        .gallery-item:nth-child(12) { grid-column: span 1; grid-row: span 1; }
+        .gallery-item:nth-child(13) { grid-column: span 2; grid-row: span 1; }
+        .gallery-item:nth-child(14) { grid-column: span 2; grid-row: span 2; }
+        .gallery-item:nth-child(15) { grid-column: span 1; grid-row: span 1; }
+        .gallery-item:nth-child(16) { grid-column: span 1; grid-row: span 1; }
+        .gallery-item:nth-child(17) { grid-column: span 1; grid-row: span 2; }
+        .gallery-item:nth-child(18) { grid-column: span 2; grid-row: span 1; }
+        .gallery-item:nth-child(19) { grid-column: span 1; grid-row: span 1; }
+        .gallery-item:nth-child(20) { grid-column: span 2; grid-row: span 2; }
+        .gallery-item:nth-child(21) { grid-column: span 1; grid-row: span 1; }
+        .gallery-item:nth-child(22) { grid-column: span 2; grid-row: span 1; }
+        .gallery-item:nth-child(23) { grid-column: span 1; grid-row: span 2; }
+        .gallery-item:nth-child(24) { grid-column: span 1; grid-row: span 1; }
+        .gallery-item:nth-child(25) { grid-column: span 2; grid-row: span 1; }
+        
+        /* --- 6. Modal (Lightbox) Styling --- */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(10, 10, 10, 0.95); justify-content: center; align-items: center; animation: fadeIn 0.3s ease; }
+        .modal.active { display: flex; }
+        .modal-content { position: relative; max-width: 90vw; max-height: 85vh; animation: zoomIn 0.3s ease; }
+        #lightbox-image { max-width: 100%; max-height: 85vh; display: block; border-radius: 4px; }
+        .close-button { position: absolute; top: 15px; right: 35px; color: #f1f1f1; font-size: 40px; font-weight: bold; transition: 0.3s; cursor: pointer; z-index: 1001; }
+        .close-button:hover, .close-button:focus { color: var(--accent-color); }
+        #caption { text-align: center; color: var(--text-color); padding-top: 15px; }
+        #caption h3 { font-size: 1.5rem; font-weight: 600; }
+        #caption p { font-size: 1rem; font-weight: 300; color: #bbb; }
+
+        /* --- 7. Animations --- */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes zoomIn { from { transform: scale(0.9); } to { transform: scale(1); } }
+
+        /* --- 8. Responsive Adjustments --- */
+        
+        /* -- Tablet Layout (4 Columns) -- */
+        @media (max-width: 1199px) {
+            .gallery-container {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            /* Reset all spans to auto (1x1) before applying new tablet-specific spans */
+            .gallery-item:nth-child(n) { grid-column: auto; grid-row: auto; }
+
+            /* A simpler, balanced pattern for tablets */
+            .gallery-item:nth-child(1) { grid-column: span 2; grid-row: span 2; }
+            .gallery-item:nth-child(5) { grid-column: span 2; grid-row: span 1; }
+            .gallery-item:nth-child(8) { grid-column: span 2; grid-row: span 2; }
+            .gallery-item:nth-child(11) { grid-column: span 2; grid-row: span 1; }
+            .gallery-item:nth-child(15) { grid-column: span 2; grid-row: span 2; }
+            .gallery-item:nth-child(20) { grid-column: span 2; grid-row: span 1; }
+        }
+
+        /* -- Mobile Layout (2 Columns) -- */
+        @media (max-width: 768px) {
+            .main-header h1 { font-size: 2.5rem; }
+            .gallery-container {
+                grid-template-columns: repeat(1, 1fr);
+                /* Make rows a bit taller on mobile for better aspect ratio */
+                grid-auto-rows: minmax(200px, auto);
+            }
+            /* On mobile, all items become uniform squares for a clean, simple grid */
+            .gallery-item:nth-child(n) {
+                grid-column: auto;
+                grid-row: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <h2>Image Gallery</h2>
+        
+    </header>
+
+    <main class="gallery-container">
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x800?abstract,art" alt="Artwork 1" data-title="Quantum Entanglement" data-artist="Dr. Evelyn Reed"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?painting,art" alt="Artwork 2" data-title="City in Sepia" data-artist="Javier Cruz"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/600x800?sculpture" alt="Artwork 3" data-title="Marble Weeps" data-artist="Chen Wei"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?abstract,vibrant" alt="Artwork 4" data-title="Chromatic Pulse" data-artist="Fatima Al-Jamil"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?modern,art" alt="Artwork 5" data-title="Echoes of Concrete" data-artist="Lars Andersen"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x800?surreal,art" alt="Artwork 6" data-title="The Watcher's Dream" data-artist="Sofia Petrova"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?digital,art" alt="Artwork 7" data-title="Neon Drift" data-artist="Kenji Tanaka"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?watercolor" alt="Artwork 8" data-title="Sunken Cathedral" data-artist="Amelia Dubois"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/600x800?portrait,painting" alt="Artwork 9" data-title="The Alchemist" data-artist="Marcus Reid"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?geometric,art" alt="Artwork 10" data-title="Vectorial" data-artist="Isabella Rossi"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?minimalist,art" alt="Artwork 11" data-title="Void Horizon" data-artist="Olaf Svensson"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?expressionism" alt="Artwork 12" data-title="Silent Scream" data-artist="Anja Schmidt"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?street,art" alt="Artwork 13" data-title="Urban Canvas" data-artist="Diego 'Rize' Garcia"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x800?impressionism" alt="Artwork 14" data-title="Lily Pond at Dusk" data-artist="Clara Moreau"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?futurism" alt="Artwork 15" data-title="Metropolis" data-artist="Nikolai Volkov"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?cubism" alt="Artwork 16" data-title="Fractured Perspective" data-artist="Leo Zimmermann"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/600x800?photography,art" alt="Artwork 17" data-title="The Long Road" data-artist="Aisha Khan"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?baroque,art" alt="Artwork 18" data-title="Golden Harvest" data-artist="Remi Dubois"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?pop,art" alt="Artwork 19" data-title="Sugar Rush" data-artist="Kylie Chen"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x800?fantasy,art" alt="Artwork 20" data-title="Celestial Garden" data-artist="Elara Vance"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?nature,painting" alt="Artwork 21" data-title="Forest's Breath" data-artist="Ben Carter"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?calligraphy" alt="Artwork 22" data-title="Ink and Silence" data-artist="Yuki Hamada"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/600x800?statue" alt="Artwork 23" data-title="The Thinker's Repose" data-artist="Auguste Renoir II"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?space,art" alt="Artwork 24" data-title="Orion's Veil" data-artist="Dr. Lena Petrova"></div>
+        <div class="gallery-item"><img src="https://source.unsplash.com/random/800x600?ocean,art" alt="Artwork 25" data-title="Abyssal Plain" data-artist="Mara Johansson"></div>
+    </main>
+
+    <div id="lightbox-modal" class="modal">
+        <span class="close-button">&times;</span>
+        <div class="modal-content">
+            <img id="lightbox-image" src="" alt="Full-size artwork">
+            <div id="caption"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const galleryItems = document.querySelectorAll('.gallery-item');
+            const modal = document.getElementById('lightbox-modal');
+            const modalImage = document.getElementById('lightbox-image');
+            const caption = document.getElementById('caption');
+            const closeButton = document.querySelector('.close-button');
+
+            const openModal = (imageSrc, title, artist) => {
+                modalImage.src = imageSrc;
+                caption.innerHTML = `<h3>${title}</h3><p>${artist}</p>`;
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            };
+
+            const closeModal = () => {
+                modal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            };
+
+            galleryItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const img = item.querySelector('img');
+                    const imageSrc = img.src; 
+                    const title = img.dataset.title;
+                    const artist = img.dataset.artist;
+                    openModal(imageSrc, title, artist);
+                });
+            });
+
+            if (closeButton) {
+                closeButton.addEventListener('click', closeModal);
+            }
+
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        closeModal();
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.classList.contains('active')) {
+                    closeModal();
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
