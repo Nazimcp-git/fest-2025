@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Fest Results</title>
+    
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter for a clean UI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712; /* Darker background for projection */
+            color: #f9fafb;
+            overflow: hidden; /* Hide scrollbars */
+        }
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
+            opacity: 0;
+            transform: scale(1.05);
+            pointer-events: none;
+        }
+        .slide.active {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+        .position-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            font-weight: 900;
+            font-size: 1.75rem;
+            margin-right: 1.5rem;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="slideshow-container" class="relative w-screen h-screen flex items-center justify-center p-8">
+        <!-- Slides will be injected here -->
+        <div class="text-center">
+            <p class="text-4xl font-bold text-gray-500">Waiting for results...</p>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs (Version 8.10.0) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+    <script type="module">
+        // --- FIREBASE CONFIGURATION ---
+        // IMPORTANT: Use the EXACT SAME Firebase config from your main fest website.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
+            authDomain: "shopping-e284c.firebaseapp.com",
+            databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
+            projectId: "shopping-e284c",
+            storageBucket: "shopping-e284c.appspot.com",
+            messagingSenderId: "248274428739",
+            appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
+            measurementId: "G-ZXZCK9BW7T"
+        };
+
+        // --- INITIALIZE FIREBASE ---
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // --- APPLICATION STATE ---
+        let students = {};
+        let teams = {};
+        let pointsConfig = { first: 5, second: 3, third: 2, a_grade: 1, b_grade: 0 }; // Default values
+        let lastDisplayedTimestamp = 0;
+        let fadeOutTimer = null;
+
+        const positionInfo = {
+            first: { label: '1st', color: 'bg-yellow-500 text-white' },
+            second: { label: '2nd', color: 'bg-gray-400 text-white' },
+            third: { label: '3rd', color: 'bg-yellow-700 text-white' }
+        };
+
+        // --- RENDER FUNCTIONS ---
+        function renderSlide(result) {
+             const positions = { first: [], second: [], third: [] };
+             const grades = { a_grade: [], b_grade: [] };
+             (result.participants || []).forEach(p => {
+                 if (p.position && positions[p.position]) positions[p.position].push(p);
+                 if (p.grade && grades[p.grade] && (!p.position || p.position === 'none')) grades[p.grade].push(p);
+             });
+
+            return `
+                <div class="slide bg-gradient-to-br from-gray-900 via-gray-900 to-indigo-900 text-white rounded-2xl shadow-2xl p-12 w-full h-full flex flex-col">
+                    <div class="text-center border-b-2 border-indigo-700 pb-6 mb-8">
+                        <p class="text-3xl font-bold text-indigo-300">${result.category}</p>
+                        <h1 class="text-7xl font-black text-white mt-2">${result.programName}</h1>
+                    </div>
+                    <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                        
+                        <!-- Positions Column -->
+                        <div class="space-y-6">
+                            ${Object.entries(positions).map(([pos, participants]) => participants.length > 0 ? `
+                                <div>
+                                ${participants.map(p => {
+                                    const studentData = students[p.studentId] || {};
+                                    const teamName = studentData.teamId ? (teams[studentData.teamId]?.name || 'N/A') : 'N/A';
+                                    const positionPoints = pointsConfig[p.position] || 0;
+                                    const gradePoints = p.grade && p.grade !== 'none' ? (pointsConfig[p.grade] || 0) : 0;
+                                    const totalPoints = positionPoints + gradePoints;
+                                    return `
+                                    <div class="flex items-center mb-4">
+                                        <div class="position-badge ${positionInfo[pos].color}">${positionInfo[pos].label}</div>
+                                        <div>
+                                            <p class="text-4xl font-bold">${p.name}</p>
+                                            <p class="text-2xl text-gray-300">${teamName}</p>
+                                        </div>
+                                        <div class="ml-auto text-4xl font-black text-green-400">+${totalPoints}</div>
+                                    </div>
+                                    `
+                                }).join('')}
+                                </div>
+                            ` : '').join('')}
+                        </div>
+
+                        <!-- Grades Column -->
+                        <div class="space-y-6">
+                             ${(grades.a_grade.length > 0) ? `
+                                <div>
+                                    <h3 class="text-4xl font-bold mb-4 text-green-400">A Grade</h3>
+                                    ${grades.a_grade.map(p => {
+                                        const studentData = students[p.studentId] || {};
+                                        const teamName = studentData.teamId ? (teams[studentData.teamId]?.name || 'N/A') : 'N/A';
+                                        const gradePoints = pointsConfig.a_grade || 0;
+                                        return `
+                                        <div class="flex items-center mb-3">
+                                             <div class="w-32 flex-shrink-0 text-gray-400 font-bold">Chest No: ${studentData.chestNo || 'N/A'}</div>
+                                             <div>
+                                                <p class="text-3xl font-semibold">${p.name}</p>
+                                                <p class="text-xl text-gray-400">${teamName}</p>
+                                             </div>
+                                             <div class="ml-auto text-3xl font-bold text-green-400">+${gradePoints}</div>
+                                        </div>
+                                        `
+                                    }).join('')}
+                                </div>
+                             ` : ''}
+                             ${(grades.b_grade.length > 0) ? `
+                                <div>
+                                    <h3 class="text-4xl font-bold mb-4 text-blue-400">B Grade</h3>
+                                     ${grades.b_grade.map(p => {
+                                        const studentData = students[p.studentId] || {};
+                                        const teamName = studentData.teamId ? (teams[studentData.teamId]?.name || 'N/A') : 'N/A';
+                                        const gradePoints = pointsConfig.b_grade || 0;
+                                        return `
+                                        <div class="flex items-center mb-3">
+                                             <div class="w-32 flex-shrink-0 text-gray-400 font-bold">Chest No: ${studentData.chestNo || 'N/A'}</div>
+                                             <div>
+                                                <p class="text-3xl font-semibold">${p.name}</p>
+                                                <p class="text-xl text-gray-400">${teamName}</p>
+                                             </div>
+                                             <div class="ml-auto text-3xl font-bold text-green-400">+${gradePoints}</div>
+                                        </div>
+                                        `
+                                    }).join('')}
+                                </div>
+                             ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showLatestResult(result) {
+            if (fadeOutTimer) clearTimeout(fadeOutTimer);
+
+            const container = document.getElementById('slideshow-container');
+            container.innerHTML = renderSlide(result);
+            
+            const slide = container.querySelector('.slide');
+            
+            // Allow the element to be added to the DOM before adding the active class for the transition to work
+            setTimeout(() => {
+                if (slide) slide.classList.add('active');
+            }, 100);
+
+            // Set a timer to fade out the slide after 14 seconds
+            fadeOutTimer = setTimeout(() => {
+                if (slide) slide.classList.remove('active');
+                
+                // After the fade-out animation (0.8s), reset to the waiting message
+                setTimeout(() => {
+                    container.innerHTML = `<div class="text-center"><p class="text-4xl font-bold text-gray-500">Waiting for the result...</p></div>`;
+                }, 800);
+
+            }, 14000); // 14 seconds display time
+        }
+
+        // --- INITIALIZATION ---
+        function fetchDataAndStart() {
+            db.ref().on('value', snapshot => {
+                const data = snapshot.val() || {};
+                students = data.students || {};
+                teams = data.teams || {};
+                pointsConfig = data.pointsConfig || { first: 5, second: 3, third: 2, a_grade: 1, b_grade: 0 };
+                const allResults = data.results || {};
+                
+                const newPublishedResults = Object.values(allResults)
+                    .filter(r => r.status === 'published')
+                    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+                if (newPublishedResults.length === 0) {
+                    lastDisplayedTimestamp = 0; // Reset if all results are removed
+                    return;
+                }
+                
+                const latestResult = newPublishedResults[newPublishedResults.length - 1];
+
+                // If this is a genuinely new result we haven't shown, display it
+                if (latestResult && latestResult.timestamp > lastDisplayedTimestamp) {
+                    lastDisplayedTimestamp = latestResult.timestamp;
+                    showLatestResult(latestResult);
+                }
+            });
+        }
+
+        fetchDataAndStart();
+    </script>
+</body>
+</html>
+
