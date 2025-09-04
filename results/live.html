@@ -67,7 +67,6 @@
 
     <script type="module">
         // --- FIREBASE CONFIGURATION ---
-        // IMPORTANT: Use the EXACT SAME Firebase config from your main fest website.
         const firebaseConfig = {
             apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
             authDomain: "shopping-e284c.firebaseapp.com",
@@ -86,7 +85,7 @@
         // --- APPLICATION STATE ---
         let students = {};
         let teams = {};
-        let pointsConfig = { first: 5, second: 3, third: 2, a_grade: 1, b_grade: 0 }; // Default values
+        let pointsConfig = { first: 5, second: 3, third: 2, a_grade: 1, b_grade: 0 };
         let lastDisplayedTimestamp = 0;
         let fadeOutTimer = null;
 
@@ -100,9 +99,13 @@
         function renderSlide(result) {
              const positions = { first: [], second: [], third: [] };
              const grades = { a_grade: [], b_grade: [] };
+             
              (result.participants || []).forEach(p => {
-                 if (p.position && positions[p.position]) positions[p.position].push(p);
-                 if (p.grade && grades[p.grade] && (!p.position || p.position === 'none')) grades[p.grade].push(p);
+                 if (p.position && p.position !== 'none' && positions[p.position]) {
+                     positions[p.position].push(p);
+                 } else if (p.grade && p.grade !== 'none' && grades[p.grade]) {
+                     grades[p.grade].push(p);
+                 }
              });
 
             return `
@@ -111,7 +114,7 @@
                         <p class="text-3xl font-bold text-indigo-300">${result.category}</p>
                         <h1 class="text-7xl font-black text-white mt-2">${result.programName}</h1>
                     </div>
-                    <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                    <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 overflow-hidden">
                         
                         <!-- Positions Column -->
                         <div class="space-y-6">
@@ -123,12 +126,13 @@
                                     const positionPoints = pointsConfig[p.position] || 0;
                                     const gradePoints = p.grade && p.grade !== 'none' ? (pointsConfig[p.grade] || 0) : 0;
                                     const totalPoints = positionPoints + gradePoints;
+                                    const gradeText = p.grade && p.grade !== 'none' ? ` • ${p.grade.replace('_', ' ')}` : '';
                                     return `
                                     <div class="flex items-center mb-4">
                                         <div class="position-badge ${positionInfo[pos].color}">${positionInfo[pos].label}</div>
                                         <div>
                                             <p class="text-4xl font-bold">${p.name}</p>
-                                            <p class="text-2xl text-gray-300">${teamName}</p>
+                                            <p class="text-2xl text-gray-300">${teamName}${gradeText}</p>
                                         </div>
                                         <div class="ml-auto text-4xl font-black text-green-400">+${totalPoints}</div>
                                     </div>
@@ -194,21 +198,18 @@
             
             const slide = container.querySelector('.slide');
             
-            // Allow the element to be added to the DOM before adding the active class for the transition to work
             setTimeout(() => {
                 if (slide) slide.classList.add('active');
             }, 100);
 
-            // Set a timer to fade out the slide after 14 seconds
             fadeOutTimer = setTimeout(() => {
                 if (slide) slide.classList.remove('active');
                 
-                // After the fade-out animation (0.8s), reset to the waiting message
                 setTimeout(() => {
-                    container.innerHTML = `<div class="text-center"><p class="text-4xl font-bold text-gray-500">Waiting for the result...</p></div>`;
+                    container.innerHTML = `<div class="text-center"><p class="text-4xl font-bold text-gray-500">Waiting for next result...</p></div>`;
                 }, 800);
 
-            }, 14000); // 14 seconds display time
+            }, 14000);
         }
 
         // --- INITIALIZATION ---
@@ -225,13 +226,12 @@
                     .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
                 if (newPublishedResults.length === 0) {
-                    lastDisplayedTimestamp = 0; // Reset if all results are removed
+                    lastDisplayedTimestamp = 0;
                     return;
                 }
                 
                 const latestResult = newPublishedResults[newPublishedResults.length - 1];
 
-                // If this is a genuinely new result we haven't shown, display it
                 if (latestResult && latestResult.timestamp > lastDisplayedTimestamp) {
                     lastDisplayedTimestamp = latestResult.timestamp;
                     showLatestResult(latestResult);
