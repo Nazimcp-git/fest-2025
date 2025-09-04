@@ -45,8 +45,9 @@
             transition: max-height 0.5s ease-in-out;
         }
          .detail-view.visible {
-            max-height: 1000px; /* Adjust as needed */
+            max-height: 1500px; /* Adjust as needed */
         }
+        #modal-container.hidden { display: none; }
     </style>
 </head>
 <body class="antialiased text-gray-800">
@@ -61,7 +62,6 @@
     <!-- Firebase SDKs (Version 8.10.0) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
     <script type="module">
         // --- FIREBASE CONFIGURATION ---
@@ -90,13 +90,38 @@
         // --- INITIALIZE FIREBASE ---
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const auth = firebase.auth();
 
         // --- APPLICATION STATE ---
         let appData = { students: {}, teams: {}, programs: {}, registrationPrograms: {}, registrations: {} };
         let currentUser = null;
         let selectedProgramId = null;
-        let selectedCategory = null; // FIX: Added missing state variable
+        let selectedCategory = null;
+
+        // --- UI COMPONENTS & TEMPLATES ---
+        const AppShell = (content) => `
+            <div class="min-h-screen bg-gray-100 flex flex-col">
+                <nav class="bg-white shadow-md sticky top-0 z-50">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex items-center justify-between h-16">
+                            <h1 class="font-bold text-xl text-indigo-600"><i class="fas fa-edit mr-2"></i>Registration Portal</h1>
+                            ${currentUser ? `<button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-md font-semibold hover:bg-red-600">Logout</button>` : ''}
+                        </div>
+                    </div>
+                </nav>
+                <main id="main-content" class="py-10 flex-grow">
+                    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 px-6">
+                        ${content}
+                    </div>
+                </main>
+                <footer class="bg-gray-800 text-white py-6 mt-auto">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                        <h3 class="font-bold text-lg">Fest Committee</h3>
+                        <p class="mt-2 text-gray-400 text-sm">&copy; ${new Date().getFullYear()} College Fest. All rights reserved.</p>
+                    </div>
+                </footer>
+                <div id="modal-container" class="hidden"></div>
+            </div>
+        `;
 
         // --- HELPER FUNCTIONS ---
         function getDataAsArray(entity) {
@@ -107,15 +132,17 @@
         // --- RENDER FUNCTIONS ---
         function renderApp() {
             const appContainer = document.getElementById('app');
-            let content = '';
             if (!currentUser) {
-                content = renderLoginPage();
-            } else if (currentUser.type === 'admin') {
-                content = renderAdminPortal();
-            } else if (currentUser.type === 'team') {
-                content = renderTeamPortal();
+                appContainer.innerHTML = renderLoginPage();
+            } else {
+                let content = '';
+                if (currentUser.type === 'admin') {
+                    content = renderAdminPortal();
+                } else if (currentUser.type === 'team') {
+                    content = renderTeamPortal();
+                }
+                appContainer.innerHTML = AppShell(content);
             }
-            appContainer.innerHTML = content;
         }
 
         function renderLoginPage() {
@@ -172,7 +199,10 @@
                                     <p class="font-bold text-gray-800">${team.name}</p>
                                     <ul class="list-disc list-inside mt-2 pl-2 text-sm text-gray-600">
                                         ${teamRegistrations.map(reg => `
-                                            <li><span class="font-semibold">${reg.studentName}</span>: "${reg.pieceTitle}"</li>
+                                            <li class="flex justify-between items-center">
+                                                <span><span class="font-semibold">${reg.studentName}</span>: "${reg.pieceTitle}"</span>
+                                                <button class="edit-reg-btn text-indigo-600 hover:text-indigo-800 text-xs font-semibold" data-reg-id="${reg.id}">EDIT</button>
+                                            </li>
                                         `).join('')}
                                     </ul>
                                 </div>
@@ -186,7 +216,6 @@
                         </div>
                     </div>
                 `;
-                // Add a small delay to trigger the transition
                 setTimeout(() => {
                     const el = document.querySelector('.detail-view');
                     if (el) el.classList.add('visible');
@@ -194,13 +223,10 @@
             }
 
             return `
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <header class="flex justify-between items-center mb-8">
-                        <div>
-                            <h1 class="text-4xl font-bold text-gray-900">Admin Panel</h1>
-                            <p class="mt-2 text-lg text-gray-600">Manage programs available for registration.</p>
-                        </div>
-                        <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-md font-semibold hover:bg-red-600">Logout</button>
+                <div>
+                    <header class="mb-8">
+                        <h1 class="text-4xl font-bold text-gray-900">Admin Panel</h1>
+                        <p class="mt-2 text-lg text-gray-600">Manage programs available for registration.</p>
                     </header>
                     <main class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                         <div class="bg-white p-6 rounded-xl shadow-lg space-y-6">
@@ -305,10 +331,15 @@
                                     <ul class="divide-y divide-gray-200">
                                     ${existingRegistrations.map(reg => `
                                         <li class="py-3">
-                                            <p class="font-semibold text-lg">${reg.pieceTitle}</p>
-                                            <p class="text-sm text-gray-600"><em>"${reg.firstLine}"</em></p>
-                                            <p class="text-sm font-bold text-indigo-700 mt-1">${reg.studentName} (${reg.teamName})</p>
-                                            <p class="text-xs text-gray-400 mt-1">${new Date(reg.timestamp).toLocaleString()}</p>
+                                            <div class="flex justify-between items-start">
+                                                <div>
+                                                    <p class="font-semibold text-lg">${reg.pieceTitle}</p>
+                                                    <p class="text-sm text-gray-600"><em>"${reg.firstLine}"</em></p>
+                                                    <p class="text-sm font-bold text-indigo-700 mt-1">${reg.studentName} (${reg.teamName})</p>
+                                                    <p class="text-xs text-gray-400 mt-1">${new Date(reg.timestamp).toLocaleString()}</p>
+                                                </div>
+                                                ${reg.teamName === currentUser.teamName ? `<button class="edit-reg-btn text-indigo-600 hover:text-indigo-800 text-xs font-semibold" data-reg-id="${reg.id}">EDIT</button>` : ''}
+                                            </div>
                                         </li>
                                     `).join('')}
                                     </ul>
@@ -475,6 +506,28 @@
                     setTimeout(() => messageEl.textContent = '', 3000);
                 }
             }
+            if(e.target.id === 'edit-registration-form') {
+                e.preventDefault();
+                const form = e.target;
+                const regId = form.elements.registrationId.value;
+                const studentId = form.elements.studentId.value;
+                const student = appData.students[studentId];
+
+                const updatedData = {
+                    studentId: studentId,
+                    studentName: student.name,
+                    pieceTitle: form.elements.pieceTitle.value,
+                    firstLine: form.elements.firstLine.value,
+                    youtubeLink: form.elements.youtubeLink.value || ''
+                };
+                
+                try {
+                    await db.ref('registrations/' + regId).update(updatedData);
+                    closeModal();
+                } catch(err) {
+                    alert('Error updating registration: ' + err.message);
+                }
+            }
         });
 
         document.addEventListener('click', (e) => {
@@ -505,6 +558,17 @@
                 const programId = e.target.dataset.programId;
                 printRegistrations(programId);
             }
+            
+            const editButton = e.target.closest('.edit-reg-btn');
+            if(editButton) {
+                openEditModal(editButton.dataset.regId);
+            }
+            
+            const closeModalBtn = e.target.closest('.close-modal-btn');
+            if (closeModalBtn) {
+                closeModal();
+            }
+
 
             if (e.target.matches('details summary')) {
                 const detailsElement = e.target.parentElement;
@@ -517,6 +581,62 @@
                 }
             }
         });
+        
+        function openEditModal(regId) {
+            const registration = appData.registrations[regId];
+            if (!registration) return;
+
+            const program = appData.programs[registration.programId];
+            const teamId = Object.keys(appData.teams).find(id => appData.teams[id].name === registration.teamName);
+            
+            let studentsForProgram;
+            if(currentUser.type === 'admin') {
+                studentsForProgram = getDataAsArray('students').filter(s => s.category === program.category);
+            } else {
+                studentsForProgram = getDataAsArray('students').filter(s => s.teamId === teamId && s.category === program.category);
+            }
+
+            const modalHTML = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-8 relative transform transition-all" style="animation: fadeIn 0.3s ease-out;">
+                        <button class="close-modal-btn absolute top-4 right-4 text-gray-400 hover:text-gray-800 text-2xl">&times;</button>
+                        <h3 class="text-2xl font-bold mb-4">Edit Registration</h3>
+                        <p class="mb-6 text-gray-600">For ${program.name}</p>
+                        <form id="edit-registration-form" class="space-y-4">
+                            <input type="hidden" name="registrationId" value="${regId}">
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700">Participant</label>
+                                <select name="studentId" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
+                                    ${studentsForProgram.map(s => `<option value="${s.id}" ${s.id === registration.studentId ? 'selected' : ''}>${s.name} (${s.chestNo})</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Title of Piece</label>
+                                <input type="text" name="pieceTitle" value="${registration.pieceTitle}" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
+                            </div>
+                                <div>
+                                <label class="block text-sm font-medium text-gray-700">First Line of Piece</label>
+                                <input type="text" name="firstLine" value="${registration.firstLine}" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">YouTube Link (Optional)</label>
+                                <input type="url" name="youtubeLink" value="${registration.youtubeLink || ''}" class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm" placeholder="https://youtube.com/...">
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md font-semibold hover:bg-indigo-700">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+            `;
+             const modalContainer = document.getElementById('modal-container');
+            modalContainer.innerHTML = modalHTML;
+            modalContainer.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.classList.add('hidden');
+            modalContainer.innerHTML = '';
+        }
 
         // --- INITIALIZATION ---
         function initializeApp() {
