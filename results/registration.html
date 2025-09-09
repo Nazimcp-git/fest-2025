@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Program Registration Portal</title>
+    <title>Participant Registration</title>
     
     <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -25,6 +25,11 @@
             box-shadow: 0 0 0 3px #4f46e5;
             transform: scale(1.02);
         }
+        .admin-tab.active { 
+            border-color: #4f46e5; 
+            color: #4f46e5; 
+            background-color: #eef2ff; 
+        }
         /* Print Styles */
         @media print {
             body > *:not(#print-area) {
@@ -33,9 +38,15 @@
             #print-area {
                 display: block !important;
             }
+            .print-page {
+                page-break-after: always;
+            }
+             .print-page:last-child {
+                page-break-after: avoid;
+            }
             @page {
-                size: A4;
-                margin: 2cm;
+                size: A4 landscape;
+                margin: 1.5cm;
             }
         }
         /* Animation for detail view */
@@ -48,6 +59,15 @@
             max-height: 1500px; /* Adjust as needed */
         }
         #modal-container.hidden { display: none; }
+
+        /* Toggle Switch Styles */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #4f46e5;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #4f46e5;
+        }
     </style>
 </head>
 <body class="antialiased text-gray-800">
@@ -65,7 +85,7 @@
 
     <script type="module">
         // --- FIREBASE CONFIGURATION ---
-        const firebaseConfig = {
+          const firebaseConfig = {
             apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
             authDomain: "shopping-e284c.firebaseapp.com",
             databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
@@ -78,11 +98,11 @@
         
         // --- TEAM & ADMIN PASSWORDS ---
         const ACCESS_CODES = {
-            "Asifstuffs": { type: "team", teamName: "Terenova" },
-            "Asilthings": { type: "team", teamName: "Calipso" },
-            "Niyasdeals": { type: "team", teamName: "Iris" },
-            "Farhangold": { type: "team", teamName: "Hemera" },
-            "Irshadusthad": { type: "admin" }
+            "ASIF": { type: "team", teamName: "Terenova" },
+            "364737A": { type: "team", teamName: "Calipso" },
+            "382738N": { type: "team", teamName: "Iris" },
+            "238849F": { type: "team", teamName: "Hemera" },
+            "IRSHADU": { type: "admin" }
         };
 
         const CATEGORIES = ["BIDAYA", "UOOLA", "THANIYA", "THANAWIYYA", "ALIYA", "KULLIYYA"];
@@ -92,10 +112,11 @@
         const db = firebase.database();
 
         // --- APPLICATION STATE ---
-        let appData = { students: {}, teams: {}, programs: {}, registrationPrograms: {}, registrations: {} };
+        let appData = { students: {}, teams: {}, programs: {}, participantRegistrations: {}, registrationPrograms: {} };
         let currentUser = null;
         let selectedProgramId = null;
         let selectedCategory = null;
+        let activeAdminTab = 'overview';
 
         // --- UI COMPONENTS & TEMPLATES ---
         const AppShell = (content) => `
@@ -103,7 +124,7 @@
                 <nav class="bg-white shadow-md sticky top-0 z-50">
                     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div class="flex items-center justify-between h-16">
-                            <h1 class="font-bold text-xl text-indigo-600"><i class="fas fa-edit mr-2"></i>Registration Portal</h1>
+                            <h1 class="font-bold text-xl text-indigo-600"><i class="fas fa-user-plus mr-2"></i>Participant Registration</h1>
                             ${currentUser ? `<button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-md font-semibold hover:bg-red-600">Logout</button>` : ''}
                         </div>
                     </div>
@@ -113,11 +134,10 @@
                         ${content}
                     </div>
                 </main>
-                
                 <div id="modal-container" class="hidden"></div>
             </div>
         `;
-
+        
         // --- HELPER FUNCTIONS ---
         function getDataAsArray(entity) {
             if (!appData[entity]) return [];
@@ -136,7 +156,7 @@
                 } else if (currentUser.type === 'team') {
                     content = renderTeamPortal();
                 }
-                appContainer.innerHTML = AppShell(content);
+                 appContainer.innerHTML = AppShell(content);
             }
         }
 
@@ -164,98 +184,131 @@
         }
         
         function renderAdminPortal() {
+            let content = '';
+            switch(activeAdminTab) {
+                case 'overview':
+                    content = renderAdminOverview();
+                    break;
+                case 'settings':
+                    content = renderAdminSettings();
+                    break;
+            }
+             return `
+                <div>
+                    <header class="flex justify-between items-center mb-8">
+                        <div>
+                            <h1 class="text-4xl font-bold text-gray-900">Admin Panel</h1>
+                        </div>
+                    </header>
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav id="admin-tabs" class="-mb-px flex space-x-8" aria-label="Tabs">
+                            <button data-tab="overview" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeAdminTab === 'overview' ? 'active' : ''}">Registration Overview</button>
+                            <button data-tab="settings" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeAdminTab === 'settings' ? 'active' : ''}">Settings</button>
+                        </nav>
+                    </div>
+                    <main>
+                       ${content}
+                    </main>
+                </div>
+            `;
+        }
+
+        function renderAdminOverview() {
             const allPrograms = getDataAsArray('programs');
             const activeRegProgramIds = Object.keys(appData.registrationPrograms || {});
-            const availablePrograms = allPrograms.filter(p => !activeRegProgramIds.includes(p.id));
             const activePrograms = allPrograms.filter(p => activeRegProgramIds.includes(p.id)).sort((a,b) => a.name.localeCompare(b.name));
-            const allRegistrations = getDataAsArray('registrations');
+            const registrations = appData.participantRegistrations || {};
+            const teams = getDataAsArray('teams');
 
-            let detailView = '';
-            if (selectedProgramId && appData.programs[selectedProgramId]) {
-                const program = appData.programs[selectedProgramId];
-                const registrationsForProgram = allRegistrations.filter(r => r.programId === selectedProgramId);
-                const teams = getDataAsArray('teams');
-                const registeredTeamNames = [...new Set(registrationsForProgram.map(r => r.teamName))];
-                const unregisteredTeams = teams.filter(t => !registeredTeamNames.includes(t.name));
-
-                detailView = `
-                    <div class="bg-gray-50 p-6 rounded-lg mt-6 border-l-4 border-indigo-500 detail-view">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-2xl font-bold">Registrations for: ${program.name}</h3>
-                            <button id="print-registrations-btn" data-program-id="${selectedProgramId}" class="bg-gray-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-gray-700"><i class="fas fa-print mr-2"></i>Print List</button>
-                        </div>
-                        
-                        <h4 class="text-lg font-semibold mb-2 text-green-700">Registered Teams (${registeredTeamNames.length})</h4>
-                        <div class="space-y-3 mb-6">
-                        ${teams.filter(t => registeredTeamNames.includes(t.name)).map(team => {
-                            const teamRegistrations = registrationsForProgram.filter(r => r.teamName === team.name);
-                            return `
-                                <div class="p-4 border bg-white rounded-md">
-                                    <p class="font-bold text-gray-800">${team.name}</p>
-                                    <ul class="list-disc list-inside mt-2 pl-2 text-sm text-gray-600">
-                                        ${teamRegistrations.map(reg => `
-                                            <li class="flex justify-between items-center">
-                                                <span><span class="font-semibold">${reg.studentName}</span>: "${reg.pieceTitle}"</span>
-                                                <button class="edit-reg-btn text-indigo-600 hover:text-indigo-800 text-xs font-semibold" data-reg-id="${reg.id}">EDIT</button>
-                                            </li>
-                                        `).join('')}
-                                    </ul>
-                                </div>
-                            `
-                        }).join('') || '<p class="text-gray-500">No teams have registered for this program yet.</p>'}
-                        </div>
-
-                        <h4 class="text-lg font-semibold mb-2 text-red-700">Teams Not Yet Registered (${unregisteredTeams.length})</h4>
-                        <div class="flex flex-wrap gap-2">
-                            ${unregisteredTeams.length > 0 ? unregisteredTeams.map(t => `<span class="bg-red-100 text-red-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded">${t.name}</span>`).join('') : '<p class="text-gray-500">All teams have registered.</p>'}
-                        </div>
-                    </div>
-                `;
-                setTimeout(() => {
-                    const el = document.querySelector('.detail-view');
-                    if (el) el.classList.add('visible');
-                }, 10);
-            }
+            const programsWithRegistrationsCount = Object.keys(registrations).filter(progId => activeRegProgramIds.includes(progId)).length;
+            const teamRegistrationStatus = teams.map(team => {
+                let count = 0;
+                activeRegProgramIds.forEach(progId => {
+                    if (registrations[progId] && registrations[progId][team.id] && registrations[progId][team.id].length > 0) {
+                        count++;
+                    }
+                });
+                return { name: team.name, count };
+            });
 
             return `
-                <div>
-                    <header class="mb-8">
-                        <h1 class="text-4xl font-bold text-gray-900">Admin Panel</h1>
-                        <p class="mt-2 text-lg text-gray-600">Manage programs available for registration.</p>
-                    </header>
-                    <main class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                        <div class="bg-white p-6 rounded-xl shadow-lg space-y-6">
-                            <div>
-                                <h2 class="text-2xl font-bold mb-4">Activate Program for Registration</h2>
-                                <form id="add-reg-program-form" class="flex gap-2">
-                                    <select name="programId" class="flex-grow p-2 border border-gray-300 rounded-md">
-                                        <option value="">Select a program...</option>
-                                        ${availablePrograms.map(p => `<option value="${p.id}">${p.name} (${p.category})</option>`).join('')}
-                                    </select>
-                                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-indigo-700">Activate</button>
-                                </form>
-                            </div>
+                 <div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+                            <h3 class="text-lg font-semibold text-gray-500">Active Programs for Reg.</h3>
+                            <p class="text-5xl font-bold text-indigo-600">${activeRegProgramIds.length}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+                            <h3 class="text-lg font-semibold text-gray-500">Programs w/ Registrations</h3>
+                            <p class="text-5xl font-bold text-indigo-600">${programsWithRegistrationsCount}</p>
                         </div>
                         <div class="bg-white p-6 rounded-xl shadow-lg">
-                            <h2 class="text-2xl font-bold mb-4">Active Registration Programs</h2>
-                            <div class="space-y-2 max-h-96 overflow-y-auto">
-                                ${activePrograms.length === 0 ? `<p class="text-gray-500">No programs are active for registration.</p>` :
-                                    activePrograms.map(p => `
-                                    <div class="program-select-btn p-3 rounded-md cursor-pointer transition-all duration-200 ${selectedProgramId === p.id ? 'bg-indigo-100 ring-2 ring-indigo-500' : 'bg-gray-50 hover:bg-gray-100'}" data-program-id="${p.id}">
-                                        <div class="flex justify-between items-center">
-                                            <div>
-                                                <p class="font-semibold">${p.name}</p>
-                                                <p class="text-sm text-gray-500">${p.category}</p>
-                                            </div>
-                                            <button class="remove-reg-program-btn text-red-500 hover:text-red-700 z-10" data-program-id="${p.id}"><i class="fas fa-times-circle"></i></button>
-                                        </div>
+                            <h3 class="text-lg font-semibold text-gray-500 mb-2 text-center">Team Progress</h3>
+                            <div class="space-y-1 text-left">
+                                ${teamRegistrationStatus.map(team => `
+                                    <div class="flex justify-between text-sm">
+                                        <span class="font-medium">${team.name}</span>
+                                        <span class="font-bold">${team.count} / ${activeRegProgramIds.length} programs</span>
                                     </div>
-                                    `).join('')
-                                }
+                                `).join('')}
                             </div>
-                             <div id="detail-view-container">${detailView}</div>
                         </div>
-                    </main>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                         <div class="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-4">
+                            <h2 class="text-2xl font-bold">Active Program Details</h2>
+                            <button id="print-all-btn" class="bg-gray-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-gray-700 w-full md:w-auto"><i class="fas fa-print mr-2"></i>Print All Participant Lists</button>
+                         </div>
+                        <div class="space-y-2 max-h-[60vh] overflow-y-auto">
+                           ${activePrograms.length === 0 ? `<p class="text-center text-gray-500 py-4">No programs activated in Settings.</p>` : 
+                           activePrograms.map(p => {
+                                const programRegs = registrations[p.id] || {};
+                                return `
+                                <div class="p-3 rounded-md bg-gray-50">
+                                    <p class="font-semibold">${p.name}</p>
+                                    <p class="text-sm text-gray-500">${p.category}</p>
+                                    <div class="flex flex-wrap gap-2 mt-2 text-xs">
+                                        ${teams.map(team => {
+                                            const count = programRegs[team.id]?.length || 0;
+                                            const color = count > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600';
+                                            return `<span class="${color} px-2 py-0.5 rounded-full font-medium">${team.name}: ${count}</span>`
+                                        }).join('')}
+                                    </div>
+                                </div>
+                                `
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderAdminSettings() {
+            const allPrograms = getDataAsArray('programs').sort((a,b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+            const activeRegProgramIds = Object.keys(appData.registrationPrograms || {});
+
+            return `
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4">Registration Program Settings</h2>
+                    <p class="text-gray-600 mb-6">Use the toggles to activate or deactivate programs for team registration.</p>
+                    <div class="space-y-4">
+                        ${allPrograms.map(p => {
+                            const isActive = activeRegProgramIds.includes(p.id);
+                            return `
+                            <div class="flex justify-between items-center bg-gray-50 p-4 rounded-md">
+                                <div>
+                                    <p class="font-semibold">${p.name}</p>
+                                    <p class="text-sm text-gray-500">${p.category}</p>
+                                </div>
+                                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                                    <input type="checkbox" name="toggle" id="toggle-${p.id}" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" 
+                                        data-program-id="${p.id}" ${isActive ? 'checked' : ''}/>
+                                    <label for="toggle-${p.id}" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                </div>
+                            </div>
+                            `
+                        }).join('')}
+                    </div>
                 </div>
             `;
         }
@@ -274,42 +327,7 @@
                 const program = appData.programs[selectedProgramId];
                 const teamId = Object.keys(appData.teams).find(id => appData.teams[id].name === teamName);
                 const studentsForProgram = getDataAsArray('students').filter(s => s.teamId === teamId && s.category === program.category);
-                const existingRegistrations = getDataAsArray('registrations').filter(r => r.programId === selectedProgramId);
-                const teamRegistrationCount = existingRegistrations.filter(r => r.teamName === teamName).length;
-
-                let formOrMessage = '';
-                if(teamRegistrationCount >= 3) {
-                    formOrMessage = `<div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md"><p class="font-bold">Registration Limit Reached</p><p>Your team has submitted the maximum of 3 entries for this program.</p></div>`;
-                } else {
-                    formOrMessage = `
-                        <h4 class="text-xl font-bold mb-4">Register Your Participant (${3 - teamRegistrationCount} slots left)</h4>
-                        <form id="registration-form" class="space-y-4">
-                            <input type="hidden" name="programId" value="${selectedProgramId}">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Participant</label>
-                                <select name="studentId" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
-                                    <option value="">Select participant...</option>
-                                    ${studentsForProgram.map(s => `<option value="${s.id}">${s.name} (${s.chestNo})</option>`).join('')}
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Title of Piece (e.g., Song Name)</label>
-                                <input type="text" name="pieceTitle" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
-                            </div>
-                                <div>
-                                <label class="block text-sm font-medium text-gray-700">First Line of Piece</label>
-                                <input type="text" name="firstLine" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">YouTube Link (Optional)</label>
-                                <input type="url" name="youtubeLink" class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm" placeholder="https://youtube.com/...">
-                            </div>
-                            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md font-semibold hover:bg-indigo-700">Submit Registration</button>
-                            <p id="reg-form-message" class="text-sm mt-2 text-center"></p>
-                        </form>
-                    `;
-                }
-
+                const teamRegistrationsForProgram = appData.participantRegistrations?.[selectedProgramId]?.[teamId] || [];
 
                 registrationContent = `
                     <div class="bg-white p-6 rounded-xl shadow-lg mt-8">
@@ -317,26 +335,42 @@
                         <p class="text-lg text-gray-500 mb-6">${program.category}</p>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             <div>
-                                ${formOrMessage}
+                                <h4 class="text-xl font-bold mb-4">Register Participants</h4>
+                                <form id="registration-form" class="space-y-4">
+                                    <input type="hidden" name="programId" value="${selectedProgramId}">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Select Participants</label>
+                                        <p class="text-xs text-gray-500 mb-1">You can select multiple students.</p>
+                                        <div class="mt-2 border rounded-md max-h-48 overflow-y-auto p-2 bg-gray-50">
+                                            ${studentsForProgram.length === 0 ? `<p class="text-sm text-gray-500 p-2">No eligible students in this category.</p>` : 
+                                            studentsForProgram.map(s => `
+                                                <div class="flex items-center p-1">
+                                                    <input id="student-${s.id}" name="studentIds" type="checkbox" value="${s.id}" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                                    <label for="student-${s.id}" class="ml-3 text-sm text-gray-700">${s.name} (${s.chestNo})</label>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md font-semibold hover:bg-indigo-700">Register Selected</button>
+                                    <p id="reg-form-message" class="text-sm mt-2 text-center"></p>
+                                </form>
                             </div>
                             <div>
-                                <h4 class="text-xl font-bold mb-4">Current Registrations</h4>
+                                <h4 class="text-xl font-bold mb-4">Your Registered Participants</h4>
                                 <div class="space-y-2 max-h-96 overflow-y-auto">
-                                ${existingRegistrations.length === 0 ? `<p class="text-gray-500">No one has registered for this program yet.</p>` : `
+                                ${teamRegistrationsForProgram.length === 0 ? `<p class="text-gray-500">You have not registered any participants for this program yet.</p>` : `
                                     <ul class="divide-y divide-gray-200">
-                                    ${existingRegistrations.map(reg => `
-                                        <li class="py-3">
-                                            <div class="flex justify-between items-start">
-                                                <div>
-                                                    <p class="font-semibold text-lg">${reg.pieceTitle}</p>
-                                                    <p class="text-sm text-gray-600"><em>"${reg.firstLine}"</em></p>
-                                                    <p class="text-sm font-bold text-indigo-700 mt-1">${reg.studentName} (${reg.teamName})</p>
-                                                    <p class="text-xs text-gray-400 mt-1">${new Date(reg.timestamp).toLocaleString()}</p>
-                                                </div>
-                                                ${reg.teamName === currentUser.teamName ? `<button class="edit-reg-btn text-indigo-600 hover:text-indigo-800 text-xs font-semibold" data-reg-id="${reg.id}">EDIT</button>` : ''}
+                                    ${teamRegistrationsForProgram.map(studentId => {
+                                        const student = appData.students[studentId];
+                                        return `
+                                        <li class="py-2 flex justify-between items-center">
+                                            <div>
+                                                <p class="font-semibold">${student.name}</p>
+                                                <p class="text-sm text-gray-500">Chest No: ${student.chestNo}</p>
                                             </div>
+                                            <button class="remove-participant-btn text-red-500 hover:text-red-700 text-xs font-semibold" data-student-id="${studentId}"><i class="fas fa-times mr-1"></i>Remove</button>
                                         </li>
-                                    `).join('')}
+                                    `}).join('')}
                                     </ul>
                                 `}
                                 </div>
@@ -351,9 +385,8 @@
                     <header class="flex justify-between items-center mb-8">
                         <div>
                             <h1 class="text-4xl font-bold text-gray-900">Team Portal: ${teamName}</h1>
-                            <p class="mt-2 text-lg text-gray-600">Select a program to register your participants.</p>
+                            <p class="mt-2 text-lg text-gray-600">Select a program to register participants.</p>
                         </div>
-                        <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-md font-semibold hover:bg-red-600">Logout</button>
                     </header>
                     <main>
                        ${categoriesWithPrograms.length === 0 
@@ -383,58 +416,71 @@
              `;
         }
         
-        function printRegistrations(programId) {
-            const program = appData.programs[programId];
-            if (!program) return;
+        function printAllParticipantLists() {
+            const allPrograms = getDataAsArray('programs').sort((a,b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+            const registrations = appData.participantRegistrations || {};
+            
+            const programsToPrint = allPrograms.filter(p => registrations[p.id] && Object.values(registrations[p.id]).flat().length > 0);
 
-            const registrations = getDataAsArray('registrations')
-                .filter(r => r.programId === programId)
-                .sort((a, b) => a.teamName.localeCompare(b.teamName) || a.studentName.localeCompare(b.studentName));
-
-            if (registrations.length === 0) {
-                alert('No registrations to print for this program.');
+            if (programsToPrint.length === 0) {
+                alert("No participants have been registered for any program yet.");
                 return;
             }
+            
+            let printHTML = `<div style="font-family: Arial, sans-serif; width: 297mm; padding: 1.5cm; box-sizing: border-box;">
+                <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 1rem; margin-bottom: 1rem;">
+                    <h1 style="font-size: 24pt; margin: 0;">PORU 2K25</h1>
+                    <h2 style="font-size: 16pt; margin: 0.5rem 0;">Participant Lists</h2>
+                </div>`;
+            
+            let programPairs = [];
+            for (let i = 0; i < programsToPrint.length; i += 2) {
+                programPairs.push(programsToPrint.slice(i, i + 2));
+            }
 
-            const printHTML = `
-                <div style="font-family: Arial, sans-serif; width: 210mm; padding: 1.5cm; box-sizing: border-box;">
-                    <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 1rem; margin-bottom: 1rem;">
-                        <h1 style="font-size: 22pt; margin: 0;">Program Registration List</h1>
-                        <p style="font-size: 12pt; margin: 0.5rem 0;">Generated on: ${new Date().toLocaleString()}</p>
-                    </div>
-                    <div style="margin-bottom: 2rem;">
-                        <h3 style="font-size: 16pt; margin: 0 0 0.5rem 0; font-weight: bold;">${program.name}</h3>
-                        <p style="font-size: 12pt; margin: 0 0 1rem 0; color: #333;">Category: ${program.category}</p>
-                    </div>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 10pt;">
-                        <thead>
-                            <tr style="background-color: #eee; text-align: left;">
-                                <th style="padding: 8px; border: 1px solid #ccc;">Team</th>
-                                <th style="padding: 8px; border: 1px solid #ccc;">Student Name</th>
-                                <th style="padding: 8px; border: 1px solid #ccc;">Chest No</th>
-                                <th style="padding: 8px; border: 1px solid #ccc;">Piece Title</th>
-                                <th style="padding: 8px; border: 1px solid #ccc;">First Line</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${registrations.map(reg => {
-                                const student = appData.students[reg.studentId];
-                                const chestNo = student ? student.chestNo : 'N/A';
-                                return `
-                                <tr style="border-bottom: 1px solid #eee;">
-                                    <td style="padding: 8px; border: 1px solid #ccc;">${reg.teamName}</td>
-                                    <td style="padding: 8px; border: 1px solid #ccc;">${reg.studentName}</td>
-                                    <td style="padding: 8px; border: 1px solid #ccc;">${chestNo}</td>
-                                    <td style="padding: 8px; border: 1px solid #ccc;">${reg.pieceTitle}</td>
-                                    <td style="padding: 8px; border: 1px solid #ccc;">${reg.firstLine}</td>
-                                </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
+            programPairs.forEach(pair => {
+                printHTML += `<div class="print-page" style="display: flex; justify-content: space-between; gap: 2cm;">`;
+                pair.forEach(program => {
+                     const programRegistrations = registrations[program.id] || {};
+                     const participantIds = Object.values(programRegistrations).flat();
+                     if(participantIds.length > 0) {
+                         printHTML += `
+                            <div style="width: 48%;">
+                                <h3 style="font-size: 14pt; margin: 0 0 0.5rem 0; font-weight: bold;">${program.name} <span style="font-weight: normal; color: #555;">(${program.category})</span></h3>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 9pt;">
+                                    <thead>
+                                        <tr style="background-color: #eee; text-align: left;">
+                                            <th style="padding: 6px; border: 1px solid #ccc; width: 20%;">Chest No</th>
+                                            <th style="padding: 6px; border: 1px solid #ccc; width: 40%;">Name</th>
+                                            <th style="padding: 6px; border: 1px solid #ccc; width: 20%;">Point</th>
+                                            <th style="padding: 6px; border: 1px solid #ccc; width: 20%;">Position</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${participantIds.map(studentId => {
+                                            const student = appData.students[studentId];
+                                            return `
+                                            <tr style="border-bottom: 1px solid #eee;">
+                                                <td style="padding: 6px; border: 1px solid #ccc;">${student?.chestNo || 'N/A'}</td>
+                                                <td style="padding: 6px; border: 1px solid #ccc;">${student?.name || 'Unknown'}</td>
+                                                <td style="padding: 6px; border: 1px solid #ccc;"></td>
+                                                <td style="padding: 6px; border: 1px solid #ccc;"></td>
+                                            </tr>
+                                            `
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                     } else {
+                         printHTML += `<div style="width: 48%;"></div>`; // Empty div to maintain layout
+                     }
+                });
+                printHTML += `</div>`;
+            });
 
+            printHTML += `</div>`;
+            
             const printArea = document.getElementById('print-area');
             printArea.innerHTML = printHTML;
             window.print();
@@ -458,41 +504,25 @@
                     errorEl.textContent = "Invalid access code.";
                 }
             }
-            if (e.target.id === 'add-reg-program-form') {
-                e.preventDefault();
-                const programId = e.target.elements.programId.value;
-                if (programId) {
-                    await db.ref('registrationPrograms/' + programId).set(true);
-                }
-            }
-            if (e.target.id === 'registration-form') {
+             if (e.target.id === 'registration-form') {
                 e.preventDefault();
                 const form = e.target;
                 const messageEl = document.getElementById('reg-form-message');
-                const studentId = form.elements.studentId.value;
-                const student = appData.students[studentId];
-                if (!student) {
-                    messageEl.textContent = 'Please select a valid participant.';
+                const selectedStudentIds = Array.from(form.querySelectorAll('input[name="studentIds"]:checked')).map(cb => cb.value);
+                
+                if (selectedStudentIds.length === 0) {
+                    messageEl.textContent = 'Please select at least one participant.';
                     return;
                 }
-
-                const registrationData = {
-                    programId: form.elements.programId.value,
-                    studentId: studentId,
-                    studentName: student.name,
-                    teamName: currentUser.teamName,
-                    pieceTitle: form.elements.pieceTitle.value,
-                    firstLine: form.elements.firstLine.value,
-                    youtubeLink: form.elements.youtubeLink.value || '',
-                    timestamp: Date.now()
-                };
                 
+                const teamId = Object.keys(appData.teams).find(id => appData.teams[id].name === currentUser.teamName);
+                const programId = form.elements.programId.value;
+
                 try {
-                    await db.ref('registrations').push(registrationData);
+                    await db.ref(`participantRegistrations/${programId}/${teamId}`).set(selectedStudentIds);
                     messageEl.textContent = 'Registration successful!';
                     messageEl.classList.remove('text-red-500');
                     messageEl.classList.add('text-green-500');
-                    form.reset();
                 } catch(err) {
                     messageEl.textContent = 'Error: ' + err.message;
                     messageEl.classList.add('text-red-500');
@@ -501,137 +531,48 @@
                     setTimeout(() => messageEl.textContent = '', 3000);
                 }
             }
-            if(e.target.id === 'edit-registration-form') {
-                e.preventDefault();
-                const form = e.target;
-                const regId = form.elements.registrationId.value;
-                const studentId = form.elements.studentId.value;
-                const student = appData.students[studentId];
-
-                const updatedData = {
-                    studentId: studentId,
-                    studentName: student.name,
-                    pieceTitle: form.elements.pieceTitle.value,
-                    firstLine: form.elements.firstLine.value,
-                    youtubeLink: form.elements.youtubeLink.value || ''
-                };
-                
-                try {
-                    await db.ref('registrations/' + regId).update(updatedData);
-                    closeModal();
-                } catch(err) {
-                    alert('Error updating registration: ' + err.message);
-                }
-            }
         });
-
+        
         document.addEventListener('click', (e) => {
-            if (e.target.id === 'logout-btn') {
+             if (e.target.id === 'logout-btn') {
                 currentUser = null;
                 sessionStorage.removeItem('user');
+                activeAdminTab = 'overview'; // Reset tab on logout
                 renderApp();
             }
-
-            if (e.target.matches('.remove-reg-program-btn') || e.target.closest('.remove-reg-program-btn')) {
-                e.stopPropagation();
-                const button = e.target.matches('.remove-reg-program-btn') ? e.target : e.target.closest('.remove-reg-program-btn');
-                const programId = button.dataset.programId;
-                if (confirm('Are you sure you want to remove this program from registration?')) {
-                    if (selectedProgramId === programId) selectedProgramId = null;
-                    db.ref('registrationPrograms/' + programId).remove();
-                }
+            if (e.target.closest('.admin-tab')) {
+                activeAdminTab = e.target.closest('.admin-tab').dataset.tab;
+                renderApp();
             }
-            
             const programButton = e.target.closest('.program-select-btn');
             if(programButton) {
                 selectedProgramId = programButton.dataset.programId;
                 selectedCategory = appData.programs[selectedProgramId].category;
                 renderApp();
             }
-            
-            if (e.target.id === 'print-registrations-btn') {
-                const programId = e.target.dataset.programId;
-                printRegistrations(programId);
+            if (e.target.closest('.remove-participant-btn')) {
+                const button = e.target.closest('.remove-participant-btn');
+                const studentIdToRemove = button.dataset.studentId;
+                const teamId = Object.keys(appData.teams).find(id => appData.teams[id].name === currentUser.teamName);
+                const currentRegs = appData.participantRegistrations?.[selectedProgramId]?.[teamId] || [];
+                const newRegs = currentRegs.filter(id => id !== studentIdToRemove);
+                db.ref(`participantRegistrations/${selectedProgramId}/${teamId}`).set(newRegs);
             }
-            
-            const editButton = e.target.closest('.edit-reg-btn');
-            if(editButton) {
-                openEditModal(editButton.dataset.regId);
-            }
-            
-            const closeModalBtn = e.target.closest('.close-modal-btn');
-            if (closeModalBtn) {
-                closeModal();
-            }
-
-
-            if (e.target.matches('details summary')) {
-                const detailsElement = e.target.parentElement;
-                if(detailsElement.open) {
-                    // It was open and is about to close
-                    selectedCategory = null;
-                } else {
-                    // It was closed and is about to open
-                    selectedCategory = e.target.textContent.trim();
-                }
+            if (e.target.id === 'print-all-btn') {
+                printAllParticipantLists();
             }
         });
         
-        function openEditModal(regId) {
-            const registration = appData.registrations[regId];
-            if (!registration) return;
-
-            const program = appData.programs[registration.programId];
-            const teamId = Object.keys(appData.teams).find(id => appData.teams[id].name === registration.teamName);
-            
-            let studentsForProgram;
-            if(currentUser.type === 'admin') {
-                studentsForProgram = getDataAsArray('students').filter(s => s.category === program.category);
-            } else {
-                studentsForProgram = getDataAsArray('students').filter(s => s.teamId === teamId && s.category === program.category);
+        document.addEventListener('change', e => {
+            if (e.target.matches('.toggle-checkbox')) {
+                const programId = e.target.dataset.programId;
+                if (e.target.checked) {
+                    db.ref(`registrationPrograms/${programId}`).set(true);
+                } else {
+                    db.ref(`registrationPrograms/${programId}`).remove();
+                }
             }
-
-            const modalHTML = `
-                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-8 relative transform transition-all" style="animation: fadeIn 0.3s ease-out;">
-                        <button class="close-modal-btn absolute top-4 right-4 text-gray-400 hover:text-gray-800 text-2xl">&times;</button>
-                        <h3 class="text-2xl font-bold mb-4">Edit Registration</h3>
-                        <p class="mb-6 text-gray-600">For ${program.name}</p>
-                        <form id="edit-registration-form" class="space-y-4">
-                            <input type="hidden" name="registrationId" value="${regId}">
-                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Participant</label>
-                                <select name="studentId" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
-                                    ${studentsForProgram.map(s => `<option value="${s.id}" ${s.id === registration.studentId ? 'selected' : ''}>${s.name} (${s.chestNo})</option>`).join('')}
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Title of Piece</label>
-                                <input type="text" name="pieceTitle" value="${registration.pieceTitle}" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
-                            </div>
-                                <div>
-                                <label class="block text-sm font-medium text-gray-700">First Line of Piece</label>
-                                <input type="text" name="firstLine" value="${registration.firstLine}" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">YouTube Link (Optional)</label>
-                                <input type="url" name="youtubeLink" value="${registration.youtubeLink || ''}" class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm" placeholder="https://youtube.com/...">
-                            </div>
-                            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md font-semibold hover:bg-indigo-700">Save Changes</button>
-                        </form>
-                    </div>
-                </div>
-            `;
-             const modalContainer = document.getElementById('modal-container');
-            modalContainer.innerHTML = modalHTML;
-            modalContainer.classList.remove('hidden');
-        }
-
-        function closeModal() {
-            const modalContainer = document.getElementById('modal-container');
-            modalContainer.classList.add('hidden');
-            modalContainer.innerHTML = '';
-        }
+        });
 
         // --- INITIALIZATION ---
         function initializeApp() {
@@ -646,8 +587,8 @@
                     students: data.students || {},
                     teams: data.teams || {},
                     programs: data.programs || {},
-                    registrationPrograms: data.registrationPrograms || {},
-                    registrations: data.registrations || {}
+                    participantRegistrations: data.participantRegistrations || {},
+                    registrationPrograms: data.registrationPrograms || {}
                 };
                 renderApp();
             });
