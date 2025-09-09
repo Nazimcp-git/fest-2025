@@ -68,14 +68,6 @@
         .toggle-checkbox:checked + .toggle-label {
             background-color: #4f46e5;
         }
-        
-
-        @media only screen and (max-width: 600px) {
-            .px-6 {
-                padding-left: 0.5rem;
-    padding-right: 0.5rem;
-            }
-        }
     </style>
 </head>
 <body class="antialiased text-gray-800">
@@ -93,7 +85,7 @@
 
     <script type="module">
         // --- FIREBASE CONFIGURATION ---
-        const firebaseConfig = {
+       const firebaseConfig = {
             apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
             authDomain: "shopping-e284c.firebaseapp.com",
             databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
@@ -114,6 +106,7 @@
         };
 
         const CATEGORIES = ["BIDAYA", "UOOLA", "THANIYA", "THANAWIYYA", "ALIYA", "KULLIYYA"];
+
 
         // --- INITIALIZE FIREBASE ---
         firebase.initializeApp(firebaseConfig);
@@ -138,7 +131,7 @@
                     </div>
                 </nav>
                 <main id="main-content" class="py-10 flex-grow">
-                    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 px-6" > 
+                    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 px-6">
                         ${content}
                     </div>
                 </main>
@@ -448,6 +441,11 @@
         function printAllParticipantLists() {
             const allPrograms = getDataAsArray('programs').sort((a,b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
             const registrations = appData.participantRegistrations || {};
+            const teams = getDataAsArray('teams').sort((a, b) => a.name.localeCompare(b.name));
+            const teamIdMap = teams.reduce((acc, team) => {
+                acc[team.id] = team.name;
+                return acc;
+            }, {});
             
             const programsToPrint = allPrograms.filter(p => registrations[p.id] && Object.values(registrations[p.id]).flat().length > 0);
 
@@ -470,9 +468,34 @@
             programPairs.forEach(pair => {
                 printHTML += `<div class="print-page" style="display: flex; justify-content: space-between; gap: 2cm;">`;
                 pair.forEach(program => {
-                     const programRegistrations = registrations[program.id] || {};
-                     const participantIds = Object.values(programRegistrations).flat();
-                     if(participantIds.length > 0) {
+                    const programRegistrations = registrations[program.id] || {};
+                    
+                    // --- START: New Shuffling Logic ---
+                    const registrationsByTeam = {};
+                    let maxParticipants = 0;
+                    
+                    teams.forEach(team => {
+                        const teamRegs = programRegistrations[team.id];
+                        if (teamRegs && teamRegs.length > 0) {
+                            registrationsByTeam[team.id] = teamRegs;
+                            if (teamRegs.length > maxParticipants) {
+                                maxParticipants = teamRegs.length;
+                            }
+                        }
+                    });
+
+                    const shuffledParticipantIds = [];
+                    for (let i = 0; i < maxParticipants; i++) {
+                        teams.forEach(team => {
+                            if (registrationsByTeam[team.id] && registrationsByTeam[team.id][i]) {
+                                shuffledParticipantIds.push(registrationsByTeam[team.id][i]);
+                            }
+                        });
+                    }
+                    // --- END: New Shuffling Logic ---
+
+
+                     if(shuffledParticipantIds.length > 0) {
                          printHTML += `
                             <div style="width: 48%;">
                                 <h3 style="font-size: 14pt; margin: 0 0 0.5rem 0; font-weight: bold;">${program.name} <span style="font-weight: normal; color: #555;">(${program.category})</span></h3>
@@ -486,7 +509,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        ${participantIds.map(studentId => {
+                                        ${shuffledParticipantIds.map(studentId => {
                                             const student = appData.students[studentId];
                                             return `
                                             <tr style="border-bottom: 1px solid #eee;">
