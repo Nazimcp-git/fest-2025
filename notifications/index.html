@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Center</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons for a nice touch -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        /* Using the Inter font family */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; /* slate-100 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; /* slate-300 */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; /* slate-400 */
+        }
+        /* Simple animation for notification cards */
+        .notification-card {
+            transform-origin: top;
+            animation: slide-down 0.5s ease-out forwards;
+        }
+        @keyframes slide-down {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 transition-colors duration-300">
+
+    <!-- Main Application Container -->
+    <div id="app" class="min-h-screen container mx-auto p-4 md:p-8">
+        
+        <!-- Header -->
+        <header class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+            <div class="flex items-center gap-3">
+                <i class="ph ph-bell-ringing text-4xl text-sky-500"></i>
+                <h1 class="text-3xl font-bold text-slate-900">Notification Center</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="enable-notifications-btn" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-1.5 px-3 text-sm rounded-lg flex items-center gap-2 transition-transform duration-200 hover:scale-105">
+                    <i class="ph ph-bell-plus"></i>
+                    <span>Enable Notifications</span>
+                </button>
+                <button id="admin-panel-btn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-1.5 px-3 text-sm rounded-lg flex items-center gap-2 transition-all duration-200 hover:scale-105">
+                     <i class="ph ph-user-gear"></i>
+                    <span>Admin Panel</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Notification List -->
+        <main id="notifications-list" class="grid gap-4 md:gap-6">
+            <!-- Notifications will be dynamically inserted here -->
+            <div id="loading-spinner" class="flex justify-center items-center py-12">
+                 <div class="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-sky-500"></div>
+            </div>
+        </main>
+        
+        <!-- Admin Panel (Initially Hidden) -->
+        <div id="admin-panel" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-lg relative border border-slate-200">
+                <button id="close-admin-btn" class="absolute top-4 right-4 text-slate-500 hover:text-slate-800 transition-colors">
+                    <i class="ph ph-x text-2xl"></i>
+                </button>
+                <h2 class="text-2xl font-bold mb-6 text-slate-900">Admin Panel</h2>
+                <form id="notification-form" class="space-y-4">
+                    <div>
+                        <label for="title" class="block mb-2 text-sm font-medium text-slate-600">Title</label>
+                        <input type="text" id="title" class="bg-slate-100 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-full p-2.5" placeholder="New Feature Announcement" required>
+                    </div>
+                    <div>
+                        <label for="content" class="block mb-2 text-sm font-medium text-slate-600">Content</label>
+                        <textarea id="content" rows="4" class="bg-slate-100 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-full p-2.5" placeholder="Describe the notification..." required></textarea>
+                    </div>
+                    <div>
+                        <label for="link" class="block mb-2 text-sm font-medium text-slate-600">Link (Optional)</label>
+                        <input type="url" id="link" class="bg-slate-100 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-full p-2.5" placeholder="https://example.com/more-info">
+                    </div>
+                    <button type="submit" class="w-full text-white bg-sky-600 hover:bg-sky-700 focus:ring-4 focus:outline-none focus:ring-sky-300 font-medium rounded-lg text-sm px-5 py-3 text-center transition-transform duration-200 hover:scale-105">Post Notification</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notification for feedback -->
+    <div id="toast" class="hidden fixed bottom-5 right-5 bg-green-500 text-white py-3 px-6 rounded-lg shadow-lg text-center z-50 transition-opacity duration-300">
+        <p id="toast-message">This is a toast message!</p>
+    </div>
+
+    <!-- Firebase SDKs (v8.10.0) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+    <script type="module">
+        // --- IMPORTANT: CONFIGURE FIREBASE HERE ---
+        // Replace with your own Firebase project configuration.
+        // You can get this from your Firebase project settings.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
+            authDomain: "shopping-e284c.firebaseapp.com",
+            databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
+            projectId: "shopping-e284c",
+            storageBucket: "shopping-e284c.appspot.com",
+            messagingSenderId: "248274428739",
+            appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
+            measurementId: "G-ZXZCK9BW7T"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        // --- DOM ELEMENT REFERENCES ---
+        const notificationsList = document.getElementById('notifications-list');
+        const adminPanelBtn = document.getElementById('admin-panel-btn');
+        const adminPanel = document.getElementById('admin-panel');
+        const closeAdminBtn = document.getElementById('close-admin-btn');
+        const notificationForm = document.getElementById('notification-form');
+        const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+
+        // --- AUTHENTICATION ---
+        // Sign in anonymously to secure Firestore with rules
+        
+
+        // --- UI LOGIC ---
+        
+        // Function to show toast messages
+        function showToast(message, type = 'success') {
+            toastMessage.textContent = message;
+            toast.classList.remove('hidden', 'bg-green-500', 'bg-red-500', 'bg-blue-500');
+            
+            if (type === 'success') {
+                toast.classList.add('bg-green-500');
+            } else if (type === 'error') {
+                toast.classList.add('bg-red-500');
+            } else {
+                toast.classList.add('bg-blue-500');
+            }
+            
+            toast.style.opacity = 1;
+            setTimeout(() => {
+                toast.style.opacity = 0;
+                 setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3000);
+        }
+
+        // Open Admin Panel
+        adminPanelBtn.addEventListener('click', () => {
+            // In a real app, you would have a proper login system.
+            // For this demo, we'll use a simple prompt for a password.
+            const password = prompt('Enter admin password:');
+            if (password === 'admin123') { // Simple placeholder password
+                adminPanel.classList.remove('hidden');
+            } else if (password !== null) {
+                showToast('Incorrect password.', 'error');
+            }
+        });
+
+        // Close Admin Panel
+        closeAdminBtn.addEventListener('click', () => {
+            adminPanel.classList.add('hidden');
+        });
+        
+        // Also close on clicking background
+         adminPanel.addEventListener('click', (e) => {
+            if (e.target === adminPanel) {
+                 adminPanel.classList.add('hidden');
+            }
+        });
+
+
+        // --- DATABASE LOGIC ---
+        
+        // Listen for real-time updates to notifications from REALTIME DATABASE
+        const notificationsRef = db.ref('notifications').orderByChild('timestamp');
+        notificationsRef.on('value', snapshot => {
+            // Hide spinner once data is loaded
+            if (loadingSpinner) {
+                loadingSpinner.style.display = 'none';
+            }
+
+            notificationsList.innerHTML = ''; // Clear existing notifications
+            if (!snapshot.exists()) {
+                notificationsList.innerHTML = `<div class="text-center text-slate-500 py-10">
+                    <i class="ph ph-bell-slash text-5xl mb-2"></i>
+                    <p>No notifications yet. Check back soon!</p>
+                </div>`;
+                return;
+            }
+            
+            const notificationsData = [];
+            snapshot.forEach(childSnapshot => {
+                // Attach the key to the data object for potential future use (e.g., deleting)
+                const notification = childSnapshot.val();
+                notification.key = childSnapshot.key;
+                notificationsData.push(notification);
+            });
+
+            // Reverse to show newest first
+            notificationsData.reverse().forEach(notification => {
+                const card = createNotificationCard(notification);
+                notificationsList.appendChild(card);
+            });
+        }, error => {
+            console.error("Error fetching notifications: ", error);
+             if (loadingSpinner) {
+                loadingSpinner.style.display = 'none';
+            }
+            notificationsList.innerHTML = `<div class="text-center text-red-500 py-10">
+                <i class="ph ph-warning-circle text-5xl mb-2"></i>
+                <p>Failed to load notifications. Please check your connection or Firebase configuration.</p>
+            </div>`;
+        });
+        
+        // Create HTML element for a single notification
+        function createNotificationCard(notification) {
+            const card = document.createElement('div');
+            card.className = 'notification-card bg-white p-5 rounded-xl shadow-sm border border-slate-200';
+            
+            const date = new Date(notification.timestamp).toLocaleString() || new Date().toLocaleString();
+
+            let linkHtml = '';
+            if (notification.link) {
+                linkHtml = `<a href="${notification.link}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sky-500 hover:text-sky-600 font-semibold mt-3 group text-sm">
+                                Get Link
+                                <i class="ph ph-arrow-right transition-transform group-hover:translate-x-1"></i>
+                           </a>`;
+            }
+
+            card.innerHTML = `
+                <div class="flex-grow">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-500">
+                                <i class="ph ph-info text-xl"></i>
+                            </span>
+                            <h3 class="font-semibold text-slate-900">${notification.title}</h3>
+                        </div>
+                        <p class="text-xs text-slate-500 flex-shrink-0 ml-4">${date}</p>
+                    </div>
+                    <div class="pl-13 ml-1"> <!-- Indent content to align with title -->
+                        <p class="text-sm text-slate-600">${notification.content}</p>
+                        ${linkHtml}
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        // Handle new notification form submission
+        notificationForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const title = notificationForm.title.value;
+            const content = notificationForm.content.value;
+            const link = notificationForm.link.value;
+            
+            try {
+                // Get a new push key
+                const newNotificationRef = db.ref('notifications').push();
+                await newNotificationRef.set({
+                    title: title,
+                    content: content,
+                    link: link,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                
+                notificationForm.reset();
+                adminPanel.classList.add('hidden');
+                showToast('Notification posted successfully!', 'success');
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                showToast('Failed to post notification.', 'error');
+            }
+        });
+
+        // --- BROWSER NOTIFICATIONS ---
+        enableNotificationsBtn.addEventListener('click', requestNotificationPermission);
+        
+        function requestNotificationPermission() {
+            if (!('Notification' in window)) {
+                showToast('This browser does not support desktop notifications.', 'error');
+                return;
+            }
+
+            switch(Notification.permission) {
+                case 'granted':
+                    showToast('Notification permissions already granted!', 'info');
+                    // In a full app, you would get the FCM token here and save it.
+                    break;
+                case 'denied':
+                    showToast('Notification permissions have been blocked.', 'error');
+                    break;
+                default: // 'default' or 'prompt'
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            showToast('Notification permissions granted!', 'success');
+                            // You can now show notifications. For a real push system,
+                            // you'd get the device token here.
+                            new Notification('Thanks for subscribing!', {
+                                body: 'You will now receive updates from us.',
+                                icon: 'https://placehold.co/48x48/0ea5e9/ffffff?text=N'
+                            });
+                        } else {
+                            showToast('Notification permissions were not granted.', 'error');
+                        }
+                    });
+                    break;
+            }
+        }
+    </script>
+
+</body>
+</html>
+
