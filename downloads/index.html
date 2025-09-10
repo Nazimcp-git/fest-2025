@@ -137,10 +137,7 @@
         const uploadBtn = document.getElementById('upload-btn');
 
         // --- AUTHENTICATION ---
-        auth.signInAnonymously().catch((error) => {
-            console.error("Anonymous sign-in failed:", error);
-            showToast('Could not connect to the service.', 'error');
-        });
+       
 
         // --- UI LOGIC ---
         function showToast(message, type = 'success') {
