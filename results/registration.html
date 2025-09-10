@@ -30,6 +30,10 @@
             color: #4f46e5; 
             background-color: #eef2ff; 
         }
+        .category-filter-btn.active {
+            background-color: #4f46e5;
+            color: white;
+        }
         /* Print Styles */
         @media print {
             body > *:not(#print-area) {
@@ -85,7 +89,7 @@
 
     <script type="module">
         // --- FIREBASE CONFIGURATION ---
-       const firebaseConfig = {
+        const firebaseConfig = {
             apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
             authDomain: "shopping-e284c.firebaseapp.com",
             databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
@@ -107,7 +111,6 @@
 
         const CATEGORIES = ["BIDAYA", "UOOLA", "THANIYA", "THANAWIYYA", "ALIYA", "KULLIYYA"];
 
-
         // --- INITIALIZE FIREBASE ---
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -118,6 +121,7 @@
         let selectedProgramId = null;
         let selectedCategory = null;
         let activeAdminTab = 'overview';
+        let studentStatsFilter = 'All';
 
         // --- UI COMPONENTS & TEMPLATES ---
         const AppShell = (content) => `
@@ -193,6 +197,9 @@
                 case 'settings':
                     content = renderAdminSettings();
                     break;
+                case 'stats':
+                    content = renderStudentStatsPage();
+                    break;
             }
              return `
                 <div>
@@ -204,10 +211,11 @@
                     <div class="border-b border-gray-200 mb-6">
                         <nav id="admin-tabs" class="-mb-px flex space-x-8" aria-label="Tabs">
                             <button data-tab="overview" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeAdminTab === 'overview' ? 'active' : ''}">Registration Overview</button>
+                            <button data-tab="stats" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeAdminTab === 'stats' ? 'active' : ''}">Student Stats</button>
                             <button data-tab="settings" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeAdminTab === 'settings' ? 'active' : ''}">Settings</button>
                         </nav>
                     </div>
-                    <main>
+                    <main id="admin-tab-content">
                        ${content}
                     </main>
                 </div>
@@ -306,6 +314,66 @@
                             </div>
                             `
                         }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStudentStatsPage() {
+            const allStudents = getDataAsArray('students');
+            const registrations = appData.participantRegistrations || {};
+            const activeRegProgramIds = Object.keys(appData.registrationPrograms || {});
+
+            allStudents.forEach(student => {
+                student.registrationCount = 0;
+                activeRegProgramIds.forEach(progId => {
+                    const programRegs = registrations[progId] || {};
+                    const teamRegs = programRegs[student.teamId] || [];
+                    if (teamRegs.includes(student.id)) {
+                        student.registrationCount++;
+                    }
+                });
+            });
+
+            const filteredStudents = studentStatsFilter === 'All'
+                ? allStudents
+                : allStudents.filter(s => s.category === studentStatsFilter);
+
+            filteredStudents.sort((a, b) => b.registrationCount - a.registrationCount);
+
+            const filterButtons = ['All', ...CATEGORIES];
+
+            return `
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4">Student Registration Stats</h2>
+                    <div id="student-stats-filter-container" class="mb-6 flex flex-wrap gap-2">
+                        ${filterButtons.map(status => `
+                            <button data-status="${status}" class="category-filter-btn px-4 py-2 text-sm font-medium rounded-full transition-colors ${studentStatsFilter === status ? 'active' : 'bg-gray-100 text-gray-700'}">${status}</button>
+                        `).join('')}
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                             <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
+                                    ${studentStatsFilter === 'All' ? `<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>` : ''}
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registrations</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                ${filteredStudents.map((student, index) => `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${student.name} <span class="text-gray-500">(${student.chestNo})</span></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${appData.teams[student.teamId]?.name || 'N/A'}</td>
+                                         ${studentStatsFilter === 'All' ? `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.category}</td>` : ''}
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">${student.registrationCount}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             `;
@@ -442,10 +510,6 @@
             const allPrograms = getDataAsArray('programs').sort((a,b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
             const registrations = appData.participantRegistrations || {};
             const teams = getDataAsArray('teams').sort((a, b) => a.name.localeCompare(b.name));
-            const teamIdMap = teams.reduce((acc, team) => {
-                acc[team.id] = team.name;
-                return acc;
-            }, {});
             
             const programsToPrint = allPrograms.filter(p => registrations[p.id] && Object.values(registrations[p.id]).flat().length > 0);
 
@@ -468,9 +532,8 @@
             programPairs.forEach(pair => {
                 printHTML += `<div class="print-page" style="display: flex; justify-content: space-between; gap: 2cm;">`;
                 pair.forEach(program => {
-                    const programRegistrations = registrations[program.id] || {};
-                    
-                    // --- START: New Shuffling Logic ---
+                     const programRegistrations = registrations[program.id] || {};
+                     
                     const registrationsByTeam = {};
                     let maxParticipants = 0;
                     
@@ -492,8 +555,6 @@
                             }
                         });
                     }
-                    // --- END: New Shuffling Logic ---
-
 
                      if(shuffledParticipantIds.length > 0) {
                          printHTML += `
@@ -589,7 +650,7 @@
              if (e.target.id === 'logout-btn') {
                 currentUser = null;
                 sessionStorage.removeItem('user');
-                activeAdminTab = 'overview'; // Reset tab on logout
+                activeAdminTab = 'overview';
                 renderApp();
             }
             if (e.target.closest('.admin-tab')) {
@@ -612,6 +673,10 @@
             }
             if (e.target.id === 'print-all-btn') {
                 printAllParticipantLists();
+            }
+            if (e.target.matches('#student-stats-filter-container .category-filter-btn')) {
+                studentStatsFilter = e.target.dataset.status;
+                renderApp();
             }
         });
         
