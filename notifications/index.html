@@ -70,10 +70,7 @@
                     <i class="ph ph-bell-plus"></i>
                     <span>Enable Notifications</span>
                 </button>
-                <button id="admin-panel-btn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-1.5 px-3 text-sm rounded-lg flex items-center gap-2 transition-all duration-200 hover:scale-105">
-                     <i class="ph ph-user-gear"></i>
-                    <span>Admin Panel</span>
-                </button>
+                
             </div>
         </header>
 
@@ -179,16 +176,7 @@
         }
 
         // Open Admin Panel
-        adminPanelBtn.addEventListener('click', () => {
-            // In a real app, you would have a proper login system.
-            // For this demo, we'll use a simple prompt for a password.
-            const password = prompt('Enter admin password:');
-            if (password === 'admin@notification') { // Simple placeholder password
-                adminPanel.classList.remove('hidden');
-            } else if (password !== null) {
-                showToast('Incorrect password.', 'error');
-            }
-        });
+        
 
         // Close Admin Panel
         closeAdminBtn.addEventListener('click', () => {
