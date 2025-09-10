@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Downloads - Information Hub</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons for a nice touch -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .new-card { transform-origin: top; animation: slide-down 0.5s ease-out forwards; }
+        @keyframes slide-down {
+            from { opacity: 0; transform: translateY(-20px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <!-- Main Application Container -->
+    <div id="app" class="min-h-screen container mx-auto p-4 md:p-8">
+        
+        <!-- Header -->
+        <header class="flex flex-col sm:flex-row justify-between items-start mb-8 gap-6">
+            <div class="flex items-center gap-3">
+                <i class="ph ph-download text-4xl text-sky-500"></i>
+                <h1 class="text-3xl font-bold text-slate-900">Downloads</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                 <button id="admin-panel-btn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-1.5 px-3 text-sm rounded-lg flex items-center gap-2 transition-all duration-200 hover:scale-105">
+                     <i class="ph ph-user-gear"></i>
+                    <span>Admin Panel</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Page Navigation Tabs -->
+        
+
+        <!-- Main Content Area -->
+        <main>
+            <!-- Downloads List -->
+            <div id="downloads-page" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                <!-- Downloads will be dynamically inserted here -->
+            </div>
+
+            <div id="loading-spinner" class="flex justify-center items-center py-12">
+                 <div class="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-sky-500"></div>
+            </div>
+        </main>
+        
+        <!-- Admin Panel (Initially Hidden) -->
+        <div id="admin-panel" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+            <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-lg relative border border-slate-200">
+                <button id="close-admin-btn" class="absolute top-4 right-4 text-slate-500 hover:text-slate-800 transition-colors">
+                    <i class="ph ph-x text-2xl"></i>
+                </button>
+                <h2 class="text-2xl font-bold mb-6 text-slate-900">Upload Document</h2>
+                
+                <!-- Download Form -->
+                <form id="download-form" class="space-y-4">
+                    <div>
+                        <label for="heading" class="block mb-2 text-sm font-medium text-slate-600">Document Heading</label>
+                        <input type="text" id="heading" class="bg-slate-100 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-full p-2.5" placeholder="e.g., Program Schedule Q4" required>
+                    </div>
+                    <div>
+                        <label for="file" class="block mb-2 text-sm font-medium text-slate-600">File (PDF, DOCX, etc.)</label>
+                        <input type="file" id="file" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100" required>
+                    </div>
+                     <div id="upload-progress-container" class="hidden w-full bg-slate-200 rounded-full h-2.5">
+                        <div id="upload-progress-bar" class="bg-sky-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <button type="submit" id="upload-btn" class="w-full text-white bg-sky-600 hover:bg-sky-700 focus:ring-4 focus:outline-none focus:ring-sky-300 font-medium rounded-lg text-sm px-5 py-3 text-center transition-transform duration-200 hover:scale-105 flex items-center justify-center gap-2">
+                        <i class="ph ph-upload-simple"></i>
+                        <span>Upload Document</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notification for feedback -->
+    <div id="toast" class="hidden fixed bottom-5 right-5 bg-green-500 text-white py-3 px-6 rounded-lg shadow-lg text-center z-50 transition-opacity duration-300">
+        <p id="toast-message"></p>
+    </div>
+
+    <!-- Firebase SDKs (v8.10.0) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+
+    <script type="module">
+        // --- IMPORTANT: CONFIGURE FIREBASE HERE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
+            authDomain: "shopping-e284c.firebaseapp.com",
+            databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
+            projectId: "shopping-e284c",
+            storageBucket: "shopping-e284c.appspot.com",
+            messagingSenderId: "248274428739",
+            appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
+            measurementId: "G-ZXZCK9BW7T"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+        const storage = firebase.storage();
+
+        // --- DOM ELEMENT REFERENCES ---
+        const downloadsPage = document.getElementById('downloads-page');
+        const adminPanelBtn = document.getElementById('admin-panel-btn');
+        const adminPanel = document.getElementById('admin-panel');
+        const closeAdminBtn = document.getElementById('close-admin-btn');
+        const downloadForm = document.getElementById('download-form');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        const uploadProgressContainer = document.getElementById('upload-progress-container');
+        const uploadProgressBar = document.getElementById('upload-progress-bar');
+        const uploadBtn = document.getElementById('upload-btn');
+
+        // --- AUTHENTICATION ---
+        auth.signInAnonymously().catch((error) => {
+            console.error("Anonymous sign-in failed:", error);
+            showToast('Could not connect to the service.', 'error');
+        });
+
+        // --- UI LOGIC ---
+        function showToast(message, type = 'success') {
+            toastMessage.textContent = message;
+            toast.classList.remove('hidden', 'bg-green-500', 'bg-red-500', 'bg-blue-500');
+            if (type === 'success') toast.classList.add('bg-green-500');
+            else if (type === 'error') toast.classList.add('bg-red-500');
+            else toast.classList.add('bg-blue-500');
+            toast.style.opacity = 1;
+            setTimeout(() => {
+                toast.style.opacity = 0;
+                 setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3000);
+        }
+
+        adminPanelBtn.addEventListener('click', () => {
+            const password = prompt('Enter admin password:');
+            if (password === '7025604804') {
+                adminPanel.classList.remove('hidden');
+            } else if (password !== null) {
+                showToast('Incorrect password.', 'error');
+            }
+        });
+
+        closeAdminBtn.addEventListener('click', () => adminPanel.classList.add('hidden'));
+        adminPanel.addEventListener('click', (e) => {
+            if (e.target === adminPanel) adminPanel.classList.add('hidden');
+        });
+
+        // --- DATABASE LOGIC ---
+        const downloadsRef = db.ref('downloads').orderByChild('timestamp');
+        downloadsRef.on('value', snapshot => {
+            loadingSpinner.style.display = 'none';
+            downloadsPage.innerHTML = '';
+            if (!snapshot.exists()) {
+                 downloadsPage.innerHTML = `<div class="text-center text-slate-500 py-10 col-span-full">
+                    <i class="ph ph-file-dashed text-5xl mb-2"></i><p>No documents available.</p></div>`;
+                return;
+            }
+            const data = [];
+            snapshot.forEach(child => { data.push({ key: child.key, ...child.val() }); });
+            data.reverse().forEach(item => downloadsPage.appendChild(createDownloadCard(item)));
+        }, error => {
+             console.error("Error fetching downloads: ", error);
+             loadingSpinner.style.display = 'none';
+             downloadsPage.innerHTML = `<div class="text-center text-red-500 py-10 col-span-full"><i class="ph ph-warning-circle text-5xl mb-2"></i><p>Failed to load documents.</p></div>`;
+        });
+        
+        // --- CARD CREATION ---
+        function createDownloadCard(doc) {
+            const card = document.createElement('div');
+            card.className = 'new-card bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between';
+            card.innerHTML = `<div><div class="flex items-center gap-3 mb-2"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-500"><i class="ph ph-file-arrow-down text-xl"></i></span><h3 class="font-semibold text-slate-900">${doc.heading}</h3></div><p class="text-xs text-slate-500 pl-13 ml-1">${doc.filename}</p></div><a href="${doc.url}" target="_blank" download class="mt-4 w-full text-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg text-sm px-4 py-2 transition-colors">Download</a>`;
+            return card;
+        }
+
+        // --- FORM SUBMISSIONS ---
+        downloadForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const heading = downloadForm.heading.value;
+            const file = downloadForm.file.files[0];
+            if (!file) {
+                showToast('Please select a file to upload.', 'error');
+                return;
+            }
+
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = `<div class="w-5 h-5 border-2 border-dashed rounded-full animate-spin border-white"></div><span>Uploading...</span>`;
+            uploadProgressContainer.classList.remove('hidden');
+
+            const storageRef = storage.ref(`downloads/${Date.now()}_${file.name}`);
+            const uploadTask = storageRef.put(file);
+
+            uploadTask.on('state_changed', 
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    uploadProgressBar.style.width = progress + '%';
+                }, 
+                (error) => {
+                    console.error('Upload failed:', error);
+                    showToast('File upload failed.', 'error');
+                    resetUploadButton();
+                }, 
+                () => {
+                    uploadTask.snapshot.ref.getDownloadURL().then(async (downloadURL) => {
+                        await db.ref('downloads').push().set({
+                            heading: heading,
+                            filename: file.name,
+                            url: downloadURL,
+                            timestamp: firebase.database.ServerValue.TIMESTAMP
+                        });
+
+                        downloadForm.reset();
+                        adminPanel.classList.add('hidden');
+                        showToast('Document uploaded successfully!', 'success');
+                        resetUploadButton();
+                    });
+                }
+            );
+        });
+
+        function resetUploadButton() {
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = `<i class="ph ph-upload-simple"></i><span>Upload Document</span>`;
+            uploadProgressContainer.classList.add('hidden');
+            uploadProgressBar.style.width = '0%';
+        }
+    </script>
+</body>
+</html>
