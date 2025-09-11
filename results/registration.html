@@ -25,7 +25,7 @@
             box-shadow: 0 0 0 3px #4f46e5;
             transform: scale(1.02);
         }
-        .admin-tab.active { 
+        .admin-tab.active, .team-tab.active { 
             border-color: #4f46e5; 
             color: #4f46e5; 
             background-color: #eef2ff; 
@@ -86,6 +86,7 @@
     <!-- Firebase SDKs (Version 8.10.0) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
     <script type="module">
         // --- FIREBASE CONFIGURATION ---
@@ -121,6 +122,7 @@
         let selectedProgramId = null;
         let selectedCategory = null;
         let activeAdminTab = 'overview';
+        let activeTeamTab = 'register';
         let studentStatsFilter = 'All';
 
         // --- UI COMPONENTS & TEMPLATES ---
@@ -296,20 +298,34 @@
             return `
                 <div class="bg-white p-6 rounded-xl shadow-lg">
                     <h2 class="text-2xl font-bold mb-4">Registration Program Settings</h2>
-                    <p class="text-gray-600 mb-6">Use the toggles to activate or deactivate programs for team registration.</p>
+                    <p class="text-gray-600 mb-6">Use the toggles to activate or deactivate programs for team registration and mark group events.</p>
                     <div class="space-y-4">
                         ${allPrograms.map(p => {
                             const isActive = activeRegProgramIds.includes(p.id);
+                            const isGroup = p.isGroup || false;
                             return `
-                            <div class="flex justify-between items-center bg-gray-50 p-4 rounded-md">
+                            <div class="flex flex-col md:flex-row justify-between md:items-center bg-gray-50 p-4 rounded-md gap-4">
                                 <div>
                                     <p class="font-semibold">${p.name}</p>
                                     <p class="text-sm text-gray-500">${p.category}</p>
                                 </div>
-                                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                                    <input type="checkbox" name="toggle" id="toggle-${p.id}" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" 
-                                        data-program-id="${p.id}" ${isActive ? 'checked' : ''}/>
-                                    <label for="toggle-${p.id}" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                <div class="flex items-center gap-6">
+                                    <div class="flex items-center">
+                                        <label for="group-toggle-${p.id}" class="text-sm font-medium text-gray-700">Group Event</label>
+                                        <div class="relative inline-block w-10 ml-2 align-middle select-none transition duration-200 ease-in">
+                                            <input type="checkbox" name="group-toggle" id="group-toggle-${p.id}" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" 
+                                                data-program-id="${p.id}" ${isGroup ? 'checked' : ''}/>
+                                            <label for="group-toggle-${p.id}" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                        </div>
+                                    </div>
+                                     <div class="flex items-center">
+                                        <label for="reg-toggle-${p.id}" class="text-sm font-medium text-gray-700">Registration On</label>
+                                        <div class="relative inline-block w-10 ml-2 align-middle select-none transition duration-200 ease-in">
+                                            <input type="checkbox" name="reg-toggle" id="reg-toggle-${p.id}" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" 
+                                                data-program-id="${p.id}" ${isActive ? 'checked' : ''}/>
+                                            <label for="reg-toggle-${p.id}" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             `
@@ -319,7 +335,7 @@
             `;
         }
 
-        function renderStudentStatsPage() {
+        function renderStudentStatsPage(activeCategory = studentStatsFilter) {
             const allStudents = getDataAsArray('students');
             const registrations = appData.participantRegistrations || {};
             const activeRegProgramIds = Object.keys(appData.registrationPrograms || {});
@@ -327,17 +343,20 @@
             allStudents.forEach(student => {
                 student.registrationCount = 0;
                 activeRegProgramIds.forEach(progId => {
-                    const programRegs = registrations[progId] || {};
-                    const teamRegs = programRegs[student.teamId] || [];
-                    if (teamRegs.includes(student.id)) {
-                        student.registrationCount++;
+                    const program = appData.programs[progId];
+                    if(program && !program.isGroup) { // Only count if not a group event
+                        const programRegs = registrations[progId] || {};
+                        const teamRegs = programRegs[student.teamId] || [];
+                        if (teamRegs.includes(student.id)) {
+                            student.registrationCount++;
+                        }
                     }
                 });
             });
 
-            const filteredStudents = studentStatsFilter === 'All'
+            const filteredStudents = activeCategory === 'All'
                 ? allStudents
-                : allStudents.filter(s => s.category === studentStatsFilter);
+                : allStudents.filter(s => s.category === activeCategory);
 
             filteredStudents.sort((a, b) => b.registrationCount - a.registrationCount);
 
@@ -345,10 +364,10 @@
 
             return `
                 <div class="bg-white p-6 rounded-xl shadow-lg">
-                    <h2 class="text-2xl font-bold mb-4">Student Registration Stats</h2>
+                    <h2 class="text-2xl font-bold mb-4">Student Registration Stats (Individual Events Only)</h2>
                     <div id="student-stats-filter-container" class="mb-6 flex flex-wrap gap-2">
                         ${filterButtons.map(status => `
-                            <button data-status="${status}" class="category-filter-btn px-4 py-2 text-sm font-medium rounded-full transition-colors ${studentStatsFilter === status ? 'active' : 'bg-gray-100 text-gray-700'}">${status}</button>
+                            <button data-status="${status}" class="category-filter-btn px-4 py-2 text-sm font-medium rounded-full transition-colors ${activeCategory === status ? 'active' : 'bg-gray-100 text-gray-700'}">${status}</button>
                         `).join('')}
                     </div>
                     <div class="overflow-x-auto">
@@ -358,7 +377,7 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
-                                    ${studentStatsFilter === 'All' ? `<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>` : ''}
+                                    ${activeCategory === 'All' ? `<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>` : ''}
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registrations</th>
                                 </tr>
                             </thead>
@@ -366,9 +385,11 @@
                                 ${filteredStudents.map((student, index) => `
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${student.name} <span class="text-gray-500">(${student.chestNo})</span></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            <button class="text-indigo-600 hover:underline student-info-btn" data-student-id="${student.id}">${student.name} <span class="text-gray-500">(${student.chestNo})</span></button>
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${appData.teams[student.teamId]?.name || 'N/A'}</td>
-                                         ${studentStatsFilter === 'All' ? `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.category}</td>` : ''}
+                                         ${activeCategory === 'All' ? `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.category}</td>` : ''}
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">${student.registrationCount}</td>
                                     </tr>
                                 `).join('')}
@@ -380,6 +401,36 @@
         }
 
         function renderTeamPortal() {
+            let content = '';
+            switch(activeTeamTab) {
+                case 'register':
+                    content = renderTeamRegistrationPage();
+                    break;
+                case 'roster':
+                    content = renderTeamRosterPage();
+                    break;
+            }
+             return `
+                <div>
+                    <header class="flex justify-between items-center mb-8">
+                        <div>
+                            <h1 class="text-4xl font-bold text-gray-900">Team Portal: ${currentUser.teamName}</h1>
+                        </div>
+                    </header>
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav id="team-tabs" class="-mb-px flex space-x-8" aria-label="Tabs">
+                            <button data-tab="register" class="team-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTeamTab === 'register' ? 'active' : ''}">Register for Programs</button>
+                            <button data-tab="roster" class="team-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTeamTab === 'roster' ? 'active' : ''}">My Roster</button>
+                        </nav>
+                    </div>
+                    <main id="team-tab-content">
+                       ${content}
+                    </main>
+                </div>
+             `;
+        }
+
+        function renderTeamRegistrationPage() {
              const { teamName } = currentUser;
              const registrationPrograms = getDataAsArray('programs').filter(p => appData.registrationPrograms && appData.registrationPrograms[p.id]);
              const teamId = Object.keys(appData.teams).find(id => appData.teams[id].name === teamName);
@@ -457,12 +508,7 @@
              }
 
              return `
-                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <header class="flex justify-between items-center mb-8">
-                        <div>
-                            <h1 class="text-4xl font-bold text-gray-900">Team Portal: ${teamName}</h1>
-                        </div>
-                    </header>
+                 <div>
                     <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
                         <h2 class="text-2xl font-bold text-gray-800 mb-2">Your Registration Progress</h2>
                         <p class="text-gray-500">You have registered for ${teamRegisteredCount} out of ${totalActivePrograms} available programs.</p>
@@ -504,6 +550,44 @@
                     </main>
                 </div>
              `;
+        }
+
+        function renderTeamRosterPage() {
+            const teamId = Object.keys(appData.teams).find(id => appData.teams[id].name === currentUser.teamName);
+            const teamStudents = getDataAsArray('students').filter(s => s.teamId === teamId).sort((a,b) => a.name.localeCompare(b.name));
+
+            return `
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <div class="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-4">
+                        <h2 class="text-2xl font-bold">My Roster (${teamStudents.length} Students)</h2>
+                        <button id="print-team-registrations-btn" class="bg-gray-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-gray-700 w-full md:w-auto"><i class="fas fa-print mr-2"></i>Print My Registrations</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                             <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chest No</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                ${teamStudents.map(student => `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${student.chestNo}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">${student.name}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.category}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            <button class="student-info-btn text-indigo-600 hover:underline" data-student-id="${student.id}">View Registrations</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
         }
         
         function printAllParticipantLists() {
@@ -599,10 +683,68 @@
             window.print();
             printArea.innerHTML = '';
         }
+        
+        function printTeamRegistrations() {
+            const { teamName } = currentUser;
+            const teamId = Object.keys(appData.teams).find(id => appData.teams[id].name === teamName);
+            const registrationPrograms = getDataAsArray('programs').filter(p => appData.registrationPrograms && appData.registrationPrograms[p.id]);
+            
+            const programsWithRegs = registrationPrograms.filter(p => appData.participantRegistrations?.[p.id]?.[teamId]?.length > 0)
+                .sort((a,b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+
+            if (programsWithRegs.length === 0) {
+                alert("Your team has not registered for any programs yet.");
+                return;
+            }
+
+            let printHTML = `
+                <div style="font-family: Arial, sans-serif; width: 210mm; padding: 1.5cm; box-sizing: border-box;">
+                    <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 1rem; margin-bottom: 1rem;">
+                        <h1 style="font-size: 24pt; margin: 0;">PORU 2K25</h1>
+                        <h2 style="font-size: 16pt; margin: 0.5rem 0;">${teamName} - Registration Summary</h2>
+                        <p style="font-size: 10pt; margin-top: 0.5rem;">Generated on: ${new Date().toLocaleString()}</p>
+                    </div>
+            `;
+
+            programsWithRegs.forEach(program => {
+                const participantIds = appData.participantRegistrations[program.id][teamId] || [];
+                printHTML += `
+                    <div style="margin-bottom: 2rem; page-break-inside: avoid;">
+                        <h3 style="font-size: 14pt; margin: 0 0 0.5rem 0; font-weight: bold;">${program.name} <span style="font-weight: normal; color: #555;">(${program.category})</span></h3>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 10pt;">
+                            <thead>
+                                <tr style="background-color: #eee; text-align: left;">
+                                    <th style="padding: 8px; border: 1px solid #ccc; width: 30%;">Chest No</th>
+                                    <th style="padding: 8px; border: 1px solid #ccc; width: 70%;">Name</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${participantIds.map(studentId => {
+                                    const student = appData.students[studentId];
+                                    return `
+                                    <tr style="border-bottom: 1px solid #eee;">
+                                        <td style="padding: 8px; border: 1px solid #ccc;">${student?.chestNo || 'N/A'}</td>
+                                        <td style="padding: 8px; border: 1px solid #ccc;">${student?.name || 'Unknown'}</td>
+                                    </tr>
+                                    `
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            });
+
+            printHTML += `</div>`;
+            
+            const printArea = document.getElementById('print-area');
+            printArea.innerHTML = printHTML;
+            window.print();
+            printArea.innerHTML = '';
+        }
 
         // --- EVENT LISTENERS ---
         document.addEventListener('submit', async (e) => {
-            if (e.target.id === 'login-form') {
+             if (e.target.id === 'login-form') {
                 e.preventDefault();
                 const input = document.getElementById('access-code-input');
                 const errorEl = document.getElementById('login-error');
@@ -657,6 +799,10 @@
                 activeAdminTab = e.target.closest('.admin-tab').dataset.tab;
                 renderApp();
             }
+            if (e.target.closest('.team-tab')) {
+                activeTeamTab = e.target.closest('.team-tab').dataset.tab;
+                renderApp();
+            }
             const programButton = e.target.closest('.program-select-btn');
             if(programButton) {
                 selectedProgramId = programButton.dataset.programId;
@@ -674,22 +820,79 @@
             if (e.target.id === 'print-all-btn') {
                 printAllParticipantLists();
             }
+            if (e.target.id === 'print-team-registrations-btn') {
+                printTeamRegistrations();
+            }
             if (e.target.matches('#student-stats-filter-container .category-filter-btn')) {
                 studentStatsFilter = e.target.dataset.status;
                 renderApp();
+            }
+             if (e.target.closest('.student-info-btn')) {
+                openStudentRegistrationsModal(e.target.closest('.student-info-btn').dataset.studentId);
+            }
+            if (e.target.closest('.close-modal-btn')) {
+                closeModal();
             }
         });
         
         document.addEventListener('change', e => {
             if (e.target.matches('.toggle-checkbox')) {
                 const programId = e.target.dataset.programId;
-                if (e.target.checked) {
-                    db.ref(`registrationPrograms/${programId}`).set(true);
-                } else {
-                    db.ref(`registrationPrograms/${programId}`).remove();
+                if(e.target.name === 'reg-toggle') {
+                    if (e.target.checked) {
+                        db.ref(`registrationPrograms/${programId}`).set(true);
+                    } else {
+                        db.ref(`registrationPrograms/${programId}`).remove();
+                    }
+                } else if (e.target.name === 'group-toggle') {
+                    db.ref(`programs/${programId}/isGroup`).set(e.target.checked);
                 }
             }
         });
+        
+        function openStudentRegistrationsModal(studentId) {
+            const student = appData.students[studentId];
+            if (!student) return;
+
+            const registrations = appData.participantRegistrations || {};
+            const studentRegistrations = [];
+            
+            Object.entries(registrations).forEach(([programId, teamRegs]) => {
+                const program = appData.programs[programId];
+                if (program && teamRegs[student.teamId]?.includes(studentId)) {
+                    studentRegistrations.push(program);
+                }
+            });
+
+            const modalHTML = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-8 relative transform transition-all" style="animation: fadeIn 0.3s ease-out;">
+                        <button class="close-modal-btn absolute top-4 right-4 text-gray-400 hover:text-gray-800 text-2xl">&times;</button>
+                        <h3 class="text-2xl font-bold mb-2">${student.name}</h3>
+                        <p class="text-gray-600 mb-6">Chest No: ${student.chestNo} • ${appData.teams[student.teamId]?.name}</p>
+                        
+                        <h4 class="text-lg font-semibold mb-2">Registered Programs (${studentRegistrations.length})</h4>
+                        <div class="space-y-2 max-h-64 overflow-y-auto">
+                            ${studentRegistrations.length > 0 ? studentRegistrations.map(p => `
+                                <div class="bg-gray-50 p-3 rounded-md">
+                                    <p class="font-semibold">${p.name}</p>
+                                    <p class="text-sm text-gray-500">${p.category}</p>
+                                </div>
+                            `).join('') : '<p class="text-gray-500">This student has not been registered for any programs yet.</p>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.innerHTML = modalHTML;
+            modalContainer.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.classList.add('hidden');
+            modalContainer.innerHTML = '';
+        }
 
         // --- INITIALIZATION ---
         function initializeApp() {
