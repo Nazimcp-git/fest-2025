@@ -194,7 +194,7 @@
         let appData = { teams: {}, students: {}, programs: {}, results: {}, pointsConfig: {} };
         let isInitialLoad = true;
         let tempParticipants = []; // For the new admin results form
-        let activeAdminTab = 'status'; // Default to the new status tab
+        let activeAdminTab = 'results'; // State for remembering the active admin tab
 
         // --- UI COMPONENTS & TEMPLATES ---
         const AppShell = (content) => `
@@ -243,7 +243,7 @@
                 `<a href="#/admin" class="nav-link text-gray-600 hover:bg-indigo-600 hover:text-white ${baseClasses}">Admin</a>
                  <button id="logout-btn" class="${isMobile ? 'w-full text-left ' : ''} bg-red-500 text-white ${baseClasses}">Logout</button>` :
                 `<a href="#/admin" class="nav-link text-gray-600 hover:bg-indigo-600 hover:text-white ${baseClasses}">Admin Login</a>`;
-            return links + authLinks;
+            return links ;
         };
 
         const renderLoader = () => `<div class="flex justify-center items-center p-16"><div class="loader"></div></div>`;
@@ -289,15 +289,6 @@
             } else {
                 const desktopNav = document.getElementById('desktop-nav');
                 if (desktopNav) desktopNav.innerHTML = generateNavLinks();
-                
-                if (path.startsWith('/admin') && document.getElementById('admin-tabs')) {
-                    const activeTabEl = document.querySelector('.admin-tab.active');
-                    const activeStatusEl = document.querySelector('#status-filter-container .category-filter-btn.active');
-                    const currentStatusFilter = activeStatusEl ? activeStatusEl.dataset.status : 'All';
-                    
-                    renderAdminTab(activeTabEl ? activeTabEl.dataset.tab : 'status', currentStatusFilter);
-                    return; 
-                }
             }
 
             const mainContent = appContainer.querySelector('#main-content');
@@ -348,10 +339,6 @@
                     if (e.target.matches('.remove-participant-btn')) removeParticipantFromTempList(e.target.dataset.index);
                     if (e.target.id === 'download-student-template') downloadTemplate('student');
                     if (e.target.id === 'download-program-template') downloadTemplate('program');
-                    if (e.target.matches('#status-filter-container .category-filter-btn')) {
-                        const status = e.target.dataset.status;
-                        renderAdminTab('status', status);
-                    }
                 });
             }
             if (path === '/search') {
@@ -874,7 +861,6 @@
                     <h1 class="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
                     <div class="border-b border-gray-200">
                         <nav id="admin-tabs" class="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
-                            <button data-tab="status" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Program Status</button>
                             <button data-tab="results" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Upload Results</button>
                             <button data-tab="publish" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Publish</button>
                             <button data-tab="announce" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Announce Live</button>
@@ -892,9 +878,11 @@
             `;
         }
 
-        async function renderAdminTab(tabName, filterParam = 'All') {
+        async function renderAdminTab(tabName) {
             const container = document.getElementById('admin-tab-content');
             if (!container) return;
+            // No loader for instant feel
+            // container.innerHTML = renderLoader();
 
             document.querySelectorAll('.admin-tab').forEach(tab => {
                 tab.classList.toggle('active', tab.dataset.tab === tabName);
@@ -904,9 +892,6 @@
             const teams = getDataAsArray('teams');
 
             switch (tabName) {
-                case 'status':
-                    content = renderProgramStatusPage(filterParam);
-                    break;
                 case 'results':
                     tempParticipants = []; // Reset on tab load
                     content = `
@@ -957,7 +942,7 @@
                                     <button id="update-all-scores-btn" class="bg-red-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-red-700"><i class="fas fa-sync-alt mr-2"></i>Update All Scores</button>
                                 </div>
                              </div>
-                             <div id="publish-list" class="space-y-6 pr-2">
+                             <div id="publish-list" class="space-y-6">
                              ${allResults.length === 0 ? `<p class="text-gray-500 text-center py-4">No results have been uploaded yet.</p>` :
                         allResults.map(result => {
                             const teamPointsSummary = {};
@@ -965,6 +950,7 @@
                                 const student = appData.students[p.studentId];
                                 if (!student || !student.teamId) return;
                                 const teamId = student.teamId;
+
                                 if (!teamPointsSummary[teamId]) {
                                     teamPointsSummary[teamId] = { points: 0, teamName: appData.teams[teamId]?.name || 'Unknown' };
                                 }
@@ -1002,14 +988,14 @@
                                     <div class="flex justify-between items-start mb-4">
                                         <div>
                                             <div class="flex items-center gap-2 mb-1">
-                                                 <p class="font-bold text-lg text-gray-800">${result.programName}</p>
-                                                 ${statusBadge}
+                                                <p class="font-bold text-lg text-gray-800">${result.programName}</p>
+                                                ${statusBadge}
                                             </div>
                                             <p class="text-sm text-gray-500">${result.category}</p>
                                         </div>
                                         <div class="flex items-center gap-2">
-                                             ${actionButtons}
-                                             <button class="delete-btn text-red-500 hover:text-red-700" data-id="${result.id}" data-collection="results"><i class="fas fa-trash"></i></button>
+                                            ${actionButtons}
+                                            <button class="delete-btn text-red-500 hover:text-red-700" data-id="${result.id}" data-collection="results"><i class="fas fa-trash"></i></button>
                                         </div>
                                     </div>
                                     <div>
@@ -1424,17 +1410,43 @@
             const printAllReadyBtn = e.target.closest('#print-all-ready-btn');
             const updateScoresBtn = e.target.closest('#update-all-scores-btn');
 
+            const currentTab = activeAdminTab;
+
+            // Optimistic UI update for Announce Live
+            if ((currentTab === 'announce' || currentTab === 'publish') && (publishBtn || unpublishBtn || markReadyBtn || unmarkReadyBtn)) {
+                const button = publishBtn || unpublishBtn || markReadyBtn || unmarkReadyBtn;
+                const card = button.closest('.border.rounded-lg');
+                if (card) {
+                    card.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease, max-height 0.3s ease, padding 0.3s ease, margin 0.3s ease';
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.95)';
+                    card.style.maxHeight = '0px';
+                    card.style.paddingTop = '0';
+                    card.style.paddingBottom = '0';
+                    card.style.marginTop = '0';
+                    card.style.marginBottom = '0';
+                    card.style.borderWidth = '0';
+
+                    setTimeout(() => card.remove(), 300);
+                }
+            }
+
+
             if (deleteBtn) {
                 const { id, collection } = deleteBtn.dataset;
                 if (confirm(`Are you sure you want to delete this item from ${collection}? This action cannot be undone.`)) {
                     const itemToDelete = appData[collection][id];
+                    // Optimistic UI update for delete
+                    const itemEl = deleteBtn.closest('.flex.justify-between')?.parentElement || deleteBtn.closest('.border.rounded-lg');
+                    if (itemEl) itemEl.remove();
+
                     db.ref(`${collection}/${id}`).remove().then(() => {
                         if ((collection === 'results' && itemToDelete && itemToDelete.status === 'published') || collection === 'students') {
                             recalculateAllPoints();
                         }
                     }).catch(error => alert("Could not delete the item. " + error.message));
                 }
-                return; 
+                return; // Prevent further actions
             }
 
             if (printBtn) {
@@ -1470,12 +1482,12 @@
                     }
                 }
             }
-
+            
             if (updateScoresBtn) {
                 if (confirm('Are you sure you want to update all public scores? This will recalculate points for all students and teams based on all published results.')) {
                     updateScoresBtn.disabled = true;
                     updateScoresBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
-
+                    
                     recalculateAllPoints().then(() => {
                         alert('All team and category scores have been successfully updated!');
                         updateScoresBtn.disabled = false;
@@ -1486,7 +1498,7 @@
                         updateScoresBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Update All Scores';
                     });
                 }
-                return; 
+                return; // Prevent other actions
             }
         }
 
@@ -1633,23 +1645,15 @@
                 second: { label: '2nd Place' },
                 third: { label: '3rd Place' }
             };
-            
-            const positionOrder = ['first', 'second', 'third'];
-            const sortedParticipants = [...(result.participants || [])].sort((a,b) => {
-                const posA = positionOrder.indexOf(a.position);
-                const posB = positionOrder.indexOf(b.position);
-                if (posA === -1 && posB > -1) return 1;
-                if (posA > -1 && posB === -1) return -1;
-                if (posA > -1 && posB > -1) return posA - posB;
-                return 0; // if both are grade-only or have no position
-            });
 
             const positions = { first: [], second: [], third: [] };
             const grades = { a_grade: [], b_grade: [] };
-            sortedParticipants.forEach(p => {
+            (result.participants || []).forEach(p => {
                 if (p.position && positions[p.position]) positions[p.position].push(p);
                 if (p.grade && grades[p.grade] && (!p.position || p.position === 'none')) grades[p.grade].push(p);
             });
+
+            const positionOrder = ['first', 'second', 'third'];
 
             const printHTML = `
                 <div style="font-family: sans-serif; width: 210mm; min-height: 297mm; padding: 2cm; box-sizing: border-box;">
@@ -1762,7 +1766,7 @@
                             <i class="fas fa-sync-alt mr-2"></i> Update All Scores
                         </button>
                     </div>
-                    <div id="announce-list" class="space-y-6 pr-2">
+                    <div class="space-y-6">
                     ${readyResults.length === 0 ? `<p class="text-gray-500 text-center py-8 text-xl">No results are currently ready for announcement.</p>` :
                 readyResults.map(result => `
                         <div class="bg-white shadow-2xl rounded-xl p-8 border-t-4 border-indigo-500">
@@ -1800,83 +1804,6 @@
                         </div>
                         `).join('')
             }
-                    </div>
-                </div>
-            `;
-        }
-        
-        function renderProgramStatusPage(activeStatus = 'All') {
-            const allPrograms = getDataAsArray('programs').sort((a,b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
-            const allResults = getDataAsArray('results');
-
-            let programStatuses = allPrograms.map(program => {
-                const result = allResults.find(r => r.programId === program.id);
-                let status = 'Not Entered';
-                if (result) {
-                    if (result.status === 'published') {
-                        status = 'Published';
-                    } else if (result.status === 'ready') {
-                        status = 'Ready to Publish';
-                    } else {
-                        status = 'Pending'; // 'pending' or any other status
-                    }
-                }
-                return { ...program, status };
-            });
-
-            // Filter the programs based on the active status filter
-            if (activeStatus !== 'All') {
-                programStatuses = programStatuses.filter(p => p.status === activeStatus);
-            }
-
-            const statusBadge = (status) => {
-                switch(status) {
-                    case 'Published':
-                        return `<span class="text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full">${status}</span>`;
-                    case 'Ready to Publish':
-                        return `<span class="text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">${status}</span>`;
-                    case 'Pending':
-                        return `<span class="text-xs font-semibold text-white bg-gray-500 px-2 py-1 rounded-full">${status}</span>`;
-                    default: // Not Entered
-                        return `<span class="text-xs font-semibold text-white bg-red-500 px-2 py-1 rounded-full">${status}</span>`;
-                }
-            };
-
-            const filterButtons = ['All', 'Published', 'Ready to Publish', 'Pending', 'Not Entered'];
-
-            return `
-                <div class="page">
-                    <h1 class="text-3xl font-bold text-gray-900 mb-6">Program Status Overview</h1>
-                    
-                    <div id="status-filter-container" class="mb-6 flex flex-wrap gap-2">
-                        ${filterButtons.map(status => `
-                            <button data-status="${status}" class="category-filter-btn px-4 py-2 text-sm font-medium rounded-full transition-colors ${activeStatus === status ? 'active' : 'bg-white text-gray-700'}">${status}</button>
-                        `).join('')}
-                    </div>
-
-                    <div class="bg-white shadow-lg rounded-xl overflow-hidden">
-                        <div id="items-list" class="overflow-x-auto max-h-[80vh] overflow-y-auto pr-2">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                 <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Program Name</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    ${programStatuses.length === 0
-                                         ? `<tr><td colspan="3" class="text-center py-8 text-gray-500">No programs match this filter.</td></tr>`
-                                         : programStatuses.map(program => `
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${program.name}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${program.category}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm">${statusBadge(program.status)}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
                     </div>
                 </div>
             `;
@@ -2004,4 +1931,3 @@
 </body>
 
 </html>
-
