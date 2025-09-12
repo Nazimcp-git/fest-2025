@@ -194,7 +194,7 @@
         let appData = { teams: {}, students: {}, programs: {}, results: {}, pointsConfig: {} };
         let isInitialLoad = true;
         let tempParticipants = []; // For the new admin results form
-        let activeAdminTab = 'results'; // State for remembering the active admin tab
+        let activeAdminTab = 'status'; // Default to the new status tab
 
         // --- UI COMPONENTS & TEMPLATES ---
         const AppShell = (content) => `
@@ -243,7 +243,7 @@
                 `<a href="#/admin" class="nav-link text-gray-600 hover:bg-indigo-600 hover:text-white ${baseClasses}">Admin</a>
                  <button id="logout-btn" class="${isMobile ? 'w-full text-left ' : ''} bg-red-500 text-white ${baseClasses}">Logout</button>` :
                 `<a href="#/admin" class="nav-link text-gray-600 hover:bg-indigo-600 hover:text-white ${baseClasses}">Admin Login</a>`;
-            return links;
+            return links + authLinks;
         };
 
         const renderLoader = () => `<div class="flex justify-center items-center p-16"><div class="loader"></div></div>`;
@@ -289,6 +289,15 @@
             } else {
                 const desktopNav = document.getElementById('desktop-nav');
                 if (desktopNav) desktopNav.innerHTML = generateNavLinks();
+                
+                if (path.startsWith('/admin') && document.getElementById('admin-tabs')) {
+                    const activeTabEl = document.querySelector('.admin-tab.active');
+                    const activeStatusEl = document.querySelector('#status-filter-container .category-filter-btn.active');
+                    const currentStatusFilter = activeStatusEl ? activeStatusEl.dataset.status : 'All';
+                    
+                    renderAdminTab(activeTabEl ? activeTabEl.dataset.tab : 'status', currentStatusFilter);
+                    return; 
+                }
             }
 
             const mainContent = appContainer.querySelector('#main-content');
@@ -339,6 +348,10 @@
                     if (e.target.matches('.remove-participant-btn')) removeParticipantFromTempList(e.target.dataset.index);
                     if (e.target.id === 'download-student-template') downloadTemplate('student');
                     if (e.target.id === 'download-program-template') downloadTemplate('program');
+                    if (e.target.matches('#status-filter-container .category-filter-btn')) {
+                        const status = e.target.dataset.status;
+                        renderAdminTab('status', status);
+                    }
                 });
             }
             if (path === '/search') {
@@ -394,14 +407,14 @@
                         const colors = ['text-yellow-400', 'text-gray-400', 'text-yellow-600', 'text-blue-400'];
                         const icons = ['fa-crown', 'fa-medal', 'fa-award', 'fa-star'];
                         return `
-                                    <div class="bg-white shadow-lg rounded-xl p-6 transform hover:scale-105 transition-transform duration-300 team-card-clickable" data-team-id="${team.id}">
-                                        <div class="flex items-center justify-between">
-                                            <h2 class="text-xl font-bold text-gray-800">${team.name}</h2>
-                                            ${index < 4 ? `<i class="fas ${icons[index]} text-2xl ${colors[index]}"></i>` : ''}
-                                        </div>
-                                        <p class="text-5xl font-extrabold text-indigo-600 mt-4">${team.totalPoints}</p>
-                                        <p class="text-gray-500 mt-1">Total Points</p>
-                                    </div>`;
+                                <div class="bg-white shadow-lg rounded-xl p-6 transform hover:scale-105 transition-transform duration-300 team-card-clickable" data-team-id="${team.id}">
+                                    <div class="flex items-center justify-between">
+                                        <h2 class="text-xl font-bold text-gray-800">${team.name}</h2>
+                                        ${index < 4 ? `<i class="fas ${icons[index]} text-2xl ${colors[index]}"></i>` : ''}
+                                    </div>
+                                    <p class="text-5xl font-extrabold text-indigo-600 mt-4">${team.totalPoints}</p>
+                                    <p class="text-gray-500 mt-1">Total Points</p>
+                                </div>`;
                     }).join('')
                 }
                         </div>
@@ -418,13 +431,13 @@
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     ${teamsArray.map(team => `
-                                        <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${team.name}</td>
-                                            ${CATEGORIES.map(c => `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${team.categoryPoints[c] || 0}</td>`).join('')}
-                                        </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${team.name}</td>
+                                        ${CATEGORIES.map(c => `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${team.categoryPoints[c] || 0}</td>`).join('')}
+                                    </tr>
                                     `).join('')}
                                 </tbody>
-                           </table>
+                            </table>
                         </div>
                     </div>
                 </div>`;
@@ -455,17 +468,17 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${filteredResults.length === 0 ? `<p class="text-gray-500 text-center py-8 col-span-full">No results found.</p>` :
-                    filteredResults.map(result => {
-                        const positions = { first: [], second: [], third: [] };
-                        const grades = { a_grade: [], b_grade: [] };
-                        (result.participants || []).forEach(p => {
-                            if (p.position && positions[p.position]) positions[p.position].push(p);
-                            if (p.grade && grades[p.grade]) {
-                                if (!p.position || p.position === 'none') grades[p.grade].push(p);
-                            }
-                        });
+                filteredResults.map(result => {
+                    const positions = { first: [], second: [], third: [] };
+                    const grades = { a_grade: [], b_grade: [] };
+                    (result.participants || []).forEach(p => {
+                        if (p.position && positions[p.position]) positions[p.position].push(p);
+                        if (p.grade && grades[p.grade]) {
+                            if (!p.position || p.position === 'none') grades[p.grade].push(p);
+                        }
+                    });
 
-                        return `
+                    return `
                                 <div class="bg-white shadow-lg rounded-xl p-6 flex flex-col">
                                     <div class="border-b pb-4 mb-4 border-gray-200">
                                         <p class="text-xs font-semibold uppercase text-indigo-600">${result.category}</p>
@@ -474,45 +487,45 @@
                                     </div>
                                     <div class="space-y-4 flex-grow">
                                         ${Object.entries(positions).map(([pos, participants]) => participants.length > 0 ? `
-                                            <div>
-                                                <h3 class="font-bold text-md mb-2 ${positionInfo[pos].color}"><i class="fas ${positionInfo[pos].icon} mr-2"></i>${positionInfo[pos].label}</h3>
-                                                <ul class="space-y-1 pl-2">
-                                                ${participants.map(p => {
-                            const student = appData.students[p.studentId];
-                            const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : '';
-                            return `
-                                                    <li class="text-sm">
-                                                        <a href="#/student/${p.studentId}" class="text-gray-700 hover:text-indigo-600 hover:underline">${p.name}</a>
-                                                        ${teamName ? `<span class="text-gray-500 text-xs ml-1">(${teamName})</span>` : ''}
-                                                        ${p.grade && p.grade !== 'none' ? `<span class="ml-2 text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full">${p.grade.replace('_', ' ')}</span>` : ''}
-                                                    </li>
-                                                `}).join('')}
-                                                </ul>
-                                            </div>
+                                        <div>
+                                            <h3 class="font-bold text-md mb-2 ${positionInfo[pos].color}"><i class="fas ${positionInfo[pos].icon} mr-2"></i>${positionInfo[pos].label}</h3>
+                                            <ul class="space-y-1 pl-2">
+                                            ${participants.map(p => {
+                        const student = appData.students[p.studentId];
+                        const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : '';
+                        return `
+                                                <li class="text-sm">
+                                                    <a href="#/student/${p.studentId}" class="text-gray-700 hover:text-indigo-600 hover:underline">${p.name}</a>
+                                                    ${teamName ? `<span class="text-gray-500 text-xs ml-1">(${teamName})</span>` : ''}
+                                                    ${p.grade && p.grade !== 'none' ? `<span class="ml-2 text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full">${p.grade.replace('_', ' ')}</span>` : ''}
+                                                </li>
+                                            `}).join('')}
+                                            </ul>
+                                        </div>
                                         ` : '').join('')}
 
                                         ${(grades.a_grade.length > 0 || grades.b_grade.length > 0) ? `
-                                            <div>
-                                                <h3 class="font-bold text-md mb-2 text-gray-600"><i class="fas fa-graduation-cap mr-2"></i>Grade Winners</h3>
-                                                <ul class="space-y-1 pl-2">
-                                                    ${grades.a_grade.map(p => {
-                                const student = appData.students[p.studentId];
-                                const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : '';
-                                return `<li class="text-sm"><a href="#/student/${p.studentId}" class="text-gray-700 hover:text-indigo-600 hover:underline">${p.name}</a> ${teamName ? `<span class="text-gray-500 text-xs ml-1">(${teamName})</span>` : ''} <span class="ml-2 text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full">A Grade</span></li>`
-                            }).join('')}
-                                                    ${grades.b_grade.map(p => {
-                                const student = appData.students[p.studentId];
-                                const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : '';
-                                return `<li class="text-sm"><a href="#/student/${p.studentId}" class="text-gray-700 hover:text-indigo-600 hover:underline">${p.name}</a> ${teamName ? `<span class="text-gray-500 text-xs ml-1">(${teamName})</span>` : ''} <span class="ml-2 text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">B Grade</span></li>`
-                            }).join('')}
-                                                </ul>
-                                            </div>
+                                        <div>
+                                            <h3 class="font-bold text-md mb-2 text-gray-600"><i class="fas fa-graduation-cap mr-2"></i>Grade Winners</h3>
+                                            <ul class="space-y-1 pl-2">
+                                                ${grades.a_grade.map(p => {
+                            const student = appData.students[p.studentId];
+                            const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : '';
+                            return `<li class="text-sm"><a href="#/student/${p.studentId}" class="text-gray-700 hover:text-indigo-600 hover:underline">${p.name}</a> ${teamName ? `<span class="text-gray-500 text-xs ml-1">(${teamName})</span>` : ''} <span class="ml-2 text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full">A Grade</span></li>`
+                        }).join('')}
+                                                ${grades.b_grade.map(p => {
+                            const student = appData.students[p.studentId];
+                            const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : '';
+                            return `<li class="text-sm"><a href="#/student/${p.studentId}" class="text-gray-700 hover:text-indigo-600 hover:underline">${p.name}</a> ${teamName ? `<span class="text-gray-500 text-xs ml-1">(${teamName})</span>` : ''} <span class="ml-2 text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">B Grade</span></li>`
+                        }).join('')}
+                                            </ul>
+                                        </div>
                                         ` : ''}
                                     </div>
                                 </div>
                                 `
-                    }).join('')
-                }
+                }).join('')
+            }
                     </div>
                 </div>
             `;
@@ -657,16 +670,16 @@
                             <div class="space-y-4">
                                 ${achievements.length === 0 ? `<p class="text-gray-500">No achievements recorded yet.</p>` :
                     achievements.map(ach => `
-                                        <div class="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
-                                            <div>
-                                                <p class="font-semibold text-lg text-gray-800">${ach.programName}</p>
-                                                <p class="text-sm text-gray-500">${ach.category}</p>
-                                            </div>
-                                            <div class="text-right">
-                                                <p class="font-bold text-lg text-indigo-600">${ach.prize}</p>
-                                                <p class="text-gray-600 font-medium">+${ach.points} Points</p>
-                                            </div>
+                                    <div class="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
+                                        <div>
+                                            <p class="font-semibold text-lg text-gray-800">${ach.programName}</p>
+                                            <p class="text-sm text-gray-500">${ach.category}</p>
                                         </div>
+                                        <div class="text-right">
+                                            <p class="font-bold text-lg text-indigo-600">${ach.prize}</p>
+                                            <p class="text-gray-600 font-medium">+${ach.points} Points</p>
+                                        </div>
+                                    </div>
                                     `).join('')
                 }
                             </div>
@@ -676,10 +689,10 @@
                              <div class="space-y-4">
                                 ${participatingIn.length === 0 ? `<p class="text-gray-500">Not registered for other programs.</p>` :
                     participatingIn.map(prog => `
-                                        <div class="bg-gray-50 rounded-lg p-4">
-                                            <p class="font-semibold text-lg text-gray-800">${prog.name}</p>
-                                            <p class="text-sm text-gray-500">${prog.category}</p>
-                                        </div>
+                                    <div class="bg-gray-50 rounded-lg p-4">
+                                        <p class="font-semibold text-lg text-gray-800">${prog.name}</p>
+                                        <p class="text-sm text-gray-500">${prog.category}</p>
+                                    </div>
                                     `).join('')
                 }
                             </div>
@@ -764,14 +777,14 @@
                 const colors = ['text-yellow-400', 'text-gray-400', 'text-yellow-600', 'text-blue-400'];
                 const icons = ['fa-crown', 'fa-medal', 'fa-award', 'fa-star'];
                 return `
-                                    <div class="bg-white shadow-lg rounded-xl p-6">
-                                        <div class="flex items-center justify-between">
-                                            <h2 class="text-xl font-bold text-gray-800">${team.name}</h2>
-                                            ${index < 4 ? `<i class="fas ${icons[index]} text-2xl ${colors[index]}"></i>` : ''}
-                                        </div>
-                                        <p class="text-5xl font-extrabold text-indigo-600 mt-4">${team.totalPoints}</p>
-                                        <p class="text-gray-500 mt-1">Total Points</p>
-                                    </div>`;
+                                <div class="bg-white shadow-lg rounded-xl p-6">
+                                    <div class="flex items-center justify-between">
+                                        <h2 class="text-xl font-bold text-gray-800">${team.name}</h2>
+                                        ${index < 4 ? `<i class="fas ${icons[index]} text-2xl ${colors[index]}"></i>` : ''}
+                                    </div>
+                                    <p class="text-5xl font-extrabold text-indigo-600 mt-4">${team.totalPoints}</p>
+                                    <p class="text-gray-500 mt-1">Total Points</p>
+                                </div>`;
             }).join('')
                 }
                         </div>
@@ -788,13 +801,13 @@
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     ${teamsArray.map(team => `
-                                        <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${team.name}</td>
-                                            ${CATEGORIES.map(c => `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${team.categoryPoints[c] || 0}</td>`).join('')}
-                                        </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${team.name}</td>
+                                        ${CATEGORIES.map(c => `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${team.categoryPoints[c] || 0}</td>`).join('')}
+                                    </tr>
                                     `).join('')}
                                 </tbody>
-                           </table>
+                            </table>
                         </div>
                     </div>
                     <div>
@@ -861,6 +874,7 @@
                     <h1 class="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
                     <div class="border-b border-gray-200">
                         <nav id="admin-tabs" class="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
+                            <button data-tab="status" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Program Status</button>
                             <button data-tab="results" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Upload Results</button>
                             <button data-tab="publish" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Publish</button>
                             <button data-tab="announce" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Announce Live</button>
@@ -878,11 +892,9 @@
             `;
         }
 
-        async function renderAdminTab(tabName) {
+        async function renderAdminTab(tabName, filterParam = 'All') {
             const container = document.getElementById('admin-tab-content');
             if (!container) return;
-            // No loader for instant feel
-            // container.innerHTML = renderLoader();
 
             document.querySelectorAll('.admin-tab').forEach(tab => {
                 tab.classList.toggle('active', tab.dataset.tab === tabName);
@@ -892,6 +904,9 @@
             const teams = getDataAsArray('teams');
 
             switch (tabName) {
+                case 'status':
+                    content = renderProgramStatusPage(filterParam);
+                    break;
                 case 'results':
                     tempParticipants = []; // Reset on tab load
                     content = `
@@ -939,76 +954,76 @@
                                 <div class="flex gap-2">
                                     <button id="print-all-ready-btn" class="bg-gray-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-gray-700"><i class="fas fa-print mr-2"></i>Print All Ready</button>
                                     <button id="publish-all-ready-btn" class="bg-blue-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-blue-700">Publish All Ready</button>
+                                    <button id="update-all-scores-btn" class="bg-red-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-red-700"><i class="fas fa-sync-alt mr-2"></i>Update All Scores</button>
                                 </div>
                              </div>
-                             <div id="publish-list" class="space-y-6">
+                             <div id="publish-list" class="space-y-6 pr-2">
                              ${allResults.length === 0 ? `<p class="text-gray-500 text-center py-4">No results have been uploaded yet.</p>` :
-                            allResults.map(result => {
-                                const teamPointsSummary = {};
-                                (result.participants || []).forEach(p => {
-                                    const student = appData.students[p.studentId];
-                                    if (!student || !student.teamId) return;
-                                    const teamId = student.teamId;
-
-                                    if (!teamPointsSummary[teamId]) {
-                                        teamPointsSummary[teamId] = { points: 0, teamName: appData.teams[teamId]?.name || 'Unknown' };
-                                    }
-                                    let currentPoints = 0;
-                                    if (p.position && p.position !== 'none') currentPoints += pointsConf[p.position] || 0;
-                                    if (p.grade && p.grade !== 'none') currentPoints += pointsConf[p.grade] || 0;
-                                    teamPointsSummary[teamId].points += currentPoints;
-                                });
-                                const sortedSummary = Object.values(teamPointsSummary).sort((a, b) => b.points - a.points);
-
-                                let statusBadge, actionButtons;
-
-                                switch (result.status) {
-                                    case 'published':
-                                        statusBadge = `<span class="text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full">Published</span>`;
-                                        actionButtons = `
-                                                <button class="unpublish-btn bg-yellow-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-yellow-600" data-id="${result.id}">Unpublish</button>
-                                                <button class="print-btn bg-gray-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-gray-600" data-id="${result.id}"><i class="fas fa-print"></i></button>
-                                            `;
-                                        break;
-                                    case 'ready':
-                                        statusBadge = `<span class="text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">Ready to Publish</span>`;
-                                        actionButtons = `
-                                                <button class="unmark-ready-btn bg-gray-400 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-gray-500" data-id="${result.id}">Unmark</button>
-                                                <button class="publish-btn bg-green-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-green-600" data-id="${result.id}">Publish</button>
-                                            `;
-                                        break;
-                                    default: // pending
-                                        statusBadge = `<span class="text-xs font-semibold text-white bg-gray-500 px-2 py-1 rounded-full">Pending</span>`;
-                                        actionButtons = `<button class="mark-ready-btn bg-blue-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-blue-600" data-id="${result.id}">Mark as Ready</button>`;
+                        allResults.map(result => {
+                            const teamPointsSummary = {};
+                            (result.participants || []).forEach(p => {
+                                const student = appData.students[p.studentId];
+                                if (!student || !student.teamId) return;
+                                const teamId = student.teamId;
+                                if (!teamPointsSummary[teamId]) {
+                                    teamPointsSummary[teamId] = { points: 0, teamName: appData.teams[teamId]?.name || 'Unknown' };
                                 }
+                                let currentPoints = 0;
+                                if (p.position && p.position !== 'none') currentPoints += pointsConf[p.position] || 0;
+                                if (p.grade && p.grade !== 'none') currentPoints += pointsConf[p.grade] || 0;
+                                teamPointsSummary[teamId].points += currentPoints;
+                            });
+                            const sortedSummary = Object.values(teamPointsSummary).sort((a, b) => b.points - a.points);
 
-                                return `
-                                    <div class="border rounded-lg p-4 ${result.status === 'published' ? 'bg-green-50' : (result.status === 'ready' ? 'bg-blue-50' : 'bg-gray-50')}">
-                                        <div class="flex justify-between items-start mb-4">
-                                            <div>
-                                                <div class="flex items-center gap-2 mb-1">
-                                                     <p class="font-bold text-lg text-gray-800">${result.programName}</p>
-                                                     ${statusBadge}
-                                                </div>
-                                                <p class="text-sm text-gray-500">${result.category}</p>
-                                            </div>
-                                            <div class="flex items-center gap-2">
-                                                 ${actionButtons}
-                                                 <button class="delete-btn text-red-500 hover:text-red-700" data-id="${result.id}" data-collection="results"><i class="fas fa-trash"></i></button>
-                                            </div>
-                                        </div>
+                            let statusBadge, actionButtons;
+
+                            switch (result.status) {
+                                case 'published':
+                                    statusBadge = `<span class="text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full">Published</span>`;
+                                    actionButtons = `
+                                        <button class="unpublish-btn bg-yellow-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-yellow-600" data-id="${result.id}">Unpublish</button>
+                                        <button class="print-btn bg-gray-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-gray-600" data-id="${result.id}"><i class="fas fa-print"></i></button>
+                                    `;
+                                    break;
+                                case 'ready':
+                                    statusBadge = `<span class="text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">Ready to Publish</span>`;
+                                    actionButtons = `
+                                        <button class="unmark-ready-btn bg-gray-400 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-gray-500" data-id="${result.id}">Unmark</button>
+                                        <button class="publish-btn bg-green-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-green-600" data-id="${result.id}">Publish</button>
+                                    `;
+                                    break;
+                                default: // pending
+                                    statusBadge = `<span class="text-xs font-semibold text-white bg-gray-500 px-2 py-1 rounded-full">Pending</span>`;
+                                    actionButtons = `<button class="mark-ready-btn bg-blue-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-blue-600" data-id="${result.id}">Mark as Ready</button>`;
+                            }
+
+                            return `
+                                <div class="border rounded-lg p-4 ${result.status === 'published' ? 'bg-green-50' : (result.status === 'ready' ? 'bg-blue-50' : 'bg-gray-50')}">
+                                    <div class="flex justify-between items-start mb-4">
                                         <div>
-                                            <h4 class="font-semibold text-sm mb-2">Team Point Impact:</h4>
-                                            <div class="flex flex-wrap gap-x-4 gap-y-1">
-                                                ${sortedSummary.map(s => `
-                                                    <span class="text-sm text-gray-700"><strong>${s.teamName}:</strong> <span class="font-bold text-green-600">+${s.points}</span></span>
-                                                `).join('')}
+                                            <div class="flex items-center gap-2 mb-1">
+                                                 <p class="font-bold text-lg text-gray-800">${result.programName}</p>
+                                                 ${statusBadge}
                                             </div>
+                                            <p class="text-sm text-gray-500">${result.category}</p>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                             ${actionButtons}
+                                             <button class="delete-btn text-red-500 hover:text-red-700" data-id="${result.id}" data-collection="results"><i class="fas fa-trash"></i></button>
                                         </div>
                                     </div>
-                                    `
-                            }).join('')
-                        }
+                                    <div>
+                                        <h4 class="font-semibold text-sm mb-2">Team Point Impact:</h4>
+                                        <div class="flex flex-wrap gap-x-4 gap-y-1">
+                                            ${sortedSummary.map(s => `
+                                                <span class="text-sm text-gray-700"><strong>${s.teamName}:</strong> <span class="font-bold text-green-600">+${s.points}</span></span>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                                `
+                        }).join('')
+                    }
                              </div>
                         </div>
                     `;
@@ -1407,44 +1422,19 @@
             const publishAllBtn = e.target.closest('#publish-all-ready-btn');
             const printBtn = e.target.closest('.print-btn');
             const printAllReadyBtn = e.target.closest('#print-all-ready-btn');
-
-            const currentTab = activeAdminTab;
-
-            // Optimistic UI update for Announce Live
-            if ((currentTab === 'announce' || currentTab === 'publish') && (publishBtn || unpublishBtn || markReadyBtn || unmarkReadyBtn)) {
-                const button = publishBtn || unpublishBtn || markReadyBtn || unmarkReadyBtn;
-                const card = button.closest('.border.rounded-lg');
-                if (card) {
-                    card.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease, max-height 0.3s ease, padding 0.3s ease, margin 0.3s ease';
-                    card.style.opacity = '0';
-                    card.style.transform = 'scale(0.95)';
-                    card.style.maxHeight = '0px';
-                    card.style.paddingTop = '0';
-                    card.style.paddingBottom = '0';
-                    card.style.marginTop = '0';
-                    card.style.marginBottom = '0';
-                    card.style.borderWidth = '0';
-
-                    setTimeout(() => card.remove(), 300);
-                }
-            }
-
+            const updateScoresBtn = e.target.closest('#update-all-scores-btn');
 
             if (deleteBtn) {
                 const { id, collection } = deleteBtn.dataset;
                 if (confirm(`Are you sure you want to delete this item from ${collection}? This action cannot be undone.`)) {
                     const itemToDelete = appData[collection][id];
-                    // Optimistic UI update for delete
-                    const itemEl = deleteBtn.closest('.flex.justify-between')?.parentElement || deleteBtn.closest('.border.rounded-lg');
-                    if (itemEl) itemEl.remove();
-
                     db.ref(`${collection}/${id}`).remove().then(() => {
                         if ((collection === 'results' && itemToDelete && itemToDelete.status === 'published') || collection === 'students') {
                             recalculateAllPoints();
                         }
                     }).catch(error => alert("Could not delete the item. " + error.message));
                 }
-                return; // Prevent further actions
+                return; 
             }
 
             if (printBtn) {
@@ -1457,7 +1447,7 @@
             }
 
             if (publishBtn) {
-                db.ref(`results/${publishBtn.dataset.id}`).update({ status: 'published' }).then(recalculateAllPoints);
+                db.ref(`results/${publishBtn.dataset.id}`).update({ status: 'published' });
             }
             if (unpublishBtn) {
                 db.ref(`results/${unpublishBtn.dataset.id}`).update({ status: 'pending' }).then(recalculateAllPoints);
@@ -1475,9 +1465,28 @@
                         if (r.status === 'ready') updates[`/results/${r.id}/status`] = 'published';
                     });
                     if (Object.keys(updates).length > 0) {
-                        db.ref().update(updates).then(recalculateAllPoints);
+                        db.ref().update(updates);
+                        alert(`${Object.keys(updates).length} result(s) have been published. Remember to click 'Update All Scores' to refresh the leaderboards.`);
                     }
                 }
+            }
+
+            if (updateScoresBtn) {
+                if (confirm('Are you sure you want to update all public scores? This will recalculate points for all students and teams based on all published results.')) {
+                    updateScoresBtn.disabled = true;
+                    updateScoresBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+
+                    recalculateAllPoints().then(() => {
+                        alert('All team and category scores have been successfully updated!');
+                        updateScoresBtn.disabled = false;
+                        updateScoresBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Update All Scores';
+                    }).catch(error => {
+                        alert('An error occurred while updating scores: ' + error.message);
+                        updateScoresBtn.disabled = false;
+                        updateScoresBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Update All Scores';
+                    });
+                }
+                return; 
             }
         }
 
@@ -1544,10 +1553,10 @@
         function downloadTemplate(type) {
             let data, filename;
             if (type === 'student') {
-                data = [{ ChestNo: '101', Name: 'Amal', Category: 'Bidaya', TeamName: 'Team A' }];
+                data = [{ ChestNo: '101', Name: 'Amal', Category: 'BIDAYA', TeamName: 'Team A' }];
                 filename = 'student_template.xlsx';
             } else { // program
-                data = [{ ProgramName: 'Solo Song', Category: 'Bidaya' }];
+                data = [{ ProgramName: 'Solo Song', Category: 'BIDAYA' }];
                 filename = 'program_template.xlsx';
             }
             const ws = XLSX.utils.json_to_sheet(data);
@@ -1624,15 +1633,23 @@
                 second: { label: '2nd Place' },
                 third: { label: '3rd Place' }
             };
+            
+            const positionOrder = ['first', 'second', 'third'];
+            const sortedParticipants = [...(result.participants || [])].sort((a,b) => {
+                const posA = positionOrder.indexOf(a.position);
+                const posB = positionOrder.indexOf(b.position);
+                if (posA === -1 && posB > -1) return 1;
+                if (posA > -1 && posB === -1) return -1;
+                if (posA > -1 && posB > -1) return posA - posB;
+                return 0; // if both are grade-only or have no position
+            });
 
             const positions = { first: [], second: [], third: [] };
             const grades = { a_grade: [], b_grade: [] };
-            (result.participants || []).forEach(p => {
+            sortedParticipants.forEach(p => {
                 if (p.position && positions[p.position]) positions[p.position].push(p);
                 if (p.grade && grades[p.grade] && (!p.position || p.position === 'none')) grades[p.grade].push(p);
             });
-
-            const positionOrder = ['first', 'second', 'third'];
 
             const printHTML = `
                 <div style="font-family: sans-serif; width: 210mm; min-height: 297mm; padding: 2cm; box-sizing: border-box;">
@@ -1664,7 +1681,7 @@
                                         <td style="padding: 0.5rem; text-align: right; font-weight: bold;">${grade}</td>
                                     </tr>`
                 }).join('')}
-                             </table>
+                            </table>
                         </div>
                     `}).join('')}
                     ${(grades.a_grade.length > 0 || grades.b_grade.length > 0) ? `
@@ -1683,9 +1700,9 @@
                                          <td style="padding: 0.5rem; text-align: right; font-weight: bold;">${grade}</td>
                                      </tr>`
                 }).join('')}
-                             </table>
+                            </table>
                         </div>
-                    `: ''}
+                    ` : ''}
                     </div>
                     <div style="position: absolute; bottom: 2cm; right: 2cm; font-size: 10pt;">
                         <p>Date: ${new Date().toLocaleDateString()}</p>
@@ -1736,48 +1753,130 @@
 
             return `
                 <div class="page space-y-8">
-                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md" role="alert">
-                        <p class="font-bold">Live Announce Mode</p>
-                        <p>Clicking "Publish Now" will immediately make the result public and update all scores in real-time.</p>
+                     <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md flex flex-col md:flex-row justify-between items-center gap-4" role="alert">
+                        <div>
+                            <p class="font-bold">Live Announce Mode</p>
+                            <p>"Publish Now" makes a result public. Click "Update All Scores" to refresh the main leaderboards.</p>
+                        </div>
+                        <button id="update-all-scores-btn" class="bg-red-600 text-white px-6 py-3 text-md font-bold rounded-lg hover:bg-red-700 transition-transform transform hover:scale-105 flex-shrink-0">
+                            <i class="fas fa-sync-alt mr-2"></i> Update All Scores
+                        </button>
                     </div>
-                    <div class="space-y-6">
+                    <div id="announce-list" class="space-y-6 pr-2">
                     ${readyResults.length === 0 ? `<p class="text-gray-500 text-center py-8 text-xl">No results are currently ready for announcement.</p>` :
-                    readyResults.map(result => `
-                            <div class="bg-white shadow-2xl rounded-xl p-8 border-t-4 border-indigo-500">
-                                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                                    <div class="text-center md:text-left">
-                                        <p class="text-lg font-semibold text-indigo-600">${result.category}</p>
-                                        <h2 class="text-4xl font-bold text-gray-900">${result.programName}</h2>
-                                    </div>
-                                    <button class="publish-btn w-full md:w-auto bg-green-600 text-white px-10 py-4 text-xl font-bold rounded-lg hover:bg-green-700 transition-transform transform hover:scale-105" data-id="${result.id}">
-                                        <i class="fas fa-bullhorn mr-2"></i> Publish Now
-                                    </button>
+                readyResults.map(result => `
+                        <div class="bg-white shadow-2xl rounded-xl p-8 border-t-4 border-indigo-500">
+                            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                                <div class="text-center md:text-left">
+                                    <p class="text-lg font-semibold text-indigo-600">${result.category}</p>
+                                    <h2 class="text-4xl font-bold text-gray-900">${result.programName}</h2>
                                 </div>
-                                <div class="mt-6 border-t pt-6">
-                                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Winners List</h3>
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-lg">
-                                        ${(result.participants || []).map(p => {
-                        const student = appData.students[p.studentId];
-                        const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : 'N/A';
-                        let achievementText = '';
-                        if (p.position && p.position !== 'none') achievementText += prizeLabels[p.position];
-                        if (p.grade && p.grade !== 'none') {
-                            if (achievementText) achievementText += ' • ';
-                            achievementText += prizeLabels[p.grade];
-                        }
-                        return `
-                                            <div class="bg-gray-50 p-3 rounded-md">
-                                                <p class="font-bold text-gray-900">${p.name} <span class="text-gray-500 font-medium">(${student.chestNo})</span></p>
-                                                <p class="text-indigo-700 font-semibold">${achievementText}</p>
-                                                <p class="text-sm text-gray-600">${teamName}</p>
-                                            </div>
-                                            `
-                    }).join('')}
-                                    </div>
+                                <button class="publish-btn w-full md:w-auto bg-green-600 text-white px-10 py-4 text-xl font-bold rounded-lg hover:bg-green-700 transition-transform transform hover:scale-105" data-id="${result.id}">
+                                    <i class="fas fa-bullhorn mr-2"></i> Publish Now
+                                </button>
+                            </div>
+                            <div class="mt-6 border-t pt-6">
+                                <h3 class="text-2xl font-bold mb-4 text-gray-800">Winners List</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-lg">
+                                    ${(result.participants || []).map(p => {
+                    const student = appData.students[p.studentId];
+                    const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : 'N/A';
+                    let achievementText = '';
+                    if (p.position && p.position !== 'none') achievementText += prizeLabels[p.position];
+                    if (p.grade && p.grade !== 'none') {
+                        if (achievementText) achievementText += ' • ';
+                        achievementText += prizeLabels[p.grade];
+                    }
+                    return `
+                                        <div class="bg-gray-50 p-3 rounded-md">
+                                            <p class="font-bold text-gray-900">${p.name} <span class="text-gray-500 font-medium">(${student.chestNo})</span></p>
+                                            <p class="text-indigo-700 font-semibold">${achievementText}</p>
+                                            <p class="text-sm text-gray-600">${teamName}</p>
+                                        </div>
+                                        `
+                }).join('')}
                                 </div>
                             </div>
+                        </div>
                         `).join('')
+            }
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderProgramStatusPage(activeStatus = 'All') {
+            const allPrograms = getDataAsArray('programs').sort((a,b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+            const allResults = getDataAsArray('results');
+
+            let programStatuses = allPrograms.map(program => {
+                const result = allResults.find(r => r.programId === program.id);
+                let status = 'Not Entered';
+                if (result) {
+                    if (result.status === 'published') {
+                        status = 'Published';
+                    } else if (result.status === 'ready') {
+                        status = 'Ready to Publish';
+                    } else {
+                        status = 'Pending'; // 'pending' or any other status
+                    }
                 }
+                return { ...program, status };
+            });
+
+            // Filter the programs based on the active status filter
+            if (activeStatus !== 'All') {
+                programStatuses = programStatuses.filter(p => p.status === activeStatus);
+            }
+
+            const statusBadge = (status) => {
+                switch(status) {
+                    case 'Published':
+                        return `<span class="text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full">${status}</span>`;
+                    case 'Ready to Publish':
+                        return `<span class="text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">${status}</span>`;
+                    case 'Pending':
+                        return `<span class="text-xs font-semibold text-white bg-gray-500 px-2 py-1 rounded-full">${status}</span>`;
+                    default: // Not Entered
+                        return `<span class="text-xs font-semibold text-white bg-red-500 px-2 py-1 rounded-full">${status}</span>`;
+                }
+            };
+
+            const filterButtons = ['All', 'Published', 'Ready to Publish', 'Pending', 'Not Entered'];
+
+            return `
+                <div class="page">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-6">Program Status Overview</h1>
+                    
+                    <div id="status-filter-container" class="mb-6 flex flex-wrap gap-2">
+                        ${filterButtons.map(status => `
+                            <button data-status="${status}" class="category-filter-btn px-4 py-2 text-sm font-medium rounded-full transition-colors ${activeStatus === status ? 'active' : 'bg-white text-gray-700'}">${status}</button>
+                        `).join('')}
+                    </div>
+
+                    <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+                        <div id="items-list" class="overflow-x-auto max-h-[80vh] overflow-y-auto pr-2">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                 <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Program Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${programStatuses.length === 0
+                                         ? `<tr><td colspan="3" class="text-center py-8 text-gray-500">No programs match this filter.</td></tr>`
+                                         : programStatuses.map(program => `
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${program.name}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${program.category}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm">${statusBadge(program.status)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1905,3 +2004,4 @@
 </body>
 
 </html>
+
