@@ -258,7 +258,8 @@
                     students: data.students || {},
                     programs: data.programs || {},
                     results: data.results || {},
-                    pointsConfig: data.pointsConfig || { first: 5, second: 3, third: 2, a_grade: 1, b_grade: 0 }
+                    pointsConfig: data.pointsConfig || { first: 5, second: 3, third: 2, a_grade: 1, b_grade: 0 },
+                    participantRegistrations: data.participantRegistrations || {}
                 };
                 if (isInitialLoad) {
                     router();
@@ -276,6 +277,7 @@
             if (!appData[entity]) return [];
             return Object.entries(appData[entity]).map(([id, value]) => ({ id, ...value }));
         }
+
 
         // --- ROUTER & PAGE RENDERING ---
         async function router(isUpdate = false) {
@@ -517,7 +519,7 @@
         }
 
         async function renderSearchPage() {
-            return `
+            return ` 
                 <div class="page max-w-lg mx-auto">
                     <div class="bg-white shadow-lg rounded-xl p-8">
                         <h1 class="text-3xl font-bold text-gray-900 mb-2">Find Participant</h1>
@@ -585,9 +587,11 @@
             if (!student) return `<p>Student not found.</p>`;
 
             const teamName = appData.teams[student.teamId]?.name || 'N/A';
+
+            // --- Achievements Logic ---
             const results = getDataAsArray('results').filter(r => r.status === 'published');
             const achievements = [];
-
+            const achievedProgramIds = new Set();
             const prizeLabels = { first: '1st Place', second: '2nd Place', third: '3rd Place', a_grade: 'A Grade', b_grade: 'B Grade' };
 
             results.forEach(result => {
@@ -604,20 +608,35 @@
                             achievementText += prizeLabels[p.grade];
                             totalPoints += appData.pointsConfig[p.grade] || 0;
                         }
-
                         achievements.push({
                             programName: result.programName,
                             category: result.category,
                             prize: achievementText,
                             points: totalPoints
                         });
+                        achievedProgramIds.add(result.programId);
                     }
                 });
             });
 
+            // --- Participating In Logic ---
+            const registrations = appData.participantRegistrations || {};
+            const participatingIn = [];
+            Object.entries(registrations).forEach(([programId, teamRegs]) => {
+                if (teamRegs[student.teamId]?.includes(studentId)) {
+                    if (!achievedProgramIds.has(programId)) {
+                        const program = appData.programs[programId];
+                        if (program) {
+                            participatingIn.push(program);
+                        }
+                    }
+                }
+            });
+
+
             return `
                 <div class="page bg-white shadow-lg rounded-xl p-6 sm:p-8">
-                    <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 mb-8">
+                    <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 mb-8 border-b pb-8 border-gray-200">
                         <div class="bg-indigo-500 text-white w-20 h-20 rounded-full flex items-center justify-center text-4xl font-bold flex-shrink-0">
                             ${student.name.charAt(0)}
                         </div>
@@ -631,22 +650,40 @@
                             <p class="text-5xl sm:text-6xl font-extrabold text-indigo-600">${student.totalPoints || 0}</p>
                         </div>
                     </div>
-                    <h2 class="text-2xl font-bold text-gray-800 mt-10 mb-4">Achievements</h2>
-                    <div class="space-y-4">
-                        ${achievements.length === 0 ? `<p class="text-gray-500">No achievements recorded yet.</p>` :
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 mb-4">Achievements</h2>
+                            <div class="space-y-4">
+                                ${achievements.length === 0 ? `<p class="text-gray-500">No achievements recorded yet.</p>` :
                     achievements.map(ach => `
-                                <div class="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
-                                    <div>
-                                        <p class="font-semibold text-lg text-gray-800">${ach.programName}</p>
-                                        <p class="text-sm text-gray-500">${ach.category}</p>
-                                    </div>
-                                    <div class="text-right">
-                                        <p class="font-bold text-lg text-indigo-600">${ach.prize}</p>
-                                        <p class="text-gray-600 font-medium">+${ach.points} Points</p>
-                                    </div>
-                                </div>
-                            `).join('')
+                                        <div class="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
+                                            <div>
+                                                <p class="font-semibold text-lg text-gray-800">${ach.programName}</p>
+                                                <p class="text-sm text-gray-500">${ach.category}</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="font-bold text-lg text-indigo-600">${ach.prize}</p>
+                                                <p class="text-gray-600 font-medium">+${ach.points} Points</p>
+                                            </div>
+                                        </div>
+                                    `).join('')
                 }
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 mb-4">Participating In</h2>
+                             <div class="space-y-4">
+                                ${participatingIn.length === 0 ? `<p class="text-gray-500">Not registered for other programs.</p>` :
+                    participatingIn.map(prog => `
+                                        <div class="bg-gray-50 rounded-lg p-4">
+                                            <p class="font-semibold text-lg text-gray-800">${prog.name}</p>
+                                            <p class="text-sm text-gray-500">${prog.category}</p>
+                                        </div>
+                                    `).join('')
+                }
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
