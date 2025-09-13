@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Schedule Printer</title>
+    
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter for a clean UI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .category-filter-btn.active {
+            background-color: #4f46e5;
+            color: white;
+        }
+        /* Print Styles */
+        @media print {
+            body > *:not(#print-area) {
+                display: none !important;
+            }
+            #print-area {
+                display: block !important;
+            }
+            .print-page {
+                page-break-after: always;
+            }
+             .print-page:last-child {
+                page-break-after: avoid;
+            }
+            @page {
+                size: A4;
+                margin: 0.5cm;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+
+    <div id="app" class="min-h-screen">
+        <!-- App content will be rendered here -->
+    </div>
+    
+    <!-- Hidden container for printing -->
+    <div id="print-area" class="hidden"></div>
+
+    <!-- Firebase SDKs (Version 8.10.0) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script type="module">
+        // --- FIREBASE CONFIGURATION ---
+        // IMPORTANT: Use the EXACT SAME Firebase config from your main fest website.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
+            authDomain: "shopping-e284c.firebaseapp.com",
+            databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
+            projectId: "shopping-e284c",
+            storageBucket: "shopping-e284c.appspot.com",
+            messagingSenderId: "248274428739",
+            appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
+            measurementId: "G-ZXZCK9BW7T"
+        };
+        
+        const CATEGORIES = ["BIDAYA", "UOOLA", "THANIYA", "THANAWIYYA", "ALIYA", "KULLIYYA"];
+
+        // --- INITIALIZE FIREBASE ---
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // --- APPLICATION STATE ---
+        let appData = { students: {}, teams: {}, programs: {}, participantRegistrations: {} };
+        let activeCategory = 'All';
+
+        // --- HELPER FUNCTIONS ---
+        function getDataAsArray(entity) {
+            if (!appData[entity]) return [];
+            return Object.entries(appData[entity]).map(([id, value]) => ({ id, ...value }));
+        }
+
+        // --- RENDER FUNCTIONS ---
+        function renderApp() {
+            const appContainer = document.getElementById('app');
+            appContainer.innerHTML = AppShell(renderStudentSelectionPage());
+        }
+
+        const AppShell = (content) => `
+            <div class="min-h-screen bg-gray-100 flex flex-col">
+                <nav class="bg-white shadow-md sticky top-0 z-50">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex items-center justify-between h-16">
+                            <h1 class="font-bold text-xl text-indigo-600"><i class="fas fa-print mr-2"></i>Student Schedule Printer</h1>
+                        </div>
+                    </div>
+                </nav>
+                <main id="main-content" class="py-10 flex-grow">
+                    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 px-6">
+                        ${content}
+                    </div>
+                </main>
+            </div>
+        `;
+
+        function renderStudentSelectionPage() {
+            const teams = getDataAsArray('teams').sort((a,b) => a.name.localeCompare(b.name));
+            const students = getDataAsArray('students');
+
+            const filterButtons = ['All', ...CATEGORIES];
+
+            return `
+                <div class="space-y-8">
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                         <div class="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-4">
+                            <h2 class="text-2xl font-bold">Select Students to Print</h2>
+                            <button id="print-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-indigo-700 w-full md:w-auto"><i class="fas fa-print mr-2"></i>Print Schedules for Selected</button>
+                         </div>
+                        <div id="student-filter-container" class="mb-6 flex flex-wrap gap-2">
+                             ${filterButtons.map(cat => `
+                                <button data-category="${cat}" class="category-filter-btn px-4 py-2 text-sm font-medium rounded-full transition-colors ${activeCategory === cat ? 'active' : 'bg-gray-100 text-gray-700'}">${cat}</button>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                    ${teams.map(team => {
+                        const teamStudents = students
+                            .filter(s => s.teamId === team.id)
+                            .filter(s => activeCategory === 'All' || s.category === activeCategory)
+                            .sort((a,b) => a.chestNo.localeCompare(b.chestNo, undefined, {numeric: true}));
+
+                        if (teamStudents.length === 0) return '';
+                        
+                        return `
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <h3 class="text-xl font-bold mb-4">${team.name}</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            ${teamStudents.map(student => `
+                                <div class="flex items-center bg-gray-50 p-3 rounded-md">
+                                    <input id="student-select-${student.id}" name="student-select" type="checkbox" value="${student.id}" class="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                                    <label for="student-select-${student.id}" class="ml-3">
+                                        <p class="font-semibold text-gray-800">${student.name}</p>
+                                        <p class="text-sm text-gray-500">Chest: ${student.chestNo} • ${student.category}</p>
+                                    </label>
+                                </div>
+                            `).join('')}
+                            </div>
+                        </div>
+                        `
+                    }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function printSchedules() {
+            const selectedStudentIds = Array.from(document.querySelectorAll('input[name="student-select"]:checked')).map(cb => cb.value);
+
+            if (selectedStudentIds.length === 0) {
+                alert("Please select at least one student to print.");
+                return;
+            }
+
+            const registrations = appData.participantRegistrations || {};
+            
+            let printHTML = `
+                <div style="font-family: Arial, sans-serif; width: 210mm; padding: 1.5cm; box-sizing: border-box;">
+                    <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 1rem; margin-bottom: 1rem;">
+                        <h1 style="font-size: 24pt; margin: 0;">PORU 2K25</h1>
+                        <h2 style="font-size: 16pt; margin: 0.5rem 0;">Individual Participant Schedules</h2>
+                    </div>
+            `;
+
+            selectedStudentIds.forEach(studentId => {
+                const student = appData.students[studentId];
+                if (!student) return;
+
+                const studentRegistrations = [];
+                Object.entries(registrations).forEach(([programId, teamRegs]) => {
+                    const program = appData.programs[programId];
+                    if (program && teamRegs[student.teamId]?.includes(studentId)) {
+                        studentRegistrations.push(program);
+                    }
+                });
+
+                printHTML += `
+                    <div class="print-page" style="page-break-inside: avoid; margin-bottom: 2rem;">
+                        <div style="background-color: #eee; padding: 0.5rem; border-radius: 5px; margin-bottom: 1rem;">
+                            <h3 style="font-size: 14pt; margin: 0; font-weight: bold;">${student.name}</h3>
+                            <p style="font-size: 11pt; margin: 0.25rem 0 0 0; color: #333;">
+                                Chest No: ${student.chestNo} | Team: ${appData.teams[student.teamId]?.name || 'N/A'} | Category: ${student.category}
+                            </p>
+                        </div>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 10pt;">
+                            <thead>
+                                <tr style="text-align: left;">
+                                    <th style="padding: 8px; border-bottom: 2px solid #333;">Program Name</th>
+                                    <th style="padding: 8px; border-bottom: 2px solid #333;">Category</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${studentRegistrations.length > 0 ? studentRegistrations.map(program => `
+                                <tr style="border-bottom: 1px solid #ddd;">
+                                    <td style="padding: 8px;">${program.name}</td>
+                                    <td style="padding: 8px;">${program.category}</td>
+                                </tr>
+                                `).join('') : '<tr><td colspan="2" style="padding: 8px;">Not registered for any programs.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            });
+
+            printHTML += `</div>`;
+            
+            const printArea = document.getElementById('print-area');
+            printArea.innerHTML = printHTML;
+            window.print();
+            printArea.innerHTML = '';
+        }
+
+        // --- EVENT LISTENERS ---
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.category-filter-btn')) {
+                activeCategory = e.target.closest('.category-filter-btn').dataset.category;
+                renderApp();
+            }
+            if (e.target.id === 'print-btn') {
+                printSchedules();
+            }
+        });
+
+        // --- INITIALIZATION ---
+        function initializeApp() {
+            const storedUser = sessionStorage.getItem('user');
+            if (storedUser) {
+                currentUser = JSON.parse(storedUser);
+            }
+
+            db.ref().on('value', snapshot => {
+                const data = snapshot.val() || {};
+                appData = {
+                    students: data.students || {},
+                    teams: data.teams || {},
+                    programs: data.programs || {},
+                    participantRegistrations: data.participantRegistrations || {}
+                };
+                renderApp();
+            });
+        }
+        
+        initializeApp();
+    </script>
+</body>
+</html>
