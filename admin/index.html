@@ -190,9 +190,9 @@
             'results': {},
             'pointsConfig': {},
             'groupPointsConfig': {},
-            // --- NEW FEATURE: Add state for team points and direct team scores ---
-            'teamPointsConfig': {},   // For points specific to team programs
-            'teamDirectScores': {} // To store points that go directly to a team
+            'teamPointsConfig': {},
+            'teamDirectScores': {},
+            'teamPenalties': {}
         };
         let isInitialLoad = true;
         let tempParticipants = [];
@@ -219,18 +219,15 @@
                     'groupPointsConfig': _0x35fde4.groupPointsConfig || {
                         'first': 10, 'second': 7, 'third': 5, 'a_grade': 0, 'b_grade': 0
                     },
-                    // --- NEW FEATURE LOGIC START ---
-                    // Fetch teamPointsConfig from Firebase, with defaults
                     'teamPointsConfig': _0x35fde4.teamPointsConfig || {
-                        'first': 15, // Example: higher points for team events
+                        'first': 15, 
                         'second': 10,
                         'third': 7,
                         'a_grade': 0,
                         'b_grade': 0
                     },
-                    // Fetch the new direct scores for teams
                     'teamDirectScores': _0x35fde4.teamDirectScores || {},
-                    // --- NEW FEATURE LOGIC END ---
+                    'teamPenalties': _0x35fde4.teamPenalties || {},
                     'participantRegistrations': _0x35fde4.participantRegistrations || {}
                 };
                 if (isInitialLoad) {
@@ -352,28 +349,37 @@
             }
         }
         
+        function calculateTeamPenalties() {
+            const penaltiesByTeam = {};
+            for (const teamId in appData.teams) {
+                penaltiesByTeam[teamId] = 0;
+            }
+            Object.values(appData.teamPenalties || {}).forEach(penalty => {
+                if (penaltiesByTeam.hasOwnProperty(penalty.teamId)) {
+                    penaltiesByTeam[penalty.teamId] += penalty.points;
+                }
+            });
+            return penaltiesByTeam;
+        }
+
         async function renderHomePage() {
-            // MODIFIED FUNCTION to calculate final team score correctly including category points.
             const teamsArray = getDataAsArray("teams");
+            const teamPenalties = calculateTeamPenalties();
 
             teamsArray.forEach(team => {
                 const directScores = appData.teamDirectScores[team.id] || {};
-                
-                // 1. Calculate total direct points by summing up category points
                 let totalDirectPoints = 0;
                 for (const cat in directScores) {
                     totalDirectPoints += (directScores[cat] || 0);
                 }
                 team.totalPoints = totalDirectPoints;
-
-                // 2. Initialize category points with the direct scores
+                
                 team.categoryPoints = {};
                 CATEGORIES.forEach(cat => {
                     team.categoryPoints[cat] = directScores[cat] || 0;
                 });
             });
 
-            // 3. Add the points from each student's individual achievements
             Object.values(appData.students || {}).forEach(student => {
                 const team = teamsArray.find(t => t.id === student.teamId);
                 if (team) {
@@ -385,9 +391,12 @@
                 }
             });
 
+            teamsArray.forEach(team => {
+                team.totalPoints -= (teamPenalties[team.id] || 0);
+            });
+
             teamsArray.sort((a, b) => b.totalPoints - a.totalPoints);
             
-            // The HTML structure remains the same.
             return `
                   <div class="page space-y-12">
                       <div>
@@ -571,13 +580,12 @@
         }
         
         function getProvisionalScores() {
-            // MODIFIED FUNCTION to reflect new scoring rules for preview.
             const studentPoints = {};
-            const teamDirectPoints = {}; // Will hold category-wise points
+            const teamDirectPoints = {}; 
+            const teamPenalties = calculateTeamPenalties();
 
             for (const studentId in appData.students) { studentPoints[studentId] = 0; }
             
-            // Initialize with category structure
             for (const teamId in appData.teams) {
                 teamDirectPoints[teamId] = {};
                 CATEGORIES.forEach(cat => {
@@ -654,6 +662,8 @@
                         }
                     }
                 });
+
+                team.totalPoints -= (teamPenalties[team.id] || 0);
             });
 
             teamsArray.sort((a, b) => b.totalPoints - a.totalPoints);
@@ -684,7 +694,7 @@
         }
         async function renderAdminDashboard() {
             setTimeout(() => renderAdminTab(activeAdminTab), 0x0);
-            return "\n               <div class=\"page space-y-8\">\n                  <h1 class=\"text-3xl font-bold text-gray-900\">Admin Dashboard</h1>\n                  <div class=\"border-b border-gray-200\">\n                      <nav id=\"admin-tabs\" class=\"-mb-px flex space-x-8 overflow-x-auto\" aria-label=\"Tabs\">\n                          <button data-tab=\"status\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Program Status</button>\n                          <button data-tab=\"results\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Upload Results</button>\n                          <button data-tab=\"publish\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Publish</button>\n                          <button data-tab=\"announce\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Announce Live</button>\n                          <button data-tab=\"preview\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Score Preview</button>\n                          <button data-tab=\"students\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Students</button>\n                          <button data-tab=\"teams\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Teams</button>\n                          <button data-tab=\"programs\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Programs</button>\n                           <button data-tab=\"points\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Points Config</button>\n                      </nav>\n                  </div>\n                  <div id=\"admin-tab-content\" class=\"pt-4\">\n                      <div class=\"flex justify-center items-center p-16\"><div class=\"loader\"></div></div>\n                  </div>\n              </div>\n            ";
+            return "\n               <div class=\"page space-y-8\">\n                  <h1 class=\"text-3xl font-bold text-gray-900\">Admin Dashboard</h1>\n                  <div class=\"border-b border-gray-200\">\n                      <nav id=\"admin-tabs\" class=\"-mb-px flex space-x-8 overflow-x-auto\" aria-label=\"Tabs\">\n                          <button data-tab=\"status\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Program Status</button>\n                          <button data-tab=\"results\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Upload Results</button>\n                          <button data-tab=\"publish\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Publish</button>\n                          <button data-tab=\"announce\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Announce Live</button>\n                          <button data-tab=\"preview\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Score Preview</button>\n                          <button data-tab=\"students\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Students</button>\n                          <button data-tab=\"teams\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Teams</button>\n                          <button data-tab=\"programs\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Programs</button>\n                           <button data-tab=\"points\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Points Config</button>\n                           <button data-tab=\"penalty\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Penalty</button>\n                      </nav>\n                  </div>\n                  <div id=\"admin-tab-content\" class=\"pt-4\">\n                      <div class=\"flex justify-center items-center p-16\"><div class=\"loader\"></div></div>\n                  </div>\n              </div>\n            ";
         }
         async function renderAdminTab(_0x3a4997, _0xa4943 = 'All') {
             const _0x88f17b = document.getElementById('admin-tab-content');
@@ -702,7 +712,6 @@
                     break;
                 case "results":
                     tempParticipants = [];
-                    // --- MODIFIED: Added "Team Program" radio button ---
                     _0x372c5f = `
                               <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                   <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg">
@@ -815,7 +824,6 @@
                 case "programs":
                     _0x372c5f = "\n                              <div class=\"grid grid-cols-1 lg:grid-cols-3 gap-8\">\n                                   <div class=\"lg:col-span-2 bg-white p-6 rounded-xl shadow-lg order-2 lg:order-1\">\n                                      <h2 class=\"text-2xl font-bold mb-6\">All Programs</h2>\n                                      <div id=\"items-list\" class=\"space-y-2 max-h-[80vh] overflow-y-auto pr-2\"></div>\n                                  </div>\n                                  <div class=\"lg:col-span-1 bg-white p-6 rounded-xl shadow-lg order-1 lg:order-2 space-y-8\">\n                                      <div>\n                                          <h2 class=\"text-2xl font-bold mb-6\">Add New Program</h2>\n                                          <form id=\"add-program-form\" class=\"space-y-4\">\n                                              <div><label for=\"program-name\" class=\"block text-sm font-medium\">Program Name</label><input type=\"text\" id=\"program-name\" required class=\"mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm\"></div>\n                                              <div><label for=\"program-category\" class=\"block text-sm font-medium\">Category</label><select id=\"program-category\" required class=\"mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm\">" + categoryOptions() + "</select></div>\n                                              <button type=\"submit\" class=\"w-full justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700\">Add Program</button>\n                                              <p id=\"form-message\" class=\"text-sm mt-2 text-center\"></p>\n                                          </form>\n                                      </div>\n                                      <hr/>\n                                      <div>\n                                          <h2 class=\"text-2xl font-bold mb-6\">Bulk Upload Programs</h2>\n                                          <form id=\"bulk-upload-programs-form\" class=\"space-y-4\">\n                                              <div class=\"text-sm\">\n                                                  <p class=\"mb-2\">Upload an Excel (.xlsx) file with columns:</p>\n                                                  <code class=\"text-xs bg-gray-200 p-1 rounded\">ProgramName, Category</code>\n                                              </div>\n                                              <div>\n                                                  <input type=\"file\" id=\"program-file-input\" class=\"block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100\" accept=\".xlsx\" required>\n                                              </div>\n                                              <button type=\"submit\" class=\"w-full justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700\">Upload File</button>\n                                              <button type=\"button\" id=\"download-program-template\" class=\"w-full text-center py-2 px-4 border text-sm font-medium rounded-md text-indigo-600 bg-indigo-50 hover:bg-indigo-100\">Download Template</button>\n                                              <p id=\"bulk-form-message\" class=\"text-sm mt-2 text-center\"></p>\n                                          </form>\n                                      </div>\n                                  </div>\n                              </div>";
                     break;
-                // --- MODIFIED: Updated the Points Config tab for all 3 program types ---
                 case 'points':
                     _0x372c5f = `
                               <div class="max-w-4xl mx-auto">
@@ -856,12 +864,45 @@
                               </div>
                             `;
                     break;
+                case 'penalty':
+                    const teamsArrayForPenalty = getDataAsArray("teams");
+                    _0x372c5f = `
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg">
+                                <h2 class="text-2xl font-bold mb-6">Apply Penalty</h2>
+                                <form id="apply-penalty-form" class="space-y-4">
+                                    <div>
+                                        <label for="penalty-team" class="block text-sm font-medium">Team</label>
+                                        <select id="penalty-team" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
+                                            <option value="">Select Team</option>
+                                            ${teamsArrayForPenalty.map(team => `<option value="${team.id}">${team.name}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="penalty-points" class="block text-sm font-medium">Penalty Points (e.g., 10)</label>
+                                        <input type="number" id="penalty-points" min="1" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
+                                    </div>
+                                    <div>
+                                        <label for="penalty-reason" class="block text-sm font-medium">Reason</label>
+                                        <input type="text" id="penalty-reason" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
+                                    </div>
+                                    <button type="submit" class="w-full justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">Apply Penalty</button>
+                                    <p id="form-message" class="text-sm mt-2 text-center"></p>
+                                </form>
+                            </div>
+                            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+                                <h2 class="text-2xl font-bold mb-6">Applied Penalties</h2>
+                                <div id="items-list" class="space-y-2 max-h-[80vh] overflow-y-auto pr-2"></div>
+                            </div>
+                        </div>
+                    `;
+                    break;
             }
             _0x88f17b.innerHTML = _0x372c5f;
             if (_0x3a4997 === "results") {
                 loadRecentResults();
             }
-            if (['students', 'teams', "programs"].includes(_0x3a4997)) {
+            if (['students', 'teams', "programs", "penalty"].includes(_0x3a4997)) {
                 loadItemsList(_0x3a4997);
             }
         }
@@ -880,6 +921,25 @@
         function loadItemsList(_0x9bd124) {
             const _0x1620a4 = document.getElementById("items-list");
             if (!_0x1620a4) {
+                return;
+            }
+            // MODIFIED: 'teamPenalties' is not a valid collection name here
+            if (_0x9bd124 === 'penalty') { _0x9bd124 = 'teamPenalties'; }
+            if (_0x9bd124 === 'teamPenalties') {
+                const penalties = getDataAsArray('teamPenalties');
+                if (penalties.length === 0) {
+                    _0x1620a4.innerHTML = `<p class="text-gray-500 text-center py-4">No penalties have been applied yet.</p>`;
+                    return;
+                }
+                _0x1620a4.innerHTML = penalties.map(penalty => `
+                    <div class="flex justify-between items-center bg-red-50 p-3 rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-800">-${penalty.points} points to <strong>${appData.teams[penalty.teamId]?.name || 'Unknown Team'}</strong></p>
+                            <p class="text-sm text-gray-500">Reason: ${penalty.reason}</p>
+                        </div>
+                        <button class="delete-btn text-red-500 hover:text-red-700" data-id="${penalty.id}" data-collection="teamPenalties"><i class="fas fa-trash"></i></button>
+                    </div>
+                `).join('');
                 return;
             }
             const _0x56029d = getDataAsArray(_0x9bd124).sort((_0x514b3c, _0x35509d) => _0x514b3c.name > _0x35509d.name ? 0x1 : -0x1);
@@ -1046,7 +1106,6 @@
                         }
                         _0x4df59d.reset();
                         break;
-                    // --- MODIFIED: Update handler to save all three point configs ---
                     case "update-points-form":
                         const individualPoints = {
                             'first': parseInt(_0x4df59d.querySelector("#points-first").value),
@@ -1117,6 +1176,27 @@
                         }
                         _0xe7735e.textContent = "Processing file...";
                         await processBulkUpload(_0x287e74, _0x2b8214, _0xe7735e);
+                        _0x4df59d.reset();
+                        break;
+                    case "apply-penalty-form":
+                        const teamId = _0x4df59d.querySelector('#penalty-team').value;
+                        const points = parseInt(_0x4df59d.querySelector('#penalty-points').value, 10);
+                        const reason = _0x4df59d.querySelector('#penalty-reason').value;
+
+                        if (!teamId || !points || !reason || points <= 0) {
+                            throw new Error("Please fill out all fields correctly.");
+                        }
+
+                        await db.ref("teamPenalties").push({
+                            teamId,
+                            points,
+                            reason,
+                            'createdAt': Date.now()
+                        });
+
+                        if (_0xe7735e) {
+                            _0xe7735e.textContent = "Penalty applied successfully!";
+                        }
                         _0x4df59d.reset();
                         break;
                 }
@@ -1240,16 +1320,13 @@
         }
         
         async function recalculateAllPoints() {
-            // MODIFIED FUNCTION: Separates individual points from direct-to-team points, now category-wise.
-            const studentPoints = {}; // Stores points for individual programs
-            const teamDirectPoints = {}; // Stores category-wise points for group/team programs
+            const studentPoints = {};
+            const teamDirectPoints = {}; 
 
-            // Initialize all student scores to 0
             for (const studentId in appData.students) {
                 studentPoints[studentId] = 0;
             }
 
-            // Initialize all team direct scores with category structure
             for (const teamId in appData.teams) {
                 teamDirectPoints[teamId] = {};
                 CATEGORIES.forEach(cat => {
@@ -1265,13 +1342,12 @@
                     continue;
                 }
 
-                // Select the correct points configuration based on program type
                 let pointsConfigToUse;
                 if (result.programType === 'group') {
                     pointsConfigToUse = appData.groupPointsConfig;
                 } else if (result.programType === 'team') {
                     pointsConfigToUse = appData.teamPointsConfig;
-                } else { // 'individual' or undefined (legacy)
+                } else {
                     pointsConfigToUse = appData.pointsConfig;
                 }
 
@@ -1286,7 +1362,6 @@
 
                     if (result.programType === 'group' || result.programType === 'team') {
                         const student = appData.students[participant.studentId];
-                        // NEW: Add points to the specific category for the team.
                         if (student && student.teamId && teamDirectPoints[student.teamId] && result.category) {
                            if (teamDirectPoints[student.teamId][result.category] === undefined) {
                                 teamDirectPoints[student.teamId][result.category] = 0;
@@ -1294,7 +1369,6 @@
                             teamDirectPoints[student.teamId][result.category] += points;
                         }
                     } else {
-                        // For individual events, add points to the student's personal score.
                         if (studentPoints.hasOwnProperty(participant.studentId)) {
                             studentPoints[participant.studentId] += points;
                         }
@@ -1304,12 +1378,10 @@
 
             const updates = {};
 
-            // 1. Update totalPoints for all students (from individual events only)
             for (const studentId in studentPoints) {
                 updates[`/students/${studentId}/totalPoints`] = studentPoints[studentId];
             }
             
-            // 2. Update the new teamDirectScores object for each team (with category breakdown)
             for (const teamId in teamDirectPoints) {
                 updates[`/teamDirectScores/${teamId}`] = teamDirectPoints[teamId];
             }
@@ -1471,32 +1543,94 @@
         async function renderNotFoundPage() {
             return "<div class=\"text-center\"><h1 class=\"text-4xl font-bold\">404 - Not Found</h1><p class=\"mt-4\">The page you are looking for does not exist.</p></div>";
         }
+        
         function renderAnnounceLivePage() {
-            const _0x33df19 = getDataAsArray("results").filter(_0xce4edf => _0xce4edf.status === "ready").sort((_0x3a28ed, _0x177e33) => _0x3a28ed.category.localeCompare(_0x177e33.category) || _0x3a28ed.programName.localeCompare(_0x177e33.programName));
-            const _0x84533f = {
-                'first': "1st Place",
-                'second': "2nd Place",
-                'third': "3rd Place",
-                'a_grade': "A Grade",
-                'b_grade': "B Grade"
+            const readyResults = getDataAsArray("results").filter(result => result.status === "ready").sort((a, b) => a.category.localeCompare(b.category) || a.programName.localeCompare(b.programName));
+            
+            const positionLabels = {
+                'first': "1st Place", 'second': "2nd Place", 'third': "3rd Place",
+                'a_grade': "A Grade", 'b_grade': "B Grade"
             };
-            return "\n              <div class=\"page space-y-8\">\n                   <div class=\"bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md flex flex-col md:flex-row justify-between items-center gap-4\" role=\"alert\">\n                        <div>\n                            <p class=\"font-bold\">Live Announce Mode</p>\n                            <p>\"Publish Now\" makes a result public. Click \"Update All Scores\" to refresh the main leaderboards.</p>\n                        </div>\n                        <button id=\"update-all-scores-btn\" class=\"bg-red-600 text-white px-6 py-3 text-md font-bold rounded-lg hover:bg-red-700 transition-transform transform hover:scale-105 flex-shrink-0\">\n                            <i class=\"fas fa-sync-alt mr-2\"></i> Update All Scores\n                        </button>\n                   </div>\n                  <div id=\"announce-list\" class=\"space-y-6 pr-2\">\n                  " + (_0x33df19.length === 0x0 ? "<p class=\"text-gray-500 text-center py-8 text-xl\">No results are currently ready for announcement.</p>" : _0x33df19.map(_0x312dfb => "\n                      <div class=\"bg-white shadow-2xl rounded-xl p-8 border-t-4 border-indigo-500\">\n                          <div class=\"flex flex-col md:flex-row justify-between items-center gap-4\">\n                              <div class=\"text-center md:text-left\">\n                                  <p class=\"text-lg font-semibold text-indigo-600\">" + _0x312dfb.category + "</p>\n                                  <h2 class=\"text-4xl font-bold text-gray-900\">" + _0x312dfb.programName + "</h2>\n                              </div>\n                              <button class=\"publish-btn w-full md:w-auto bg-green-600 text-white px-10 py-4 text-xl font-bold rounded-lg hover:bg-green-700 transition-transform transform hover:scale-105\" data-id=\"" + _0x312dfb.id + "\">\n                                  <i class=\"fas fa-bullhorn mr-2\"></i> Publish Now\n                              </button>\n                          </div>\n                          <div class=\"mt-6 border-t pt-6\">\n                              <h3 class=\"text-2xl font-bold mb-4 text-gray-800\">Winners List</h3>\n                              <div class=\"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-lg\">\n                                  " + (_0x312dfb.participants || []).map(_0x55e33a => {
-                const _0x39534d = appData.students[_0x55e33a.studentId];
-                const _0x1322b5 = _0x39534d && appData.teams[_0x39534d.teamId] ? appData.teams[_0x39534d.teamId].name : 'N/A';
-                let _0x2e53f4 = '';
-                if (_0x55e33a.position && _0x55e33a.position !== 'none') {
-                    _0x2e53f4 += _0x84533f[_0x55e33a.position];
+
+            const groupedResults = readyResults.reduce((acc, result) => {
+                const category = result.category;
+                if (!acc[category]) {
+                    acc[category] = [];
                 }
-                if (_0x55e33a.grade && _0x55e33a.grade !== "none") {
-                    if (_0x2e53f4) {
-                        _0x2e53f4 += " • ";
-                    }
-                    _0x2e53f4 += _0x84533f[_0x55e33a.grade];
-                }
-                const displayName = _0x312dfb.programType === 'group' || _0x312dfb.programType === 'team' ? `${_0x55e33a.name} & Team` : _0x55e33a.name;
-                return "\n                                  <div class=\"bg-gray-50 p-3 rounded-md\">\n                                      <p class=\"font-bold text-gray-900\">" + displayName + " <span class=\"text-gray-500 font-medium\">(" + _0x39534d.chestNo + ")</span></p>\n                                      <p class=\"text-indigo-700 font-semibold\">" + _0x2e53f4 + "</p>\n                                      <p class=\"text-sm text-gray-600\">" + _0x1322b5 + "</p>\n                                  </div>\n                                  ";
-            }).join('') + "\n                              </div>\n                          </div>\n                      </div>\n                      ").join('')) + "\n                  </div>\n              </div>\n            ";
+                acc[category].push(result);
+                return acc;
+            }, {});
+
+            const pageHTML = `
+              <div class="page space-y-8">
+                   <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md flex flex-col md:flex-row justify-between items-center gap-4" role="alert">
+                        <div>
+                            <p class="font-bold">Live Announce Mode</p>
+                            <p>"Publish Now" makes a result public. Click "Update All Scores" to refresh the main leaderboards.</p>
+                        </div>
+                        <button id="update-all-scores-btn" class="bg-red-600 text-white px-6 py-3 text-md font-bold rounded-lg hover:bg-red-700 transition-transform transform hover:scale-105 flex-shrink-0">
+                            <i class="fas fa-sync-alt mr-2"></i> Update All Scores
+                        </button>
+                   </div>
+                   <div id="announce-list" class="pr-2">
+                       ${Object.keys(groupedResults).length === 0 
+                           ? `<p class="text-gray-500 text-center py-8 text-xl">No results are currently ready for announcement.</p>`
+                           : Object.keys(groupedResults).sort((a, b) => CATEGORIES.indexOf(a) - CATEGORIES.indexOf(b)).map(category => {
+                               const resultsInCategory = groupedResults[category];
+                               return `
+                                   <div class="mb-12">
+                                       <h2 class="text-3xl font-extrabold text-gray-800 border-b-4 border-indigo-300 pb-3 mb-6">${category}</h2>
+                                       <div class="space-y-6">
+                                       ${resultsInCategory.map(result => {
+                                           return `
+                                               <div class="bg-white shadow-2xl rounded-xl p-8 border-t-4 border-indigo-500">
+                                                   <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                                                       <div class="text-center md:text-left">
+                                                          
+                                                           <h2 class="text-4xl font-bold text-gray-900">${result.programName}</h2>
+                                                       </div>
+                                                       <button class="publish-btn w-full md:w-auto bg-green-600 text-white px-10 py-4 text-xl font-bold rounded-lg hover:bg-green-700 transition-transform transform hover:scale-105" data-id="${result.id}">
+                                                           <i class="fas fa-bullhorn mr-2"></i> Publish Now
+                                                       </button>
+                                                   </div>
+                                                   <div class="mt-6 border-t pt-6">
+                                                       <h3 class="text-2xl font-bold mb-4 text-gray-800">Winners List</h3>
+                                                       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-lg">
+                                                           ${(result.participants || []).map(participant => {
+                                                               const student = appData.students[participant.studentId];
+                                                               const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : 'N/A';
+                                                               let prize = '';
+                                                               if (participant.position && participant.position !== 'none') {
+                                                                   prize += positionLabels[participant.position];
+                                                               }
+                                                               if (participant.grade && participant.grade !== "none") {
+                                                                   if (prize) prize += " • ";
+                                                                   prize += positionLabels[participant.grade];
+                                                               }
+                                                               const displayName = result.programType === 'group' || result.programType === 'team' ? `${participant.name} & Team` : participant.name;
+                                                               return `
+                                                                   <div class="bg-gray-50 p-3 rounded-md">
+                                                                       <p class="font-bold text-gray-900">${displayName} <span class="text-gray-500 font-medium">(${student.chestNo})</span></p>
+                                                                       <p class="text-indigo-700 font-semibold">${prize}</p>
+                                                                       <p class="text-sm text-gray-600">${teamName}</p>
+                                                                   </div>
+                                                               `;
+                                                           }).join('')}
+                                                       </div>
+                                                   </div>
+                                               </div>
+                                           `;
+                                       }).join('')}
+                                       </div>
+                                   </div>
+                               `;
+                           }).join('')}
+                   </div>
+              </div>
+            `;
+            return pageHTML;
         }
+
         function renderProgramStatusPage(_0x188e57 = "All") {
             const _0xee3d1d = getDataAsArray("programs").sort((_0x21c5ba, _0x22f921) => _0x21c5ba.category.localeCompare(_0x22f921.category) || _0x21c5ba.name.localeCompare(_0x22f921.name));
             const _0x5125c9 = getDataAsArray("results");
@@ -1578,22 +1712,19 @@
         
         function openTeamModal(_0x737574) {
             const team = appData.teams[_0x737574];
-            if (!team) {
-                return;
-            }
+            if (!team) { return; }
 
+            const teamPenalties = calculateTeamPenalties();
             const directScores = appData.teamDirectScores[_0x737574] || {};
             let totalTeamPoints = 0;
             const categoryPoints = {};
 
-            // 1. Initialize with direct scores
             CATEGORIES.forEach(cat => {
                 const points = directScores[cat] || 0;
                 categoryPoints[cat] = points;
                 totalTeamPoints += points;
             });
 
-            // 2. Add student scores
             Object.values(appData.students || {}).forEach(student => {
                 if (student.teamId === _0x737574) {
                     const studentPoints = student.totalPoints || 0;
@@ -1604,14 +1735,14 @@
                 }
             });
 
-            // Calculate rank
+            totalTeamPoints -= (teamPenalties[_0x737574] || 0);
+
             const allTeams = getDataAsArray("teams").map(t => {
                 let teamScore = appData.teamDirectScores[t.id] ? Object.values(appData.teamDirectScores[t.id]).reduce((a, b) => a + (b || 0), 0) : 0;
                 Object.values(appData.students || {}).forEach(s => {
-                    if (s.teamId === t.id) {
-                        teamScore += (s.totalPoints || 0);
-                    }
+                    if (s.teamId === t.id) { teamScore += (s.totalPoints || 0); }
                 });
+                teamScore -= (teamPenalties[t.id] || 0);
                 return { ...t, totalPoints: teamScore };
             }).sort((a, b) => b.totalPoints - a.totalPoints);
             
