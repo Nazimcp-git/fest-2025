@@ -15,16 +15,17 @@
 <meta property="og:url" content="https://poru.live/">
 <meta property="og:title" content="Poru '25 | Creativity Unleashed">
 <meta property="og:description" content="Join the most vibrant art festival of the year at Darunnajath Islamic Complex, Vallappuzha. Experience a symphony of color, talent, and passion.">
-<meta property="og:image" content="https://poru.live/logo.png"> <meta property="twitter:card" content="summary_large_image">
+<meta property="og:image" content="https://poru.live/logo.png">
+<meta property="twitter:card" content="summary_large_image">
 <meta property="twitter:url" content="https://poru.live/">
 <meta property="twitter:title" content="Poru '25 | The Vibrant Art Fest">
 <meta property="twitter:description" content="Experience creativity unleashed at Poru '25, the year's most vibrant art festival at Darunnajath Islamic Complex, Vallappuzha.">
-<meta property="twitter:image" content="https://poru.live/logo.png"> <link rel="canonical" href="https://poru.live/" />
+<meta property="twitter:image" content="https://poru.live/logo.png">
+<link rel="canonical" href="https://poru.live/" />
 
 <link rel="icon" href="logo.png" sizes="any">
 <link rel="icon" href="logo.png" type="image/svg+xml">
 <link rel="apple-touch-icon" href="logo.png"> 
-
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,8 +64,70 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
 }
+
+/* --- PRELOADER / LOGO INTRO --- */
+.preloader {
+    position: fixed;
+    inset: 0;
+    background-color: var(--dark-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease;
+}
+.preloader img {
+    max-width: 25%;
+    animation: logo-intro 3.5s ease-in-out forwards;
+}
+.preloader.preloader-hiding {
+    opacity: 0;
+    pointer-events: none;
+}
+
+@keyframes logo-intro {
+    0% { transform: scale(0.8); opacity: 0; }
+    40% { transform: scale(1); opacity: 1; }
+    80% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.8); opacity: 0; }
+}
+
+/* --- STICKY HEADER --- */
+.main-header {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    padding: 1rem 0;
+    background-color: rgba(18, 18, 18, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+    border-bottom: 1px solid var(--dark-border);
+    transform: translateY(-100%);
+    transition: transform 0.5s ease;
+}
+.main-header.is-visible {
+    transform: translateY(0);
+}
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.header-logo img {
+    height: 40px;
+}
+.main-nav a {
+    text-decoration: none;
+    color: var(--text-muted);
+    margin-left: 1.5rem;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+.main-nav a:hover {
+    color: var(--text-light);
+}
+
 
 /* --- SUBTLE BACKGROUND PATTERN --- */
 body::before {
@@ -78,7 +141,6 @@ body::before {
     z-index: -1;
     opacity: 0.5;
 }
-
 
 /* --- UTILITIES & GLOBAL STYLES --- */
 .container {
@@ -361,21 +423,27 @@ body::before {
     margin-top: 2rem;
     font-size: 0.9rem;
 }
+
+/* --- RESPONSIVE ADJUSTMENTS --- */
 @media (max-width: 768px) {
+    .main-header { display: none; }
     .section-title, .hero-content h1 { font-size: 2.5rem; }
     .about-section-grid { grid-template-columns: 1fr; text-align: center; }
     .about-logo { margin-bottom: 2rem; text-align: center; }
-}
-.adout-logo{
-  text-align: center;
-}
-@media only screen and (max-width: 600px) {
-  .adout-logo{
-  text-align: center;
+    .preloader img {
+    max-width: 65%;
+    animation: logo-intro 3.5s ease-in-out forwards;
 }
 }
+
 </style>
 <body>
+
+  <div class="preloader">
+      <img src="logo.png" alt="Poru '25 Logo">
+  </div>
+
+  
   
   <main>
     <section class="hero-section">
@@ -391,7 +459,7 @@ body::before {
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" id="about">
         <div class="container reveal-on-scroll">
             <div class="about-section-grid">
                 <div class="about-logo">
@@ -405,7 +473,7 @@ body::before {
         </div>
     </section>
     
-    <section class="section countdown-section" style="background-color: var(--dark-surface);">
+    <section class="section countdown-section" id="countdown" style="background-color: var(--dark-surface);">
         <div class="container">
             <div class="section-header reveal-on-scroll">
                 <h2 class="section-title">The Celebration Begins In</h2>
@@ -419,7 +487,23 @@ body::before {
         </div>
     </section>
 
-    <section class="section leaderboard-section" id="leaderboard">
+    <section class="section action-section">
+        <div class="container">
+             <div class="section-header reveal-on-scroll">
+                <h2 class="section-title">Navigate The Festival</h2>
+            </div>
+            <div class="action-grid reveal-on-scroll">
+                <a href="/results/" class="action-card"><div class="action-icon"><i class="fas fa-clipboard-list"></i></div><h3>Arts Score Board</h3></a>
+                <a href="/sports/" class="action-card"><div class="action-icon"><i class="fa-solid fa-volleyball"></i></div><h3>Sports Score Board</h3></a>
+                <a href="/results/live.html" class="action-card"><div class="action-icon"><i class="fa-solid fa-square-poll-vertical"></i></div><h3>Live Results</h3></a>
+                <a href="/gallery/" class="action-card"><div class="action-icon"><i class="fas fa-images"></i></div><h3>Explore Gallery</h3></a>
+                <a href="/notifications/" class="action-card"><div class="action-icon"><i class="fas fa-bell"></i></div><h3>Check Notifications</h3></a>
+                <a href="/downloads/" class="action-card"><div class="action-icon"><i class="fas fa-download"></i></div><h3>Downloads</h3></a>
+            </div>
+        </div>
+    </section>
+
+    <section class="section leaderboard-section" id="leaderboard" style="background-color: var(--dark-surface);">
         <div class="container">
             <div class="section-header reveal-on-scroll">
                 <h2 class="section-title">Team Standings</h2>
@@ -433,26 +517,8 @@ body::before {
             </div>
         </div>
     </section>
-    
-    <section class="section action-section" style="background-color: var(--dark-surface);">
-        <div class="container">
-             <div class="section-header reveal-on-scroll">
-                <h2 class="section-title">Navigate The Festival</h2>
-            </div>
-            <div class="action-grid reveal-on-scroll">
-                <a href="/results/" class="action-card"><div class="action-icon"><i class="fas fa-clipboard-list"></i></div><h3>Arts Score Board</h3></a>
-                <a href="/sports/" class="action-card"><div class="action-icon"><i class="fa-solid fa-volleyball"></i></div><h3>Sports Score Board</h3></a>
-                <a href="/results/live.html" class="action-card"><div class="action-icon"><i class="fa-solid fa-square-poll-vertical"></i></div><h3>Live Results</h3></a>
-                <a href="/gallery/" class="action-card"><div class="action-icon"><i class="fas fa-images"></i></div><h3>Explore Gallery</h3></a>
-                <a href="/notifications/" class="action-card"><div class="action-icon"><i class="fas fa-bell"></i></div><h3>Check Notifications</h3></a>
-                <a href="/downloads/" class="action-card"><div class="action-icon"><i class="fas fa-download"></i></div><h3>Downloads</h3></a>
-                
-           
-              </div>
-        </div>
-    </section>
 
-    <section class="section gallery-section">
+    <section class="section gallery-section" id="gallery">
         <div class="container">
             <div class="section-header reveal-on-scroll">
                 <h2 class="section-title">Festival in Focus</h2>
@@ -482,6 +548,32 @@ body::before {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    
+    // --- PRELOADER LOGIC ---
+    const preloader = document.querySelector('.preloader');
+    const mainHeader = document.querySelector('.main-header');
+
+    window.addEventListener('load', () => {
+        // Wait for the intro animation to mostly complete
+        setTimeout(() => {
+            if (preloader) {
+                preloader.classList.add('preloader-hiding');
+            }
+            if (mainHeader) {
+                mainHeader.classList.add('is-visible');
+            }
+            
+            // Remove preloader from DOM after transition
+            setTimeout(() => {
+                if (preloader) {
+                    preloader.style.display = 'none';
+                }
+            }, 500);
+
+        }, 2500); // This duration should match the CSS animation
+    });
+
+    // --- REVEAL ON SCROLL LOGIC ---
     const revealObserver = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -495,8 +587,11 @@ document.addEventListener('DOMContentLoaded', function() {
         revealObserver.observe(el);
     });
 
+    // --- COUNTDOWN TIMER LOGIC ---
     function setupCountdown() {
-        const countdownDate = new Date('September 26, 2025 23:59:59').getTime();
+        // SET THE TARGET DATE HERE!
+        const countdownDate = new Date('September 26, 2025 09:00:00').getTime();
+        
         const daysEl = document.getElementById('days');
         const hoursEl = document.getElementById('hours');
         const minutesEl = document.getElementById('minutes');
@@ -510,7 +605,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (distance < 0) {
                 clearInterval(timer);
-                // Optionally handle countdown completion
+                // Handle countdown completion
+                document.querySelector('.countdown-grid').innerHTML = '<h3 style="grid-column: 1 / -1; color: var(--text-light);">The Festival is Live!</h3>';
                 return;
             }
 
