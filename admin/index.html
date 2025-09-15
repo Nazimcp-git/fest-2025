@@ -196,10 +196,10 @@
         };
         let isInitialLoad = true;
         let tempParticipants = [];
-        let activeAdminTab = "status";
-        let editingResultId = null; // For editing results
-        let activeStatusFilter = 'All'; // For status tab filter
-        let activeStatusCategoryFilter = 'All'; // For status tab filter
+        let activeAdminTab = "dashboard"; // Set dashboard as default
+        let editingResultId = null; 
+        let activeStatusFilter = 'All'; 
+        let activeStatusCategoryFilter = 'All';
 
         const generateNavLinks = (_0x3129ae = false) => {
             const _0x1890c9 = _0x3129ae ? "block px-4 py-3 text-base font-medium" : "px-3 py-2 rounded-md text-sm font-medium";
@@ -266,7 +266,7 @@
                 }
                 if (_0x23c4c7.startsWith('/admin') && document.getElementById("admin-tabs")) {
                     const _0x3d6663 = document.querySelector(".admin-tab.active");
-                    renderAdminTab(_0x3d6663 ? _0x3d6663.dataset.tab : 'status');
+                    renderAdminTab(_0x3d6663 ? _0x3d6663.dataset.tab : 'dashboard');
                     return;
                 }
             }
@@ -692,6 +692,163 @@
             return { teamsArray, studentsArray };
         }
 
+        function calculateAllScoresInternal() {
+            const studentPoints = {};
+            const teamDirectPoints = {}; 
+            const teamPenalties = calculateTeamPenalties();
+
+            for (const studentId in appData.students) { studentPoints[studentId] = 0; }
+            
+            for (const teamId in appData.teams) {
+                teamDirectPoints[teamId] = {};
+                CATEGORIES.forEach(cat => {
+                    teamDirectPoints[teamId][cat] = 0;
+                });
+            }
+
+            const allResults = appData.results || {};
+            
+            for (const resultId in allResults) {
+                const result = allResults[resultId];
+                if (!result.participants) {
+                    continue;
+                }
+
+                let pointsConfigToUse;
+                if (result.programType === 'group') {
+                    pointsConfigToUse = appData.groupPointsConfig;
+                } else if (result.programType === 'team') {
+                    pointsConfigToUse = appData.teamPointsConfig;
+                } else {
+                    pointsConfigToUse = appData.pointsConfig;
+                }
+
+                result.participants.forEach(participant => {
+                    let points = 0;
+                    if (participant.position && participant.position !== "none" && pointsConfigToUse[participant.position]) {
+                        points += pointsConfigToUse[participant.position];
+                    }
+                    if (participant.grade && participant.grade !== "none" && pointsConfigToUse[participant.grade]) {
+                        points += pointsConfigToUse[participant.grade];
+                    }
+                    
+                    if (result.programType === 'group' || result.programType === 'team') {
+                        const student = appData.students[participant.studentId];
+                        if (student && student.teamId && teamDirectPoints[student.teamId] && result.category) {
+                           if (!teamDirectPoints[student.teamId][result.category]) {
+                                 teamDirectPoints[student.teamId][result.category] = 0;
+                           }
+                            teamDirectPoints[student.teamId][result.category] += points;
+                        }
+                    } else {
+                        if (studentPoints.hasOwnProperty(participant.studentId)) {
+                            studentPoints[participant.studentId] += points;
+                        }
+                    }
+                });
+            }
+
+            const teamsArray = JSON.parse(JSON.stringify(getDataAsArray("teams")));
+            const studentsArray = JSON.parse(JSON.stringify(getDataAsArray("students")));
+
+            studentsArray.forEach(student => {
+                student.totalPoints = studentPoints[student.id] || 0;
+            });
+
+            teamsArray.forEach(team => {
+                const directScores = teamDirectPoints[team.id] || {};
+                let totalDirectPoints = 0;
+                team.categoryPoints = {};
+
+                CATEGORIES.forEach(cat => {
+                    const points = directScores[cat] || 0;
+                    team.categoryPoints[cat] = points;
+                    totalDirectPoints += points;
+                });
+                team.totalPoints = totalDirectPoints;
+
+                studentsArray.forEach(student => {
+                    if (student.teamId === team.id) {
+                        team.totalPoints += student.totalPoints;
+                        if (student.category && team.categoryPoints.hasOwnProperty(student.category)) {
+                            team.categoryPoints[student.category] += student.totalPoints;
+                        }
+                    }
+                });
+
+                team.totalPoints -= (teamPenalties[team.id] || 0);
+            });
+
+            teamsArray.sort((a, b) => b.totalPoints - a.totalPoints);
+            studentsArray.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+
+            return { teamsArray, studentsArray };
+        }
+
+        async function renderDashboardPage() {
+            const { teamsArray, studentsArray } = calculateAllScoresInternal();
+
+            const teamsHtml = teamsArray.length === 0 ? "<p class=\"text-gray-500 col-span-full\">No teams data yet.</p>" : teamsArray.map((team, index) => {
+                const medalClasses = ["text-yellow-400", "text-gray-400", "text-yellow-600", "text-blue-400"];
+                const medalIcons = ["fa-crown", "fa-medal", "fa-award", "fa-star"];
+                return `
+                    <div class="bg-white shadow-lg rounded-xl p-6">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold text-gray-800">${team.name}</h2>
+                            ${index < 4 ? `<i class="fas ${medalIcons[index]} text-2xl ${medalClasses[index]}"></i>` : ''}
+                        </div>
+                        <p class="text-5xl font-extrabold text-indigo-600 mt-4">${team.totalPoints}</p>
+                        <p class="text-gray-500 mt-1">Total Points</p>
+                    </div>`;
+            }).join('');
+
+            const studentsHtml = studentsArray.length === 0 ? `<tr><td colspan="5" class="text-center py-8 text-gray-500">No student data yet.</td></tr>` : studentsArray.slice(0, 50).map((student, index) => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600"><a href="#/student/${student.id}" class="hover:underline">${student.name}</a></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${appData.teams[student.teamId]?.name || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.category}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">${student.totalPoints || 0}</td>
+                </tr>
+            `).join('');
+
+            return `
+                <div class="page space-y-12">
+                    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md" role="alert">
+                        <p class="font-bold">Internal Dashboard</p>
+                        <p>This is a live view of all scores, including pending, ready, and published results. This is NOT the public score.</p>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Live Team Standings (All Results)</h1>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            ${teamsHtml}
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 mb-6">Live Student Leaderboard (Top 50)</h2>
+                        <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        ${studentsHtml}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
         function renderScorePreviewPage() {
             const {
                 teamsArray: _0xe7e004,
@@ -714,7 +871,7 @@
         }
         async function renderAdminDashboard() {
             setTimeout(() => renderAdminTab(activeAdminTab), 0x0);
-            return "\n               <div class=\"page space-y-8\">\n                  <h1 class=\"text-3xl font-bold text-gray-900\">Admin Dashboard</h1>\n                  <div class=\"border-b border-gray-200\">\n                      <nav id=\"admin-tabs\" class=\"-mb-px flex space-x-8 overflow-x-auto\" aria-label=\"Tabs\">\n                          <button data-tab=\"status\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Program Status</button>\n                          <button data-tab=\"results\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Upload Results</button>\n                          <button data-tab=\"publish\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Publish</button>\n                          <button data-tab=\"announce\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Announce Live</button>\n                          <button data-tab=\"preview\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Score Preview</button>\n                          <button data-tab=\"students\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Students</button>\n                          <button data-tab=\"teams\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Teams</button>\n                          <button data-tab=\"programs\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Programs</button>\n                           <button data-tab=\"points\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Points Config</button>\n                           <button data-tab=\"penalty\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Penalty</button>\n                      </nav>\n                  </div>\n                  <div id=\"admin-tab-content\" class=\"pt-4\">\n                      <div class=\"flex justify-center items-center p-16\"><div class=\"loader\"></div></div>\n                  </div>\n              </div>\n            ";
+            return "\n               <div class=\"page space-y-8\">\n                  <h1 class=\"text-3xl font-bold text-gray-900\">Admin Dashboard</h1>\n                  <div class=\"border-b border-gray-200\">\n                      <nav id=\"admin-tabs\" class=\"-mb-px flex space-x-8 overflow-x-auto\" aria-label=\"Tabs\">\n                          <button data-tab=\"dashboard\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Dashboard</button>\n                          <button data-tab=\"status\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Program Status</button>\n                          <button data-tab=\"results\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Upload Results</button>\n                          <button data-tab=\"publish\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Publish</button>\n                          <button data-tab=\"announce\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Announce Live</button>\n                          <button data-tab=\"preview\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Score Preview</button>\n                          <button data-tab=\"students\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Students</button>\n                          <button data-tab=\"teams\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Teams</button>\n                          <button data-tab=\"programs\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Programs</button>\n                           <button data-tab=\"points\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Points Config</button>\n                           <button data-tab=\"penalty\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Penalty</button>\n                      </nav>\n                  </div>\n                  <div id=\"admin-tab-content\" class=\"pt-4\">\n                      <div class=\"flex justify-center items-center p-16\"><div class=\"loader\"></div></div>\n                  </div>\n              </div>\n            ";
         }
         async function renderAdminTab(_0x3a4997) {
             const _0x88f17b = document.getElementById('admin-tab-content');
@@ -727,6 +884,9 @@
             let _0x372c5f = '';
             const _0x41a22c = getDataAsArray("teams");
             switch (_0x3a4997) {
+                 case "dashboard":
+                    _0x372c5f = await renderDashboardPage();
+                    break;
                 case "status":
                     _0x372c5f = renderProgramStatusPage(activeStatusFilter, activeStatusCategoryFilter);
                     break;
@@ -1002,12 +1162,24 @@
                 `).join('');
                 return;
             }
-            const _0x56029d = getDataAsArray(_0x9bd124).sort((_0x514b3c, _0x35509d) => _0x514b3c.name > _0x35509d.name ? 0x1 : -0x1);
+            const _0x56029d = getDataAsArray(_0x9bd124).sort((_0x514b3c, _0x35509d) => (_0x514b3c.name || '').localeCompare(_0x35509d.name || ''));
             if (_0x56029d.length === 0x0) {
                 _0x1620a4.innerHTML = "<p class=\"text-gray-500 text-center py-4\">No " + _0x9bd124 + " have been added yet.</p>";
                 return;
             }
-            _0x1620a4.innerHTML = _0x56029d.map(_0x55c723 => "\n              <div class=\"flex justify-between items-center bg-gray-50 p-3 rounded-lg\">\n                  <div>\n                      <p class=\"font-medium text-gray-800\">" + _0x55c723.name + "</p>\n                      <p class=\"text-sm text-gray-500\">\n                          " + (_0x9bd124 === "students" ? "Chest No: " + _0x55c723.chestNo + " • " : '') + "\n                          " + (_0x55c723.category || '') + "\n                          " + (_0x55c723.teamId ? "• " + appData.teams[_0x55c723.teamId]?.["name"] : '') + "\n                      </p>\n                  </div>\n                  <button class=\"delete-btn text-red-500 hover:text-red-700\" data-id=\"" + _0x55c723.id + "\" data-collection=\"" + _0x9bd124 + "\"><i class=\"fas fa-trash\"></i></button>\n              </div>\n            ").join('');
+            _0x1620a4.innerHTML = _0x56029d.map(_0x55c723 => `
+              <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                  <div>
+                      <p class="font-medium text-gray-800">${_0x55c723.name}</p>
+                      <p class="text-sm text-gray-500">
+                          ${(_0x9bd124 === "students" ? "Chest No: " + _0x55c723.chestNo + " • " : '')}
+                          ${(_0x55c723.category || '')}
+                          ${(_0x55c723.teamId ? " • " + (appData.teams[_0x55c723.teamId]?.name || 'N/A') : '')}
+                      </p>
+                  </div>
+                  <button class="delete-btn text-red-500 hover:text-red-700" data-id="${_0x55c723.id}" data-collection="${_0x9bd124}"><i class="fas fa-trash"></i></button>
+              </div>
+            `).join('');
         }
         function populateProgramDropdown(categoryId) {
             const programSelect = document.getElementById("res-program");
