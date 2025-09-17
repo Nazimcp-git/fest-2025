@@ -165,23 +165,10 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
+<script src="firebase.js"></script>
     <!-- Main Application Logic -->
     <script type="module">
-        const firebaseConfig = {
-            'apiKey': "AIzaSyBGMfjKSH3fk1JOeQvSo2uzqlNTMMQFBWc",
-  'authDomain': "webcam-f1269.firebaseapp.com",
-  'databaseURL': "https://webcam-f1269-default-rtdb.firebaseio.com",
-  'projectId': "webcam-f1269",
-  'storageBucket': "webcam-f1269.appspot.com",
-  'messagingSenderId': "90764998407",
-  'appId': "1:90764998407:web:f97e4844b53f7fa1b7f7a2",
-  'measurementId': "G-FBE6KKQ1X2"
-        };
-        const CATEGORIES = ["BIDAYA", "UOOLA", "THANIYA", 'THANAWIYYA', "ALIYA", "KULLIYYA"];
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const auth = firebase.auth();
+        
         let currentUser = null;
         let appData = {
             'teams': {},
