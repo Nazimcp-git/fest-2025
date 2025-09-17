@@ -25,6 +25,11 @@
             box-shadow: 0 0 0 3px #4f46e5;
             transform: scale(1.02);
         }
+        .admin-tab.active { 
+            border-color: #4f46e5; 
+            color: #4f46e5; 
+            background-color: #eef2ff; 
+        }
         /* Print Styles */
         @media print {
             body > *:not(#print-area) {
@@ -32,6 +37,12 @@
             }
             #print-area {
                 display: block !important;
+            }
+            .print-page {
+                page-break-after: always;
+            }
+             .print-page:last-child {
+                page-break-after: avoid;
             }
             @page {
                 size: A4;
@@ -48,6 +59,15 @@
             max-height: 1500px; /* Adjust as needed */
         }
         #modal-container.hidden { display: none; }
+
+        /* Toggle Switch Styles */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #4f46e5;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #4f46e5;
+        }
     </style>
 </head>
 <body class="antialiased text-gray-800">
@@ -96,6 +116,7 @@
         let currentUser = null;
         let selectedProgramId = null;
         let selectedCategory = null;
+        let activeAdminTab = 'overview';
 
         // --- UI COMPONENTS & TEMPLATES ---
         const AppShell = (content) => `
@@ -103,7 +124,7 @@
                 <nav class="bg-white shadow-md sticky top-0 z-50">
                     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div class="flex items-center justify-between h-16">
-                            <h1 class="font-bold text-xl text-indigo-600"><i class="fas fa-edit mr-2"></i>Song Registration Portal</h1>
+                            <h1 class="font-bold text-xl text-indigo-600"><i class="fas fa-edit mr-2"></i>Item Registration Portal</h1>
                             ${currentUser ? `<button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-md font-semibold hover:bg-red-600">Logout</button>` : ''}
                         </div>
                     </div>
@@ -113,11 +134,10 @@
                         ${content}
                     </div>
                 </main>
-                
                 <div id="modal-container" class="hidden"></div>
             </div>
         `;
-
+        
         // --- HELPER FUNCTIONS ---
         function getDataAsArray(entity) {
             if (!appData[entity]) return [];
@@ -127,16 +147,23 @@
         // --- RENDER FUNCTIONS ---
         function renderApp() {
             const appContainer = document.getElementById('app');
+            let content = '';
             if (!currentUser) {
                 appContainer.innerHTML = renderLoginPage();
+                return;
+            }
+
+            if (currentUser.type === 'admin') {
+                content = renderAdminPortal();
+            } else if (currentUser.type === 'team') {
+                content = renderTeamPortal();
+            }
+            
+            const mainContentContainer = document.getElementById('main-content');
+            if(mainContentContainer) {
+                mainContentContainer.innerHTML = `<div class="max-w-7xl mx-auto sm:px-6 lg:px-8 px-6">${content}</div>`;
             } else {
-                let content = '';
-                if (currentUser.type === 'admin') {
-                    content = renderAdminPortal();
-                } else if (currentUser.type === 'team') {
-                    content = renderTeamPortal();
-                }
-                appContainer.innerHTML = AppShell(content);
+                 appContainer.innerHTML = AppShell(content);
             }
         }
 
@@ -146,7 +173,7 @@
                     <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
                         <div class="flex flex-col items-center">
                             <i class="fas fa-edit text-4xl text-indigo-600"></i>
-                            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Registration Portal</h2>
+                            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Iteam Registration Portal</h2>
                             <p class="mt-2 text-center text-sm text-gray-600">Enter your Team or Admin access code.</p>
                         </div>
                         <form id="login-form" class="mt-8 space-y-6">
@@ -164,10 +191,37 @@
         }
         
         function renderAdminPortal() {
-            const allPrograms = getDataAsArray('programs');
+            let content = '';
+            switch(activeAdminTab) {
+                case 'overview':
+                    content = renderAdminOverview();
+                    break;
+                case 'settings':
+                    content = renderAdminSettings();
+                    break;
+            }
+             return `
+                <div>
+                    <header class="mb-8">
+                        <h1 class="text-4xl font-bold text-gray-900">Admin Panel</h1>
+                        <p class="mt-2 text-lg text-gray-600">Manage programs available for registration.</p>
+                    </header>
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav id="admin-tabs" class="-mb-px flex space-x-8" aria-label="Tabs">
+                            <button data-tab="overview" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeAdminTab === 'overview' ? 'active' : ''}">Registration Overview</button>
+                            <button data-tab="settings" class="admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeAdminTab === 'settings' ? 'active' : ''}">Settings</button>
+                        </nav>
+                    </div>
+                    <main>
+                       ${content}
+                    </main>
+                </div>
+            `;
+        }
+
+        function renderAdminOverview() {
             const activeRegProgramIds = Object.keys(appData.registrationPrograms || {});
-            const availablePrograms = allPrograms.filter(p => !activeRegProgramIds.includes(p.id));
-            const activePrograms = allPrograms.filter(p => activeRegProgramIds.includes(p.id)).sort((a,b) => a.name.localeCompare(b.name));
+            const activePrograms = getDataAsArray('programs').filter(p => activeRegProgramIds.includes(p.id)).sort((a,b) => a.name.localeCompare(b.name));
             const allRegistrations = getDataAsArray('registrations');
 
             let detailView = '';
@@ -218,44 +272,70 @@
             }
 
             return `
-                <div>
-                    <header class="mb-8">
-                        <h1 class="text-4xl font-bold text-gray-900">Admin Panel</h1>
-                        <p class="mt-2 text-lg text-gray-600">Manage programs available for registration.</p>
-                    </header>
-                    <main class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                        <div class="bg-white p-6 rounded-xl shadow-lg space-y-6">
-                            <div>
-                                <h2 class="text-2xl font-bold mb-4">Activate Program for Registration</h2>
-                                <form id="add-reg-program-form" class="flex gap-2">
-                                    <select name="programId" class="flex-grow p-2 border border-gray-300 rounded-md">
-                                        <option value="">Select a program...</option>
-                                        ${availablePrograms.map(p => `<option value="${p.id}">${p.name} (${p.category})</option>`).join('')}
-                                    </select>
-                                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-indigo-700">Activate</button>
-                                </form>
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold">Active Registration Programs</h2>
+                        <button id="print-all-registrations-btn" class="bg-blue-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-blue-700"><i class="fas fa-print mr-2"></i>Print All Registrations</button>
+                    </div>
+                    <div class="space-y-2 max-h-96 overflow-y-auto">
+                        ${activePrograms.length === 0 ? `<p class="text-gray-500">No programs are active for registration. Go to Settings to activate them.</p>` :
+                            activePrograms.map(p => `
+                            <div class="program-select-btn p-3 rounded-md cursor-pointer transition-all duration-200 ${selectedProgramId === p.id ? 'bg-indigo-100 ring-2 ring-indigo-500' : 'bg-gray-50 hover:bg-gray-100'}" data-program-id="${p.id}">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <p class="font-semibold">${p.name}</p>
+                                        <p class="text-sm text-gray-500">${p.category}</p>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl shadow-lg">
-                            <h2 class="text-2xl font-bold mb-4">Active Registration Programs</h2>
-                            <div class="space-y-2 max-h-96 overflow-y-auto">
-                                ${activePrograms.length === 0 ? `<p class="text-gray-500">No programs are active for registration.</p>` :
-                                    activePrograms.map(p => `
-                                    <div class="program-select-btn p-3 rounded-md cursor-pointer transition-all duration-200 ${selectedProgramId === p.id ? 'bg-indigo-100 ring-2 ring-indigo-500' : 'bg-gray-50 hover:bg-gray-100'}" data-program-id="${p.id}">
-                                        <div class="flex justify-between items-center">
-                                            <div>
-                                                <p class="font-semibold">${p.name}</p>
-                                                <p class="text-sm text-gray-500">${p.category}</p>
-                                            </div>
-                                            <button class="remove-reg-program-btn text-red-500 hover:text-red-700 z-10" data-program-id="${p.id}"><i class="fas fa-times-circle"></i></button>
+                            `).join('')
+                        }
+                    </div>
+                    <div id="detail-view-container">${detailView}</div>
+                </div>
+            `;
+        }
+        
+        function renderAdminSettings() {
+            const allPrograms = getDataAsArray('programs').sort((a,b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+            const activeRegProgramIds = Object.keys(appData.registrationPrograms || {});
+
+            return `
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4">Registration Program Settings</h2>
+                    <p class="text-gray-600 mb-6">Use the toggles to activate or deactivate programs for team registration and set the registration form type.</p>
+                    <div class="space-y-4">
+                        ${allPrograms.map(p => {
+                            const isActive = activeRegProgramIds.includes(p.id);
+                            const regType = p.registrationType || 'full';
+                            return `
+                            <div class="flex flex-col md:flex-row justify-between md:items-center bg-gray-50 p-4 rounded-md gap-4">
+                                <div>
+                                    <p class="font-semibold">${p.name}</p>
+                                    <p class="text-sm text-gray-500">${p.category}</p>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <div>
+                                        <label for="type-select-${p.id}" class="text-sm font-medium text-gray-700">Form Type</label>
+                                        <select id="type-select-${p.id}" data-program-id="${p.id}" class="reg-type-select mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                            <option value="full" ${regType === 'full' ? 'selected' : ''}>Full</option>
+                                            <option value="titleOnly" ${regType === 'titleOnly' ? 'selected' : ''}>Title Only</option>
+                                            <option value="titleAndLink" ${regType === 'titleAndLink' ? 'selected' : ''}>Title & Link</option>
+                                        </select>
+                                    </div>
+                                     <div class="flex items-center pt-5">
+                                        <label for="reg-toggle-${p.id}" class="text-sm font-medium text-gray-700">Registration On</label>
+                                        <div class="relative inline-block w-10 ml-2 align-middle select-none transition duration-200 ease-in">
+                                            <input type="checkbox" name="reg-toggle" id="reg-toggle-${p.id}" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" 
+                                                data-program-id="${p.id}" ${isActive ? 'checked' : ''}/>
+                                            <label for="reg-toggle-${p.id}" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
                                         </div>
                                     </div>
-                                    `).join('')
-                                }
+                                </div>
                             </div>
-                             <div id="detail-view-container">${detailView}</div>
-                        </div>
-                    </main>
+                            `
+                        }).join('')}
+                    </div>
                 </div>
             `;
         }
@@ -275,12 +355,41 @@
                 const teamId = Object.keys(appData.teams).find(id => appData.teams[id].name === teamName);
                 const studentsForProgram = getDataAsArray('students').filter(s => s.teamId === teamId && s.category === program.category);
                 const existingRegistrations = getDataAsArray('registrations').filter(r => r.programId === selectedProgramId);
-                const teamRegistrationCount = existingRegistrations.filter(r => r.teamName === teamName).length;
+                const teamRegistrations = existingRegistrations.filter(r => r.teamName === teamName);
+                const teamRegistrationCount = teamRegistrations.length;
+                
+                const registeredStudentIds = new Set(teamRegistrations.map(r => r.studentId));
+                const availableStudents = studentsForProgram.filter(s => !registeredStudentIds.has(s.id));
 
                 let formOrMessage = '';
                 if(teamRegistrationCount >= 3) {
                     formOrMessage = `<div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md"><p class="font-bold">Registration Limit Reached</p><p>Your team has submitted the maximum of 3 entries for this program.</p></div>`;
                 } else {
+                    let formFields = '';
+                    const regType = program.registrationType || 'full';
+                
+                    if (regType === 'full' || regType === 'titleOnly' || regType === 'titleAndLink') {
+                        formFields += `
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Title of Piece (e.g., Song Name)</label>
+                                <input type="text" name="pieceTitle" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
+                            </div>`;
+                    }
+                     if (regType === 'full') {
+                        formFields += `
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">First Line of Piece</label>
+                                <input type="text" name="firstLine" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
+                            </div>`;
+                    }
+                     if (regType === 'full' || regType === 'titleAndLink') {
+                        formFields += `
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">YouTube Link (Optional)</label>
+                                <input type="url" name="youtubeLink" class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm" placeholder="https://youtube.com/...">
+                            </div>`;
+                    }
+
                     formOrMessage = `
                         <h4 class="text-xl font-bold mb-4">Register Your Participant (${3 - teamRegistrationCount} slots left)</h4>
                         <form id="registration-form" class="space-y-4">
@@ -289,27 +398,15 @@
                                 <label class="block text-sm font-medium text-gray-700">Participant</label>
                                 <select name="studentId" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
                                     <option value="">Select participant...</option>
-                                    ${studentsForProgram.map(s => `<option value="${s.id}">${s.name} (${s.chestNo})</option>`).join('')}
+                                    ${availableStudents.map(s => `<option value="${s.id}">${s.name} (${s.chestNo})</option>`).join('')}
                                 </select>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Title of Piece (e.g., Song Name)</label>
-                                <input type="text" name="pieceTitle" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
-                            </div>
-                                <div>
-                                <label class="block text-sm font-medium text-gray-700">First Line of Piece</label>
-                                <input type="text" name="firstLine" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">YouTube Link (Optional)</label>
-                                <input type="url" name="youtubeLink" class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm" placeholder="https://youtube.com/...">
-                            </div>
+                            ${formFields}
                             <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md font-semibold hover:bg-indigo-700">Submit Registration</button>
                             <p id="reg-form-message" class="text-sm mt-2 text-center"></p>
                         </form>
                     `;
                 }
-
 
                 registrationContent = `
                     <div class="bg-white p-6 rounded-xl shadow-lg mt-8">
@@ -328,8 +425,8 @@
                                         <li class="py-3">
                                             <div class="flex justify-between items-start">
                                                 <div>
-                                                    <p class="font-semibold text-lg">${reg.pieceTitle}</p>
-                                                    <p class="text-sm text-gray-600"><em>"${reg.firstLine}"</em></p>
+                                                    <p class="font-semibold text-lg">${reg.pieceTitle || 'N/A'}</p>
+                                                    <p class="text-sm text-gray-600"><em>"${reg.firstLine || 'N/A'}"</em></p>
                                                     <p class="text-sm font-bold text-indigo-700 mt-1">${reg.studentName} (${reg.teamName})</p>
                                                     <p class="text-xs text-gray-400 mt-1">${new Date(reg.timestamp).toLocaleString()}</p>
                                                 </div>
@@ -353,7 +450,6 @@
                             <h1 class="text-4xl font-bold text-gray-900">Team Portal: ${teamName}</h1>
                             <p class="mt-2 text-lg text-gray-600">Select a program to register your participants.</p>
                         </div>
-                        <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-md font-semibold hover:bg-red-600">Logout</button>
                     </header>
                     <main>
                        ${categoriesWithPrograms.length === 0 
@@ -440,7 +536,7 @@
             window.print();
             printArea.innerHTML = '';
         }
-
+        
         // --- EVENT LISTENERS ---
         document.addEventListener('submit', async (e) => {
             if (e.target.id === 'login-form') {
@@ -448,7 +544,6 @@
                 const input = document.getElementById('access-code-input');
                 const errorEl = document.getElementById('login-error');
                 const code = input.value.trim().toUpperCase();
-                
                 const user = ACCESS_CODES[code];
                 if (user) {
                     currentUser = user;
@@ -456,13 +551,6 @@
                     renderApp();
                 } else {
                     errorEl.textContent = "Invalid access code.";
-                }
-            }
-            if (e.target.id === 'add-reg-program-form') {
-                e.preventDefault();
-                const programId = e.target.elements.programId.value;
-                if (programId) {
-                    await db.ref('registrationPrograms/' + programId).set(true);
                 }
             }
             if (e.target.id === 'registration-form') {
@@ -481,9 +569,9 @@
                     studentId: studentId,
                     studentName: student.name,
                     teamName: currentUser.teamName,
-                    pieceTitle: form.elements.pieceTitle.value,
-                    firstLine: form.elements.firstLine.value,
-                    youtubeLink: form.elements.youtubeLink.value || '',
+                    pieceTitle: form.elements.pieceTitle?.value || '',
+                    firstLine: form.elements.firstLine?.value || '',
+                    youtubeLink: form.elements.youtubeLink?.value || '',
                     timestamp: Date.now()
                 };
                 
@@ -526,112 +614,49 @@
         });
 
         document.addEventListener('click', (e) => {
-            if (e.target.id === 'logout-btn') {
+             if (e.target.id === 'logout-btn') {
                 currentUser = null;
                 sessionStorage.removeItem('user');
                 renderApp();
             }
-
-            if (e.target.matches('.remove-reg-program-btn') || e.target.closest('.remove-reg-program-btn')) {
-                e.stopPropagation();
-                const button = e.target.matches('.remove-reg-program-btn') ? e.target : e.target.closest('.remove-reg-program-btn');
-                const programId = button.dataset.programId;
-                if (confirm('Are you sure you want to remove this program from registration?')) {
-                    if (selectedProgramId === programId) selectedProgramId = null;
-                    db.ref('registrationPrograms/' + programId).remove();
-                }
+            if (e.target.closest('.admin-tab')) {
+                activeAdminTab = e.target.closest('.admin-tab').dataset.tab;
+                renderApp();
             }
-            
             const programButton = e.target.closest('.program-select-btn');
             if(programButton) {
                 selectedProgramId = programButton.dataset.programId;
                 selectedCategory = appData.programs[selectedProgramId].category;
                 renderApp();
             }
-            
             if (e.target.id === 'print-registrations-btn') {
-                const programId = e.target.dataset.programId;
-                printRegistrations(programId);
+                printRegistrations(selectedProgramId);
             }
-            
             const editButton = e.target.closest('.edit-reg-btn');
             if(editButton) {
                 openEditModal(editButton.dataset.regId);
             }
-            
             const closeModalBtn = e.target.closest('.close-modal-btn');
             if (closeModalBtn) {
                 closeModal();
             }
-
-
-            if (e.target.matches('details summary')) {
-                const detailsElement = e.target.parentElement;
-                if(detailsElement.open) {
-                    // It was open and is about to close
-                    selectedCategory = null;
-                } else {
-                    // It was closed and is about to open
-                    selectedCategory = e.target.textContent.trim();
-                }
-            }
         });
         
-        function openEditModal(regId) {
-            const registration = appData.registrations[regId];
-            if (!registration) return;
-
-            const program = appData.programs[registration.programId];
-            const teamId = Object.keys(appData.teams).find(id => appData.teams[id].name === registration.teamName);
-            
-            let studentsForProgram;
-            if(currentUser.type === 'admin') {
-                studentsForProgram = getDataAsArray('students').filter(s => s.category === program.category);
-            } else {
-                studentsForProgram = getDataAsArray('students').filter(s => s.teamId === teamId && s.category === program.category);
+        document.addEventListener('change', e => {
+            if (e.target.matches('.toggle-checkbox[name="reg-toggle"]')) {
+                const programId = e.target.dataset.programId;
+                if (e.target.checked) {
+                    db.ref(`registrationPrograms/${programId}`).set(true);
+                } else {
+                    db.ref(`registrationPrograms/${programId}`).remove();
+                }
             }
-
-            const modalHTML = `
-                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-8 relative transform transition-all" style="animation: fadeIn 0.3s ease-out;">
-                        <button class="close-modal-btn absolute top-4 right-4 text-gray-400 hover:text-gray-800 text-2xl">&times;</button>
-                        <h3 class="text-2xl font-bold mb-4">Edit Registration</h3>
-                        <p class="mb-6 text-gray-600">For ${program.name}</p>
-                        <form id="edit-registration-form" class="space-y-4">
-                            <input type="hidden" name="registrationId" value="${regId}">
-                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Participant</label>
-                                <select name="studentId" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
-                                    ${studentsForProgram.map(s => `<option value="${s.id}" ${s.id === registration.studentId ? 'selected' : ''}>${s.name} (${s.chestNo})</option>`).join('')}
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Title of Piece</label>
-                                <input type="text" name="pieceTitle" value="${registration.pieceTitle}" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
-                            </div>
-                                <div>
-                                <label class="block text-sm font-medium text-gray-700">First Line of Piece</label>
-                                <input type="text" name="firstLine" value="${registration.firstLine}" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">YouTube Link (Optional)</label>
-                                <input type="url" name="youtubeLink" value="${registration.youtubeLink || ''}" class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm" placeholder="https://youtube.com/...">
-                            </div>
-                            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md font-semibold hover:bg-indigo-700">Save Changes</button>
-                        </form>
-                    </div>
-                </div>
-            `;
-             const modalContainer = document.getElementById('modal-container');
-            modalContainer.innerHTML = modalHTML;
-            modalContainer.classList.remove('hidden');
-        }
-
-        function closeModal() {
-            const modalContainer = document.getElementById('modal-container');
-            modalContainer.classList.add('hidden');
-            modalContainer.innerHTML = '';
-        }
+            if (e.target.matches('.reg-type-select')) {
+                 const programId = e.target.dataset.programId;
+                 const type = e.target.value;
+                 db.ref(`programs/${programId}/registrationType`).set(type);
+            }
+        });
 
         // --- INITIALIZATION ---
         function initializeApp() {
