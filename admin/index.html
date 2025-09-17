@@ -383,6 +383,7 @@
         }
 
         async function renderHomePage() {
+            // Team Score Calculation
             const teamsArray = getDataAsArray("teams");
             const teamPenalties = calculateTeamPenalties();
 
@@ -400,7 +401,8 @@
                 });
             });
 
-            Object.values(appData.students || {}).forEach(student => {
+            const studentsArray = getDataAsArray("students");
+            studentsArray.forEach(student => {
                 const team = teamsArray.find(t => t.id === student.teamId);
                 if (team) {
                     const studentPoints = student.totalPoints || 0;
@@ -417,24 +419,66 @@
 
             teamsArray.sort((a, b) => b.totalPoints - a.totalPoints);
             
+            // Category Topper Calculation
+            const categoryToppers = [];
+            CATEGORIES.forEach(category => {
+                const studentsInCategory = studentsArray.filter(s => s.category === category);
+                if (studentsInCategory.length > 0) {
+                    studentsInCategory.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+                    const topper = studentsInCategory[0];
+                    if (topper && (topper.totalPoints || 0) > 0) {
+                        categoryToppers.push({
+                            category: category,
+                            id: topper.id,
+                            name: topper.name,
+                            points: topper.totalPoints,
+                            teamName: appData.teams[topper.teamId]?.name || 'N/A'
+                        });
+                    }
+                }
+            });
+
+            // HTML Rendering
+            const teamsHtml = teamsArray.length === 0 ? "<p class=\"text-gray-500 col-span-full\">No teams data yet.</p>" : teamsArray.map((team, index) => {
+                const medalClasses = ["text-yellow-400", "text-gray-400", "text-yellow-600", "text-blue-400"];
+                const medalIcons = ["fa-crown", "fa-medal", "fa-award", "fa-star"];
+                return `
+                    <div class="bg-white shadow-lg rounded-xl p-6 transform hover:scale-105 transition-transform duration-300 team-card-clickable" data-team-id="${team.id}">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold text-gray-800">${team.name}</h2>
+                            ${index < 4 ? `<i class="fas ${medalIcons[index]} text-2xl ${medalClasses[index]}"></i>` : ''}
+                        </div>
+                        <p class="text-5xl font-extrabold text-indigo-600 mt-4">${team.totalPoints}</p>
+                        <p class="text-gray-500 mt-1">Total Points</p>
+                    </div>`;
+            }).join('');
+
+            const toppersHtml = categoryToppers.length === 0 ? "<p class=\"text-gray-500 col-span-full\">Category toppers will be displayed here.</p>" : categoryToppers.map(topper => `
+                <a href="#/student/${topper.id}" class="bg-white shadow-lg rounded-xl p-6 transform hover:scale-105 transition-transform duration-300 block">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-indigo-600">${topper.category} Topper</h3>
+                        <i class="fas fa-star text-2xl text-yellow-400"></i>
+                    </div>
+                    <div class="mt-4">
+                        <p class="text-2xl font-bold text-gray-800">${topper.name}</p>
+                        <p class="text-sm text-gray-500">${topper.teamName}</p>
+                        <p class="text-3xl font-extrabold text-indigo-500 mt-2">${topper.points} pts</p>
+                    </div>
+                </a>
+            `).join('');
+
             return `
                   <div class="page space-y-12">
                       <div>
                           <h1 class="text-3xl font-bold text-gray-900 mb-6">Team Standings</h1>
                           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                              ${teamsArray.length === 0 ? "<p class=\"text-gray-500 col-span-full\">No teams data yet.</p>" : teamsArray.map((team, index) => {
-                                  const medalClasses = ["text-yellow-400", "text-gray-400", "text-yellow-600", "text-blue-400"];
-                                  const medalIcons = ["fa-crown", "fa-medal", "fa-award", "fa-star"];
-                                  return `
-                                  <div class="bg-white shadow-lg rounded-xl p-6 transform hover:scale-105 transition-transform duration-300 team-card-clickable" data-team-id="${team.id}">
-                                      <div class="flex items-center justify-between">
-                                          <h2 class="text-xl font-bold text-gray-800">${team.name}</h2>
-                                          ${index < 4 ? `<i class="fas ${medalIcons[index]} text-2xl ${medalClasses[index]}"></i>` : ''}
-                                      </div>
-                                      <p class="text-5xl font-extrabold text-indigo-600 mt-4">${team.totalPoints}</p>
-                                      <p class="text-gray-500 mt-1">Total Points</p>
-                                  </div>`;
-                              }).join('')}
+                              ${teamsHtml}
+                          </div>
+                      </div>
+                      <div>
+                          <h1 class="text-3xl font-bold text-gray-900 mb-6">Category Stars</h1>
+                          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              ${toppersHtml}
                           </div>
                       </div>
                       <div>
@@ -460,6 +504,7 @@
                       </div>
                   </div>`;
         }
+
 
         async function renderResultsPage(_0x4edbbb = '') {
             const _0x3461b0 = getDataAsArray("results").filter(_0x20f0e3 => _0x20f0e3.status === "published").sort((_0x3fbef4, _0x2adbed) => (_0x2adbed.timestamp || 0x0) - (_0x3fbef4.timestamp || 0x0));
