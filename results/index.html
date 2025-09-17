@@ -205,7 +205,7 @@
             const _0x1890c9 = _0x3129ae ? "block px-4 py-3 text-base font-medium" : "px-3 py-2 rounded-md text-sm font-medium";
             const _0x2d01b6 = "\n              <a href=\"#/\" class=\"nav-link text-gray-600 hover:bg-indigo-600 hover:text-white " + _0x1890c9 + "\">Home</a>\n              <a href=\"#/results\" class=\"nav-link text-gray-600 hover:bg-indigo-600 hover:text-white " + _0x1890c9 + "\">Results</a>\n              <a href=\"live.html\" class=\"nav-link text-gray-600 hover:bg-indigo-600 hover:text-white " + _0x1890c9 + "\">Live</a>\n              <a href=\"#/leaderboard\" class=\"nav-link text-gray-600 hover:bg-indigo-600 hover:text-white " + _0x1890c9 + "\">Leaderboard</a>\n              <a href=\"#/search\" class=\"nav-link text-gray-600 hover:bg-indigo-600 hover:text-white " + _0x1890c9 + "\">Search</a>\n            ";
             const _0x104e7d = currentUser ? "<a href=\"#/admin\" class=\"nav-link text-gray-600 hover:bg-indigo-600 hover:text-white " + _0x1890c9 + "\">Admin</a>\n                   <button id=\"logout-btn\" class=\"" + (_0x3129ae ? "w-full text-left " : '') + " bg-red-500 text-white " + _0x1890c9 + "\">Logout</button>" : "<a href=\"#/admin\" class=\"nav-link text-gray-600 hover:bg-indigo-600 hover:text-white " + _0x1890c9 + "\">Admin Login</a>";
-            return _0x2d01b6 + _0x104e7d;
+            return _0x2d01b6 ;
         };
         const categoryOptions = () => "<option value=\"\">Select Category</option>" + CATEGORIES.map(_0x4fcc2b => "<option value=\"" + _0x4fcc2b + "\">" + _0x4fcc2b + "</option>").join('');
 
@@ -516,13 +516,6 @@
                           </div>
                       </div>
                       <div>
-                          <h1 class="text-3xl font-bold text-gray-900 mb-6">Category Stars</h1>
-                          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                              ${toppersHtml}
-                          </div>
-                      </div>
-                      ${classLeaderboardHtml}
-                      <div>
                           <h2 class="text-3xl font-bold text-gray-900 mb-6">Category-wise Scores</h2>
                           <div class="bg-white shadow-lg rounded-xl overflow-x-auto">
                              <table class="min-w-full divide-y divide-gray-200">
@@ -543,6 +536,14 @@
                              </table>
                           </div>
                       </div>
+                      <div>
+                          <h1 class="text-3xl font-bold text-gray-900 mb-6">Category Stars</h1>
+                          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              ${toppersHtml}
+                          </div>
+                      </div>
+                      ${classLeaderboardHtml}
+                      
                   </div>`;
         }
 
