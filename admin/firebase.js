@@ -1,18 +1,1 @@
-const firebaseConfig = {
-            apiKey: "AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo",
-            authDomain: "shopping-e284c.firebaseapp.com",
-            databaseURL: "https://shopping-e284c-default-rtdb.firebaseio.com",
-            projectId: "shopping-e284c",
-            storageBucket: "shopping-e284c.appspot.com",
-            messagingSenderId: "248274428739",
-            appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
-            measurementId: "G-ZXZCK9BW7T"
-        };
-
-        // --- CONSTANTS ---
-        const CATEGORIES = ["BIDAYA", "UOOLA", "THANIYA", "THANAWIYYA", "ALIYA", "KULLIYYA"];
-
-        // --- INITIALIZE FIREBASE ---
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const auth = firebase.auth();
+const _0x249343=_0x5888;function _0x5888(_0x30f673,_0x305f4c){const _0x5c6e1b=_0x5c6e();return _0x5888=function(_0x5888dd,_0x131853){_0x5888dd=_0x5888dd-0x64;let _0x3f2359=_0x5c6e1b[_0x5888dd];return _0x3f2359;},_0x5888(_0x30f673,_0x305f4c);}(function(_0x3b3415,_0x5a0594){const _0x2ead33=_0x5888,_0x16b0b6=_0x3b3415();while(!![]){try{const _0x313a8a=parseInt(_0x2ead33(0x67))/0x1*(-parseInt(_0x2ead33(0x64))/0x2)+-parseInt(_0x2ead33(0x69))/0x3*(parseInt(_0x2ead33(0x68))/0x4)+parseInt(_0x2ead33(0x6e))/0x5+parseInt(_0x2ead33(0x7c))/0x6*(parseInt(_0x2ead33(0x75))/0x7)+-parseInt(_0x2ead33(0x73))/0x8+-parseInt(_0x2ead33(0x65))/0x9*(-parseInt(_0x2ead33(0x70))/0xa)+parseInt(_0x2ead33(0x6a))/0xb;if(_0x313a8a===_0x5a0594)break;else _0x16b0b6['push'](_0x16b0b6['shift']());}catch(_0x5eefa0){_0x16b0b6['push'](_0x16b0b6['shift']());}}}(_0x5c6e,0xeaec7));function _0x5c6e(){const _0x1897fb=['234EMcFBo','https://shopping-e284c-default-rtdb.firebaseio.com','629381HhJKIi','880cTPByO','7305boWuFd','3204652uBywGW','THANIYA','BIDAYA','shopping-e284c','7981900NFJrum','UOOLA','60540KotiVy','auth','AIzaSyBXJ_RnfjUDi7qPDATWVnS5lSFw6jVRYgo','2326712DGhbTM','ALIYA','2611357oglzzn','shopping-e284c.firebaseapp.com','1:248274428739:web:fc30dd9eb1ef83f610c5f6','G-ZXZCK9BW7T','THANAWIYYA','248274428739','shopping-e284c.appspot.com','6tJtLOd','2ZWAVoz'];_0x5c6e=function(){return _0x1897fb;};return _0x5c6e();}const firebaseConfig={'apiKey':_0x249343(0x72),'authDomain':_0x249343(0x76),'databaseURL':_0x249343(0x66),'projectId':_0x249343(0x6d),'storageBucket':_0x249343(0x7b),'messagingSenderId':_0x249343(0x7a),'appId':_0x249343(0x77),'measurementId':_0x249343(0x78)},CATEGORIES=[_0x249343(0x6c),_0x249343(0x6f),_0x249343(0x6b),_0x249343(0x79),_0x249343(0x74),'KULLIYYA'];firebase['initializeApp'](firebaseConfig);const db=firebase['database'](),auth=firebase[_0x249343(0x71)]();
