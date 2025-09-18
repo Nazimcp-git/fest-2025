@@ -165,23 +165,10 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
+    <script src="firebase.js"></script>
     <!-- Main Application Logic -->
     <script type="module">
-        const firebaseConfig = {
-            'apiKey': "AIzaSyBGMfjKSH3fk1JOeQvSo2uzqlNTMMQFBWc",
-  'authDomain': "webcam-f1269.firebaseapp.com",
-  'databaseURL': "https://webcam-f1269-default-rtdb.firebaseio.com",
-  'projectId': "webcam-f1269",
-  'storageBucket': "webcam-f1269.appspot.com",
-  'messagingSenderId': "90764998407",
-  'appId': "1:90764998407:web:f97e4844b53f7fa1b7f7a2",
-  'measurementId': "G-FBE6KKQ1X2"
-        };
-        const CATEGORIES = ["BIDAYA", "UOOLA", "THANIYA", 'THANAWIYYA', "ALIYA", "KULLIYYA"];
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const auth = firebase.auth();
+        
         let currentUser = null;
         let appData = {
             'teams': {},
@@ -190,13 +177,17 @@
             'results': {},
             'pointsConfig': {},
             'groupPointsConfig': {},
-            // --- NEW FEATURE: Add state for team points and direct team scores ---
-            'teamPointsConfig': {},   // For points specific to team programs
-            'teamDirectScores': {} // To store points that go directly to a team
+            'teamPointsConfig': {},
+            'teamDirectScores': {},
+            'teamPenalties': {}
         };
         let isInitialLoad = true;
         let tempParticipants = [];
-        let activeAdminTab = "status";
+        let activeAdminTab = "dashboard"; // Set dashboard as default
+        let editingResultId = null; 
+        let activeStatusFilter = 'All'; 
+        let activeStatusCategoryFilter = 'All';
+
         const generateNavLinks = (_0x3129ae = false) => {
             const _0x1890c9 = _0x3129ae ? "block px-4 py-3 text-base font-medium" : "px-3 py-2 rounded-md text-sm font-medium";
             const _0x2d01b6 = "\n              <a href=\"#/\" class=\"nav-link text-gray-600 hover:bg-indigo-600 hover:text-white " + _0x1890c9 + "\">Home</a>\n              <a href=\"#/results\" class=\"nav-link text-gray-600 hover:bg-indigo-600 hover:text-white " + _0x1890c9 + "\">Results</a>\n              <a href=\"live.html\" class=\"nav-link text-gray-600 hover:bg-indigo-600 hover:text-white " + _0x1890c9 + "\">Live</a>\n              <a href=\"#/leaderboard\" class=\"nav-link text-gray-600 hover:bg-indigo-600 hover:text-white " + _0x1890c9 + "\">Leaderboard</a>\n              <a href=\"#/search\" class=\"nav-link text-gray-600 hover:bg-indigo-600 hover:text-white " + _0x1890c9 + "\">Search</a>\n            ";
@@ -219,18 +210,15 @@
                     'groupPointsConfig': _0x35fde4.groupPointsConfig || {
                         'first': 10, 'second': 7, 'third': 5, 'a_grade': 0, 'b_grade': 0
                     },
-                    // --- NEW FEATURE LOGIC START ---
-                    // Fetch teamPointsConfig from Firebase, with defaults
                     'teamPointsConfig': _0x35fde4.teamPointsConfig || {
-                        'first': 15, // Example: higher points for team events
+                        'first': 15, 
                         'second': 10,
                         'third': 7,
                         'a_grade': 0,
                         'b_grade': 0
                     },
-                    // Fetch the new direct scores for teams
                     'teamDirectScores': _0x35fde4.teamDirectScores || {},
-                    // --- NEW FEATURE LOGIC END ---
+                    'teamPenalties': _0x35fde4.teamPenalties || {},
                     'participantRegistrations': _0x35fde4.participantRegistrations || {}
                 };
                 if (isInitialLoad) {
@@ -257,7 +245,7 @@
             const _0x23c4c7 = window.location.hash.slice(0x1) || '/';
             const _0x5620d6 = document.getElementById("app");
             if (!_0x1486f1) {
-                _0x5620d6.innerHTML = "\n            <div class=\"min-h-screen bg-gray-100 flex flex-col\">\n                <nav class=\"bg-white shadow-md sticky top-0 z-50\">\n                    <div class=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">\n                        <div class=\"flex items-center justify-between h-16\">\n                            <a href=\"#/\" class=\"font-bold text-xl text-indigo-600\"><i class=\"fas fa-trophy mr-2\"></i>SPORTS RESULTS</a>\n                            <div class=\"hidden md:block\">\n                                <div id=\"desktop-nav\" class=\"ml-10 flex items-baseline space-x-4\">\n                                    " + generateNavLinks() + "\n                                </div>\n                            </div>\n                            <div class=\"md:hidden\">\n                                <button id=\"mobile-menu-btn\" class=\"text-gray-600 hover:text-indigo-600 p-2 rounded-md\">\n                                    <i class=\"fas fa-bars text-xl\"></i>\n                                </button>\n                            </div>\n                        </div>\n                    </div>\n                    <div id=\"mobile-nav-container\" class=\"md:hidden bg-white border-t border-gray-200\">\n                        \n                    </div>\n                </nav>\n                <main id=\"main-content\" class=\"py-10 flex-grow remoss\">\n                    <div class=\"max-w-7xl mx-auto sm:px-6 lg:px-8 px-6\">\n                        " + "<div class=\"flex justify-center items-center p-16\"><div class=\"loader\"></div></div>" + "\n                    </div>\n                </main>\n                                <p style=\"text-align:center; color: gray; margin-bottom: 10px; font-size: 14px;\">© Copyright Owned Nazim Cp</p>\n                \n                <div id=\"modal-container\" class=\"hidden\"></div>\n            </div>\n        ";
+                _0x5620d6.innerHTML = "\n            <div class=\"min-h-screen bg-gray-100 flex flex-col\">\n                <nav class=\"bg-white shadow-md sticky top-0 z-50\">\n                    <div class=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">\n                        <div class=\"flex items-center justify-between h-16\">\n                            <a href=\"#/\" class=\"font-bold text-xl text-indigo-600\"><i class=\"fas fa-trophy mr-2\"></i>PORU 2K25</a>\n                            <div class=\"hidden md:block\">\n                                <div id=\"desktop-nav\" class=\"ml-10 flex items-baseline space-x-4\">\n                                    " + generateNavLinks() + "\n                                </div>\n                            </div>\n                            <div class=\"md:hidden\">\n                                <button id=\"mobile-menu-btn\" class=\"text-gray-600 hover:text-indigo-600 p-2 rounded-md\">\n                                    <i class=\"fas fa-bars text-xl\"></i>\n                                </button>\n                            </div>\n                        </div>\n                    </div>\n                    <div id=\"mobile-nav-container\" class=\"md:hidden bg-white border-t border-gray-200\">\n                        \n                    </div>\n                </nav>\n                <main id=\"main-content\" class=\"py-10 flex-grow remoss\">\n                    <div class=\"max-w-7xl mx-auto sm:px-6 lg:px-8 px-6\">\n                        " + "<div class=\"flex justify-center items-center p-16\"><div class=\"loader\"></div></div>" + "\n                    </div>\n                </main>\n                                <p style=\"text-align:center; color: gray; margin-bottom: 10px; font-size: 14px;\">© Copyright Owned Nazim Cp</p>\n                \n                <div id=\"modal-container\" class=\"hidden\"></div>\n            </div>\n        ";
             } else {
                 const _0x16c7a5 = document.getElementById('desktop-nav');
                 if (_0x16c7a5) {
@@ -265,9 +253,7 @@
                 }
                 if (_0x23c4c7.startsWith('/admin') && document.getElementById("admin-tabs")) {
                     const _0x3d6663 = document.querySelector(".admin-tab.active");
-                    const _0x1fb808 = document.querySelector("#status-filter-container .category-filter-btn.active");
-                    const _0x2e0591 = _0x1fb808 ? _0x1fb808.dataset.status : "All";
-                    renderAdminTab(_0x3d6663 ? _0x3d6663.dataset.tab : 'status', _0x2e0591);
+                    renderAdminTab(_0x3d6663 ? _0x3d6663.dataset.tab : 'dashboard');
                     return;
                 }
             }
@@ -302,79 +288,107 @@
         }
         function attachPageEventListeners(_0x2e7e47) {
             if (_0x2e7e47.startsWith("/admin")) {
-                document.getElementById("admin-tabs")?.["addEventListener"]("click", _0x1d51bd => {
-                    if (_0x1d51bd.target.matches(".admin-tab")) {
-                        activeAdminTab = _0x1d51bd.target.dataset.tab;
+                document.getElementById("admin-tabs")?.addEventListener("click", e => {
+                    if (e.target.matches(".admin-tab")) {
+                        activeAdminTab = e.target.dataset.tab;
                         renderAdminTab(activeAdminTab);
                     }
                 });
-                const _0x390838 = document.getElementById("admin-tab-content");
-                _0x390838?.['addEventListener']("submit", handleAdminFormSubmit);
-                _0x390838?.['addEventListener']("change", handleAdminFormChange);
-                _0x390838?.['addEventListener']("click", handleAdminListClick);
-                _0x390838?.["addEventListener"]("click", _0x8ee80 => {
-                    if (_0x8ee80.target.id === "add-participant-btn") {
+                const adminContent = document.getElementById("admin-tab-content");
+                adminContent?.addEventListener("submit", handleAdminFormSubmit);
+                adminContent?.addEventListener("change", handleAdminFormChange);
+                adminContent?.addEventListener("click", handleAdminListClick);
+                adminContent?.addEventListener("click", e => {
+                    if (e.target.id === "add-participant-btn") {
                         addParticipantToTempList();
                     }
-                    if (_0x8ee80.target.matches(".remove-participant-btn")) {
-                        removeParticipantFromTempList(_0x8ee80.target.dataset.index);
+                    if (e.target.matches(".remove-participant-btn")) {
+                        removeParticipantFromTempList(e.target.dataset.index);
                     }
-                    if (_0x8ee80.target.id === "download-student-template") {
+                    if (e.target.id === "download-student-template") {
                         downloadTemplate("student");
                     }
-                    if (_0x8ee80.target.id === "download-program-template") {
+                    if (e.target.id === "download-program-template") {
                         downloadTemplate('program');
                     }
-                    if (_0x8ee80.target.matches("#status-filter-container .category-filter-btn")) {
-                        const _0x2dd205 = _0x8ee80.target.dataset.status;
-                        renderAdminTab('status', _0x2dd205);
+                    if (e.target.matches("#status-filter-container .category-filter-btn")) {
+                        activeStatusFilter = e.target.dataset.status;
+                        renderAdminTab('status');
+                    }
+                    if (e.target.matches("#category-filter-container .category-filter-btn")) {
+                        activeStatusCategoryFilter = e.target.dataset.category;
+                        renderAdminTab('status');
+                    }
+                });
+                adminContent?.addEventListener('input', e => {
+                    if (e.target.id === 'publish-search-input') {
+                        const searchTerm = e.target.value.toLowerCase();
+                        const programItems = document.querySelectorAll('#publish-list .program-item-container');
+                        programItems.forEach(item => {
+                            const programName = item.dataset.programName.toLowerCase();
+                            if (programName.includes(searchTerm)) {
+                                item.style.display = 'block';
+                            } else {
+                                item.style.display = 'none';
+                            }
+                        });
                     }
                 });
             }
             if (_0x2e7e47 === '/search') {
-                document.getElementById('profile-search-form')?.['addEventListener']('submit', handleProfileSearch);
+                document.getElementById('profile-search-form')?.addEventListener('submit', handleProfileSearch);
             }
             if (_0x2e7e47 === "/results") {
-                document.getElementById("results-search-form")?.["addEventListener"]("submit", _0x12c3be => {
-                    _0x12c3be.preventDefault();
-                    const _0x3fdac2 = document.getElementById("results-search-input");
-                    const _0x307075 = document.getElementById("main-content");
-                    renderResultsPage(_0x3fdac2.value).then(_0x1ce49c => _0x307075.innerHTML = _0x1ce49c);
+                document.getElementById("results-search-form")?.addEventListener("submit", e => {
+                    e.preventDefault();
+                    const searchInput = document.getElementById("results-search-input");
+                    const mainContent = document.getElementById("main-content");
+                    renderResultsPage(searchInput.value).then(html => mainContent.innerHTML = html);
                 });
             }
             if (_0x2e7e47 === "/leaderboard") {
-                document.getElementById("leaderboard-filter-container")?.["addEventListener"]("click", _0x45f1e9 => {
-                    if (_0x45f1e9.target.classList.contains("category-filter-btn")) {
-                        const _0x581866 = document.getElementById("main-content");
-                        renderLeaderboardPage(_0x45f1e9.target.dataset.category).then(_0x55fdcd => _0x581866.innerHTML = _0x55fdcd);
+                document.getElementById("leaderboard-filter-container")?.addEventListener("click", e => {
+                    if (e.target.classList.contains("category-filter-btn")) {
+                        const mainContent = document.getElementById("main-content");
+                        renderLeaderboardPage(e.target.dataset.category).then(html => mainContent.innerHTML = html);
                     }
                 });
             }
         }
         
+        function calculateTeamPenalties() {
+            const penaltiesByTeam = {};
+            for (const teamId in appData.teams) {
+                penaltiesByTeam[teamId] = 0;
+            }
+            Object.values(appData.teamPenalties || {}).forEach(penalty => {
+                if (penaltiesByTeam.hasOwnProperty(penalty.teamId)) {
+                    penaltiesByTeam[penalty.teamId] += penalty.points;
+                }
+            });
+            return penaltiesByTeam;
+        }
+
         async function renderHomePage() {
-            // MODIFIED FUNCTION to calculate final team score correctly including category points.
             const teamsArray = getDataAsArray("teams");
+            const teamPenalties = calculateTeamPenalties();
 
             teamsArray.forEach(team => {
                 const directScores = appData.teamDirectScores[team.id] || {};
-                
-                // 1. Calculate total direct points by summing up category points
                 let totalDirectPoints = 0;
                 for (const cat in directScores) {
                     totalDirectPoints += (directScores[cat] || 0);
                 }
                 team.totalPoints = totalDirectPoints;
-
-                // 2. Initialize category points with the direct scores
+                
                 team.categoryPoints = {};
                 CATEGORIES.forEach(cat => {
                     team.categoryPoints[cat] = directScores[cat] || 0;
                 });
             });
 
-            // 3. Add the points from each student's individual achievements
-            Object.values(appData.students || {}).forEach(student => {
+            const studentsArray = getDataAsArray("students");
+            studentsArray.forEach(student => {
                 const team = teamsArray.find(t => t.id === student.teamId);
                 if (team) {
                     const studentPoints = student.totalPoints || 0;
@@ -385,27 +399,107 @@
                 }
             });
 
+            teamsArray.forEach(team => {
+                team.totalPoints -= (teamPenalties[team.id] || 0);
+            });
+
             teamsArray.sort((a, b) => b.totalPoints - a.totalPoints);
             
-            // The HTML structure remains the same.
+            const categoryToppers = [];
+            CATEGORIES.forEach(category => {
+                const studentsInCategory = studentsArray.filter(s => s.category === category);
+                if (studentsInCategory.length > 0) {
+                    studentsInCategory.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+                    const topper = studentsInCategory[0];
+                    if (topper && (topper.totalPoints || 0) > 0) {
+                        categoryToppers.push({
+                            category: category,
+                            id: topper.id,
+                            name: topper.name,
+                            points: topper.totalPoints,
+                            teamName: appData.teams[topper.teamId]?.name || 'N/A'
+                        });
+                    }
+                }
+            });
+
+            const classScores = {};
+            studentsArray.forEach(student => {
+                if (student.class && student.class.trim() !== '') {
+                    const className = student.class.trim().toUpperCase();
+                    if (!classScores[className]) {
+                        classScores[className] = 0;
+                    }
+                    classScores[className] += student.totalPoints || 0;
+                }
+            });
+
+            const classLeaderboard = Object.entries(classScores)
+                .map(([className, totalPoints]) => ({ className, totalPoints }))
+                .sort((a, b) => b.totalPoints - a.totalPoints);
+
+            const teamsHtml = teamsArray.length === 0 ? "<p class=\"text-gray-500 col-span-full\">No teams data yet.</p>" : teamsArray.map((team, index) => {
+                const medalClasses = ["text-yellow-400", "text-gray-400", "text-yellow-600", "text-blue-400"];
+                const medalIcons = ["fa-crown", "fa-medal", "fa-award", "fa-star"];
+                return `
+                    <div class="bg-white shadow-lg rounded-xl p-6 transform hover:scale-105 transition-transform duration-300 team-card-clickable" data-team-id="${team.id}">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold text-gray-800">${team.name}</h2>
+                            ${index < 4 ? `<i class="fas ${medalIcons[index]} text-2xl ${medalClasses[index]}"></i>` : ''}
+                        </div>
+                        <p class="text-5xl font-extrabold text-indigo-600 mt-4">${team.totalPoints}</p>
+                        <p class="text-gray-500 mt-1">Total Points</p>
+                    </div>`;
+            }).join('');
+
+            const toppersHtml = categoryToppers.length === 0 ? "<p class=\"text-gray-500 col-span-full\">Category toppers will be displayed here.</p>" : categoryToppers.map(topper => `
+                <a href="#/student/${topper.id}" class="bg-white shadow-lg rounded-xl p-6 transform hover:scale-105 transition-transform duration-300 block">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-indigo-600">${topper.category} Topper</h3>
+                        <i class="fas fa-star text-2xl text-yellow-400"></i>
+                    </div>
+                    <div class="mt-4">
+                        <p class="text-2xl font-bold text-gray-800">${topper.name}</p>
+                        <p class="text-sm text-gray-500">${topper.teamName}</p>
+                        <p class="text-3xl font-extrabold text-indigo-500 mt-2">${topper.points} pts</p>
+                    </div>
+                </a>
+            `).join('');
+
+            const classLeaderboardHtml = `
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900 mb-6">Best Class Award</h2>
+                    <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${classLeaderboard.length === 0 ? `<tr><td colspan="3" class="text-center py-8 text-gray-500">No class points recorded yet.</td></tr>` : classLeaderboard.slice(0,10).map((item, index) => `
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">${item.className}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-extrabold text-gray-800">${item.totalPoints}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
             return `
                   <div class="page space-y-12">
                       <div>
                           <h1 class="text-3xl font-bold text-gray-900 mb-6">Team Standings</h1>
                           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                              ${teamsArray.length === 0 ? "<p class=\"text-gray-500 col-span-full\">No teams data yet.</p>" : teamsArray.map((team, index) => {
-                                  const medalClasses = ["text-yellow-400", "text-gray-400", "text-yellow-600", "text-blue-400"];
-                                  const medalIcons = ["fa-crown", "fa-medal", "fa-award", "fa-star"];
-                                  return `
-                                  <div class="bg-white shadow-lg rounded-xl p-6 transform hover:scale-105 transition-transform duration-300 team-card-clickable" data-team-id="${team.id}">
-                                      <div class="flex items-center justify-between">
-                                          <h2 class="text-xl font-bold text-gray-800">${team.name}</h2>
-                                          ${index < 4 ? `<i class="fas ${medalIcons[index]} text-2xl ${medalClasses[index]}"></i>` : ''}
-                                      </div>
-                                      <p class="text-5xl font-extrabold text-indigo-600 mt-4">${team.totalPoints}</p>
-                                      <p class="text-gray-500 mt-1">Total Points</p>
-                                  </div>`;
-                              }).join('')}
+                              ${teamsHtml}
                           </div>
                       </div>
                       <div>
@@ -429,8 +523,17 @@
                              </table>
                           </div>
                       </div>
+                      <div>
+                          <h1 class="text-3xl font-bold text-gray-900 mb-6">Category Stars</h1>
+                          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              ${toppersHtml}
+                          </div>
+                      </div>
+                      ${classLeaderboardHtml}
+                      
                   </div>`;
         }
+
 
         async function renderResultsPage(_0x4edbbb = '') {
             const _0x3461b0 = getDataAsArray("results").filter(_0x20f0e3 => _0x20f0e3.status === "published").sort((_0x3fbef4, _0x2adbed) => (_0x2adbed.timestamp || 0x0) - (_0x3fbef4.timestamp || 0x0));
@@ -571,13 +674,12 @@
         }
         
         function getProvisionalScores() {
-            // MODIFIED FUNCTION to reflect new scoring rules for preview.
             const studentPoints = {};
-            const teamDirectPoints = {}; // Will hold category-wise points
+            const teamDirectPoints = {}; 
+            const teamPenalties = calculateTeamPenalties();
 
             for (const studentId in appData.students) { studentPoints[studentId] = 0; }
             
-            // Initialize with category structure
             for (const teamId in appData.teams) {
                 teamDirectPoints[teamId] = {};
                 CATEGORIES.forEach(cat => {
@@ -654,6 +756,8 @@
                         }
                     }
                 });
+
+                team.totalPoints -= (teamPenalties[team.id] || 0);
             });
 
             teamsArray.sort((a, b) => b.totalPoints - a.totalPoints);
@@ -662,6 +766,163 @@
             return { teamsArray, studentsArray };
         }
 
+        function calculateAllScoresInternal() {
+            const studentPoints = {};
+            const teamDirectPoints = {}; 
+            const teamPenalties = calculateTeamPenalties();
+
+            for (const studentId in appData.students) { studentPoints[studentId] = 0; }
+            
+            for (const teamId in appData.teams) {
+                teamDirectPoints[teamId] = {};
+                CATEGORIES.forEach(cat => {
+                    teamDirectPoints[teamId][cat] = 0;
+                });
+            }
+
+            const allResults = appData.results || {};
+            
+            for (const resultId in allResults) {
+                const result = allResults[resultId];
+                if (!result.participants) {
+                    continue;
+                }
+
+                let pointsConfigToUse;
+                if (result.programType === 'group') {
+                    pointsConfigToUse = appData.groupPointsConfig;
+                } else if (result.programType === 'team') {
+                    pointsConfigToUse = appData.teamPointsConfig;
+                } else {
+                    pointsConfigToUse = appData.pointsConfig;
+                }
+
+                result.participants.forEach(participant => {
+                    let points = 0;
+                    if (participant.position && participant.position !== "none" && pointsConfigToUse[participant.position]) {
+                        points += pointsConfigToUse[participant.position];
+                    }
+                    if (participant.grade && participant.grade !== "none" && pointsConfigToUse[participant.grade]) {
+                        points += pointsConfigToUse[participant.grade];
+                    }
+                    
+                    if (result.programType === 'group' || result.programType === 'team') {
+                        const student = appData.students[participant.studentId];
+                        if (student && student.teamId && teamDirectPoints[student.teamId] && result.category) {
+                           if (!teamDirectPoints[student.teamId][result.category]) {
+                                 teamDirectPoints[student.teamId][result.category] = 0;
+                           }
+                            teamDirectPoints[student.teamId][result.category] += points;
+                        }
+                    } else {
+                        if (studentPoints.hasOwnProperty(participant.studentId)) {
+                            studentPoints[participant.studentId] += points;
+                        }
+                    }
+                });
+            }
+
+            const teamsArray = JSON.parse(JSON.stringify(getDataAsArray("teams")));
+            const studentsArray = JSON.parse(JSON.stringify(getDataAsArray("students")));
+
+            studentsArray.forEach(student => {
+                student.totalPoints = studentPoints[student.id] || 0;
+            });
+
+            teamsArray.forEach(team => {
+                const directScores = teamDirectPoints[team.id] || {};
+                let totalDirectPoints = 0;
+                team.categoryPoints = {};
+
+                CATEGORIES.forEach(cat => {
+                    const points = directScores[cat] || 0;
+                    team.categoryPoints[cat] = points;
+                    totalDirectPoints += points;
+                });
+                team.totalPoints = totalDirectPoints;
+
+                studentsArray.forEach(student => {
+                    if (student.teamId === team.id) {
+                        team.totalPoints += student.totalPoints;
+                        if (student.category && team.categoryPoints.hasOwnProperty(student.category)) {
+                            team.categoryPoints[student.category] += student.totalPoints;
+                        }
+                    }
+                });
+
+                team.totalPoints -= (teamPenalties[team.id] || 0);
+            });
+
+            teamsArray.sort((a, b) => b.totalPoints - a.totalPoints);
+            studentsArray.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+
+            return { teamsArray, studentsArray };
+        }
+
+        async function renderDashboardPage() {
+            const { teamsArray, studentsArray } = calculateAllScoresInternal();
+
+            const teamsHtml = teamsArray.length === 0 ? "<p class=\"text-gray-500 col-span-full\">No teams data yet.</p>" : teamsArray.map((team, index) => {
+                const medalClasses = ["text-yellow-400", "text-gray-400", "text-yellow-600", "text-blue-400"];
+                const medalIcons = ["fa-crown", "fa-medal", "fa-award", "fa-star"];
+                return `
+                    <div class="bg-white shadow-lg rounded-xl p-6">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold text-gray-800">${team.name}</h2>
+                            ${index < 4 ? `<i class="fas ${medalIcons[index]} text-2xl ${medalClasses[index]}"></i>` : ''}
+                        </div>
+                        <p class="text-5xl font-extrabold text-indigo-600 mt-4">${team.totalPoints}</p>
+                        <p class="text-gray-500 mt-1">Total Points</p>
+                    </div>`;
+            }).join('');
+
+            const studentsHtml = studentsArray.length === 0 ? `<tr><td colspan="5" class="text-center py-8 text-gray-500">No student data yet.</td></tr>` : studentsArray.slice(0, 50).map((student, index) => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600"><a href="#/student/${student.id}" class="hover:underline">${student.name}</a></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${appData.teams[student.teamId]?.name || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.category}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">${student.totalPoints || 0}</td>
+                </tr>
+            `).join('');
+
+            return `
+                <div class="page space-y-12">
+                    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md" role="alert">
+                        <p class="font-bold">Internal Dashboard</p>
+                        <p>This is a live view of all scores, including pending, ready, and published results. This is NOT the public score.</p>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Live Team Standings (All Results)</h1>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            ${teamsHtml}
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 mb-6">Live Student Leaderboard (Top 50)</h2>
+                        <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        ${studentsHtml}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
         function renderScorePreviewPage() {
             const {
                 teamsArray: _0xe7e004,
@@ -684,9 +945,9 @@
         }
         async function renderAdminDashboard() {
             setTimeout(() => renderAdminTab(activeAdminTab), 0x0);
-            return "\n               <div class=\"page space-y-8\">\n                  <h1 class=\"text-3xl font-bold text-gray-900\">Admin Dashboard</h1>\n                  <div class=\"border-b border-gray-200\">\n                      <nav id=\"admin-tabs\" class=\"-mb-px flex space-x-8 overflow-x-auto\" aria-label=\"Tabs\">\n                          <button data-tab=\"status\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Program Status</button>\n                          <button data-tab=\"results\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Upload Results</button>\n                          <button data-tab=\"publish\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Publish</button>\n                          <button data-tab=\"announce\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Announce Live</button>\n                          <button data-tab=\"preview\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Score Preview</button>\n                          <button data-tab=\"students\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Students</button>\n                          <button data-tab=\"teams\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Teams</button>\n                          <button data-tab=\"programs\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Programs</button>\n                           <button data-tab=\"points\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Points Config</button>\n                      </nav>\n                  </div>\n                  <div id=\"admin-tab-content\" class=\"pt-4\">\n                      <div class=\"flex justify-center items-center p-16\"><div class=\"loader\"></div></div>\n                  </div>\n              </div>\n            ";
+            return "\n               <div class=\"page space-y-8\">\n                  <h1 class=\"text-3xl font-bold text-gray-900\">Admin Dashboard</h1>\n                  <div class=\"border-b border-gray-200\">\n                      <nav id=\"admin-tabs\" class=\"-mb-px flex space-x-8 overflow-x-auto\" aria-label=\"Tabs\">\n                          <button data-tab=\"dashboard\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Dashboard</button>\n                          <button data-tab=\"status\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Program Status</button>\n                          <button data-tab=\"results\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Upload Results</button>\n                          <button data-tab=\"publish\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Publish</button>\n                          <button data-tab=\"announce\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Announce Live</button>\n                          <button data-tab=\"preview\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Score Preview</button>\n                          <button data-tab=\"students\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Students</button>\n                          <button data-tab=\"teams\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Teams</button>\n                          <button data-tab=\"programs\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Programs</button>\n                           <button data-tab=\"points\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Points Config</button>\n                           <button data-tab=\"penalty\" class=\"admin-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm\">Penalty</button>\n                      </nav>\n                  </div>\n                  <div id=\"admin-tab-content\" class=\"pt-4\">\n                      <div class=\"flex justify-center items-center p-16\"><div class=\"loader\"></div></div>\n                  </div>\n              </div>\n            ";
         }
-        async function renderAdminTab(_0x3a4997, _0xa4943 = 'All') {
+        async function renderAdminTab(_0x3a4997) {
             const _0x88f17b = document.getElementById('admin-tab-content');
             if (!_0x88f17b) {
                 return;
@@ -697,12 +958,15 @@
             let _0x372c5f = '';
             const _0x41a22c = getDataAsArray("teams");
             switch (_0x3a4997) {
+                 case "dashboard":
+                    _0x372c5f = await renderDashboardPage();
+                    break;
                 case "status":
-                    _0x372c5f = renderProgramStatusPage(_0xa4943);
+                    _0x372c5f = renderProgramStatusPage(activeStatusFilter, activeStatusCategoryFilter);
                     break;
                 case "results":
+                    if(editingResultId) resetResultForm(); // Reset if user was editing and switched tabs
                     tempParticipants = [];
-                    // --- MODIFIED: Added "Team Program" radio button ---
                     _0x372c5f = `
                               <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                   <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg">
@@ -748,57 +1012,82 @@
                     break;
                 case "publish":
                     const _0x578940 = getDataAsArray("results").sort((_0x3030fa, _0x2496ca) => _0x2496ca.timestamp - _0x3030fa.timestamp);
-                    _0x372c5f = "\n                              <div class=\"bg-white p-6 rounded-xl shadow-lg\">\n                                   <div class=\"flex justify-between items-center mb-6\">\n                                      <h2 class=\"text-2xl font-bold\">Manage Results Publication</h2>\n                                      <div class=\"flex gap-2\">\n                                          <button id=\"print-all-ready-btn\" class=\"bg-gray-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-gray-700\"><i class=\"fas fa-print mr-2\"></i>Print All Ready</button>\n                                          <button id=\"publish-all-ready-btn\" class=\"bg-blue-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-blue-700\">Publish All Ready</button>\n                                          <button id=\"update-all-scores-btn\" class=\"bg-red-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-red-700\"><i class=\"fas fa-sync-alt mr-2\"></i>Update All Scores</button>\n                                      </div>\n                                   </div>\n                                   <div id=\"publish-list\" class=\"space-y-6 pr-2\">\n                                   " + (_0x578940.length === 0x0 ? "<p class=\"text-gray-500 text-center py-4\">No results have been uploaded yet.</p>" : _0x578940.map(_0x23e4de => {
-                        const _0x47f43c = {};
+                    _0x372c5f = `
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                                <h2 class="text-2xl font-bold">Manage Results Publication</h2>
+                                <div class="w-full md:w-1/3">
+                                    <input type="text" id="publish-search-input" placeholder="Search programs..." class="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <div class="flex gap-2 flex-wrap justify-center">
+                                    <button id="print-all-ready-btn" class="bg-gray-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-gray-700"><i class="fas fa-print mr-2"></i>Print All Ready</button>
+                                    <button id="publish-all-ready-btn" class="bg-blue-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-blue-700">Publish All Ready</button>
+                                    <button id="update-all-scores-btn" class="bg-red-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-red-700"><i class="fas fa-sync-alt mr-2"></i>Update All Scores</button>
+                                </div>
+                            </div>
+                            <div id="publish-list" class="space-y-6 pr-2 max-h-[70vh] overflow-y-auto">
+                            ${(_0x578940.length === 0x0 ? "<p class=\"text-gray-500 text-center py-4\">No results have been uploaded yet.</p>" : _0x578940.map(_0x23e4de => {
+                                const _0x47f43c = {};
+                                const pointsConfigForImpact = _0x23e4de.programType === 'group' ? appData.groupPointsConfig : _0x23e4de.programType === 'team' ? appData.teamPointsConfig : appData.pointsConfig;
 
-                        let pointsConfigForImpact;
-                        if(_0x23e4de.programType === 'group') {
-                            pointsConfigForImpact = appData.groupPointsConfig;
-                        } else if (_0x23e4de.programType === 'team') {
-                            pointsConfigForImpact = appData.teamPointsConfig;
-                        } else {
-                            pointsConfigForImpact = appData.pointsConfig;
-                        }
-
-                        (_0x23e4de.participants || []).forEach(_0x3880e9 => {
-                            const _0xf3b299 = appData.students[_0x3880e9.studentId];
-                            if (!_0xf3b299 || !_0xf3b299.teamId) {
-                                return;
-                            }
-                            const _0x1ceabb = _0xf3b299.teamId;
-                            if (!_0x47f43c[_0x1ceabb]) {
-                                _0x47f43c[_0x1ceabb] = {
-                                    'points': 0x0,
-                                    'teamName': appData.teams[_0x1ceabb]?.['name'] || "Unknown"
-                                };
-                            }
-                            let _0x22d001 = 0x0;
-                            if (_0x3880e9.position && _0x3880e9.position !== "none") {
-                                _0x22d001 += pointsConfigForImpact[_0x3880e9.position] || 0x0;
-                            }
-                            if (_0x3880e9.grade && _0x3880e9.grade !== "none") {
-                                _0x22d001 += pointsConfigForImpact[_0x3880e9.grade] || 0x0;
-                            }
-                            _0x47f43c[_0x1ceabb].points += _0x22d001;
-                        });
-                        const _0x2ed5f9 = Object.values(_0x47f43c).sort((_0xb12717, _0x3fff28) => _0x3fff28.points - _0xb12717.points);
-                        let _0x10ff74;
-                        let _0x41020c;
-                        switch (_0x23e4de.status) {
-                            case "published":
-                                _0x10ff74 = "<span class=\"text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full\">Published</span>";
-                                _0x41020c = "\n                                        <button class=\"unpublish-btn bg-yellow-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-yellow-600\" data-id=\"" + _0x23e4de.id + "\">Unpublish</button>\n                                        <button class=\"print-btn bg-gray-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-gray-600\" data-id=\"" + _0x23e4de.id + "\"><i class=\"fas fa-print\"></i></button>\n                                    ";
-                                break;
-                            case "ready":
-                                _0x10ff74 = "<span class=\"text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full\">Ready to Publish</span>";
-                                _0x41020c = "\n                                        <button class=\"unmark-ready-btn bg-gray-400 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-gray-500\" data-id=\"" + _0x23e4de.id + "\">Unmark</button>\n                                        <button class=\"publish-btn bg-green-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-green-600\" data-id=\"" + _0x23e4de.id + "\">Publish</button>\n                                    ";
-                                break;
-                            default:
-                                _0x10ff74 = "<span class=\"text-xs font-semibold text-white bg-gray-500 px-2 py-1 rounded-full\">Pending</span>";
-                                _0x41020c = "<button class=\"mark-ready-btn bg-blue-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-blue-600\" data-id=\"" + _0x23e4de.id + "\">Mark as Ready</button>";
-                        }
-                        return "\n                                      <div class=\"border rounded-lg p-4 " + (_0x23e4de.status === "published" ? "bg-green-50" : _0x23e4de.status === "ready" ? "bg-blue-50" : "bg-gray-50") + "\">\n                                          <div class=\"flex justify-between items-start mb-4\">\n                                              <div>\n                                                  <div class=\"flex items-center gap-2 mb-1\">\n                                                       <p class=\"font-bold text-lg text-gray-800\">" + _0x23e4de.programName + "</p>\n                                                      " + _0x10ff74 + "\n                                                  </div>\n                                                  <p class=\"text-sm text-gray-500\">" + _0x23e4de.category + "</p>\n                                              </div>\n                                              <div class=\"flex items-center gap-2\">\n                                                  " + _0x41020c + "\n                                                  <button class=\"delete-btn text-red-500 hover:text-red-700\" data-id=\"" + _0x23e4de.id + "\" data-collection=\"results\"><i class=\"fas fa-trash\"></i></button>\n                                              </div>\n                                          </div>\n                                          <div>\n                                              <h4 class=\"font-semibold text-sm mb-2\">Team Point Impact:</h4>\n                                              <div class=\"flex flex-wrap gap-x-4 gap-y-1\">\n                                                  " + _0x2ed5f9.map(_0x1631b3 => "\n                                                  <span class=\"text-sm text-gray-700\"><strong>" + _0x1631b3.teamName + ":</strong> <span class=\"font-bold text-green-600\">+" + _0x1631b3.points + "</span></span>\n                                                  ").join('') + "\n                                              </div>\n                                          </div>\n                                      </div>\n                                      ";
-                    }).join('')) + "\n                                   </div>\n                              </div>\n                            ";
+                                (_0x23e4de.participants || []).forEach(_0x3880e9 => {
+                                    const _0xf3b299 = appData.students[_0x3880e9.studentId];
+                                    if (!_0xf3b299 || !_0xf3b299.teamId) return;
+                                    const _0x1ceabb = _0xf3b299.teamId;
+                                    if (!_0x47f43c[_0x1ceabb]) {
+                                        _0x47f43c[_0x1ceabb] = { 'points': 0x0, 'teamName': appData.teams[_0x1ceabb]?.['name'] || "Unknown" };
+                                    }
+                                    let _0x22d001 = 0x0;
+                                    if (_0x3880e9.position && _0x3880e9.position !== "none") _0x22d001 += pointsConfigForImpact[_0x3880e9.position] || 0x0;
+                                    if (_0x3880e9.grade && _0x3880e9.grade !== "none") _0x22d001 += pointsConfigForImpact[_0x3880e9.grade] || 0x0;
+                                    _0x47f43c[_0x1ceabb].points += _0x22d001;
+                                });
+                                const _0x2ed5f9 = Object.values(_0x47f43c).sort((_0xb12717, _0x3fff28) => _0x3fff28.points - _0xb12717.points);
+                                let _0x10ff74, _0x41020c;
+                                switch (_0x23e4de.status) {
+                                    case "published":
+                                        _0x10ff74 = `<span class="text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full">Published</span>`;
+                                        _0x41020c = `<button class="unpublish-btn bg-yellow-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-yellow-600" data-id="${_0x23e4de.id}">Unpublish</button>
+                                                    <button class="print-btn bg-gray-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-gray-600" data-id="${_0x23e4de.id}"><i class="fas fa-print"></i></button>`;
+                                        break;
+                                    case "ready":
+                                        _0x10ff74 = `<span class="text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">Ready to Publish</span>`;
+                                        _0x41020c = `<button class="unmark-ready-btn bg-gray-400 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-gray-500" data-id="${_0x23e4de.id}">Unmark</button>
+                                                    <button class="publish-btn bg-green-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-green-600" data-id="${_0x23e4de.id}">Publish</button>`;
+                                        break;
+                                    default:
+                                        _0x10ff74 = `<span class="text-xs font-semibold text-white bg-gray-500 px-2 py-1 rounded-full">Pending</span>`;
+                                        _0x41020c = `<button class="mark-ready-btn bg-blue-500 text-white px-3 py-1 text-sm font-semibold rounded-md hover:bg-blue-600" data-id="${_0x23e4de.id}">Mark as Ready</button>`;
+                                }
+                                return `
+                                    <div class="border rounded-lg p-4 program-item-container ${(_0x23e4de.status === "published" ? "bg-green-50" : _0x23e4de.status === "ready" ? "bg-blue-50" : "bg-gray-50")}" data-program-name="${_0x23e4de.programName.toLowerCase()}">
+                                        <div class="flex justify-between items-start mb-4">
+                                            <div class="program-item-clickable cursor-pointer flex-grow" data-result-id="${_0x23e4de.id}">
+                                                <div class="flex items-center gap-2 mb-1">
+                                                    <p class="font-bold text-lg text-gray-800">${_0x23e4de.programName}</p>
+                                                    ${_0x10ff74}
+                                                </div>
+                                                <p class="text-sm text-gray-500">${_0x23e4de.category}</p>
+                                            </div>
+                                            <div class="flex items-center gap-2 flex-shrink-0" data-no-modal-trigger="true">
+                                                ${_0x41020c}
+                                                <button class="delete-btn text-red-500 hover:text-red-700" data-id="${_0x23e4de.id}" data-collection="results"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                        </div>
+                                        <div class="program-item-clickable cursor-pointer" data-result-id="${_0x23e4de.id}">
+                                            <h4 class="font-semibold text-sm mb-2">Team Point Impact:</h4>
+                                            <div class="flex flex-wrap gap-x-4 gap-y-1">
+                                                ${_0x2ed5f9.map(_0x1631b3 => `
+                                                <span class="text-sm text-gray-700"><strong>${_0x1631b3.teamName}:</strong> <span class="font-bold text-green-600">+${_0x1631b3.points}</span></span>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join(''))}
+                            </div>
+                        </div>
+                    `;
                     break;
                 case 'announce':
                     _0x372c5f = renderAnnounceLivePage();
@@ -815,7 +1104,6 @@
                 case "programs":
                     _0x372c5f = "\n                              <div class=\"grid grid-cols-1 lg:grid-cols-3 gap-8\">\n                                   <div class=\"lg:col-span-2 bg-white p-6 rounded-xl shadow-lg order-2 lg:order-1\">\n                                      <h2 class=\"text-2xl font-bold mb-6\">All Programs</h2>\n                                      <div id=\"items-list\" class=\"space-y-2 max-h-[80vh] overflow-y-auto pr-2\"></div>\n                                  </div>\n                                  <div class=\"lg:col-span-1 bg-white p-6 rounded-xl shadow-lg order-1 lg:order-2 space-y-8\">\n                                      <div>\n                                          <h2 class=\"text-2xl font-bold mb-6\">Add New Program</h2>\n                                          <form id=\"add-program-form\" class=\"space-y-4\">\n                                              <div><label for=\"program-name\" class=\"block text-sm font-medium\">Program Name</label><input type=\"text\" id=\"program-name\" required class=\"mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm\"></div>\n                                              <div><label for=\"program-category\" class=\"block text-sm font-medium\">Category</label><select id=\"program-category\" required class=\"mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm\">" + categoryOptions() + "</select></div>\n                                              <button type=\"submit\" class=\"w-full justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700\">Add Program</button>\n                                              <p id=\"form-message\" class=\"text-sm mt-2 text-center\"></p>\n                                          </form>\n                                      </div>\n                                      <hr/>\n                                      <div>\n                                          <h2 class=\"text-2xl font-bold mb-6\">Bulk Upload Programs</h2>\n                                          <form id=\"bulk-upload-programs-form\" class=\"space-y-4\">\n                                              <div class=\"text-sm\">\n                                                  <p class=\"mb-2\">Upload an Excel (.xlsx) file with columns:</p>\n                                                  <code class=\"text-xs bg-gray-200 p-1 rounded\">ProgramName, Category</code>\n                                              </div>\n                                              <div>\n                                                  <input type=\"file\" id=\"program-file-input\" class=\"block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100\" accept=\".xlsx\" required>\n                                              </div>\n                                              <button type=\"submit\" class=\"w-full justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700\">Upload File</button>\n                                              <button type=\"button\" id=\"download-program-template\" class=\"w-full text-center py-2 px-4 border text-sm font-medium rounded-md text-indigo-600 bg-indigo-50 hover:bg-indigo-100\">Download Template</button>\n                                              <p id=\"bulk-form-message\" class=\"text-sm mt-2 text-center\"></p>\n                                          </form>\n                                      </div>\n                                  </div>\n                              </div>";
                     break;
-                // --- MODIFIED: Updated the Points Config tab for all 3 program types ---
                 case 'points':
                     _0x372c5f = `
                               <div class="max-w-4xl mx-auto">
@@ -856,64 +1144,156 @@
                               </div>
                             `;
                     break;
+                case 'penalty':
+                    const teamsArrayForPenalty = getDataAsArray("teams");
+                    _0x372c5f = `
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg">
+                                <h2 class="text-2xl font-bold mb-6">Apply Penalty</h2>
+                                <form id="apply-penalty-form" class="space-y-4">
+                                    <div>
+                                        <label for="penalty-team" class="block text-sm font-medium">Team</label>
+                                        <select id="penalty-team" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
+                                            <option value="">Select Team</option>
+                                            ${teamsArrayForPenalty.map(team => `<option value="${team.id}">${team.name}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="penalty-points" class="block text-sm font-medium">Penalty Points (e.g., 10)</label>
+                                        <input type="number" id="penalty-points" min="1" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
+                                    </div>
+                                    <div>
+                                        <label for="penalty-reason" class="block text-sm font-medium">Reason</label>
+                                        <input type="text" id="penalty-reason" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
+                                    </div>
+                                    <button type="submit" class="w-full justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">Apply Penalty</button>
+                                    <p id="form-message" class="text-sm mt-2 text-center"></p>
+                                </form>
+                            </div>
+                            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+                                <h2 class="text-2xl font-bold mb-6">Applied Penalties</h2>
+                                <div id="items-list" class="space-y-2 max-h-[80vh] overflow-y-auto pr-2"></div>
+                            </div>
+                        </div>
+                    `;
+                    break;
             }
             _0x88f17b.innerHTML = _0x372c5f;
             if (_0x3a4997 === "results") {
                 loadRecentResults();
             }
-            if (['students', 'teams', "programs"].includes(_0x3a4997)) {
+            if (['students', 'teams', "programs", "penalty"].includes(_0x3a4997)) {
                 loadItemsList(_0x3a4997);
             }
         }
         function loadRecentResults() {
-            const _0x54e900 = document.getElementById("recent-results-list");
-            if (!_0x54e900) {
+            const listContainer = document.getElementById("recent-results-list");
+            if (!listContainer) return;
+            
+            const results = getDataAsArray("results").sort((a, b) => b.timestamp - a.timestamp);
+            
+            if (results.length === 0) {
+                listContainer.innerHTML = "<p class=\"text-gray-500 text-center py-4\">No results have been added yet.</p>";
                 return;
             }
-            const _0x2e6577 = getDataAsArray("results").sort((_0x5c2f1c, _0x35eff7) => _0x35eff7.timestamp - _0x5c2f1c.timestamp);
-            if (_0x2e6577.length === 0x0) {
-                _0x54e900.innerHTML = "<p class=\"text-gray-500 text-center py-4\">No results have been added yet.</p>";
-                return;
-            }
-            _0x54e900.innerHTML = _0x2e6577.map(_0x4f61c0 => "\n              <div class=\"border rounded-lg p-4 bg-gray-50\">\n                  <div class=\"flex justify-between items-start\">\n                      <div>\n                          <p class=\"font-bold text-gray-800\">" + _0x4f61c0.programName + "</p>\n                          <p class=\"text-sm text-gray-500\">" + _0x4f61c0.category + "</p>\n                      </div>\n                      <button class=\"delete-btn text-red-500 hover:text-red-700\" data-id=\"" + _0x4f61c0.id + "\" data-collection=\"results\"><i class=\"fas fa-trash\"></i></button>\n                  </div>\n              </div>\n            ").join('');
+
+            listContainer.innerHTML = results.map(result => `
+              <div class="border rounded-lg p-4 bg-gray-50">
+                  <div class="flex justify-between items-start">
+                      <div>
+                          <p class="font-bold text-gray-800">${result.programName}</p>
+                          <p class="text-sm text-gray-500">${result.category}</p>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <button class="edit-result-btn text-blue-500 hover:text-blue-700" data-id="${result.id}"><i class="fas fa-edit"></i></button>
+                        <button class="delete-btn text-red-500 hover:text-red-700" data-id="${result.id}" data-collection="results"><i class="fas fa-trash"></i></button>
+                      </div>
+                  </div>
+              </div>
+            `).join('');
         }
+
         function loadItemsList(_0x9bd124) {
             const _0x1620a4 = document.getElementById("items-list");
             if (!_0x1620a4) {
                 return;
             }
-            const _0x56029d = getDataAsArray(_0x9bd124).sort((_0x514b3c, _0x35509d) => _0x514b3c.name > _0x35509d.name ? 0x1 : -0x1);
+            if (_0x9bd124 === 'penalty') { _0x9bd124 = 'teamPenalties'; }
+            if (_0x9bd124 === 'teamPenalties') {
+                const penalties = getDataAsArray('teamPenalties').sort((a,b) => b.createdAt - a.createdAt);
+                if (penalties.length === 0) {
+                    _0x1620a4.innerHTML = `<p class="text-gray-500 text-center py-4">No penalties have been applied yet.</p>`;
+                    return;
+                }
+                _0x1620a4.innerHTML = penalties.map(penalty => `
+                    <div class="flex justify-between items-center bg-red-50 p-3 rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-800">-${penalty.points} points to <strong>${appData.teams[penalty.teamId]?.name || 'Unknown Team'}</strong></p>
+                            <p class="text-sm text-gray-500">Reason: ${penalty.reason}</p>
+                        </div>
+                        <button class="delete-btn text-red-500 hover:text-red-700" data-id="${penalty.id}" data-collection="teamPenalties"><i class="fas fa-trash"></i></button>
+                    </div>
+                `).join('');
+                return;
+            }
+            const _0x56029d = getDataAsArray(_0x9bd124).sort((_0x514b3c, _0x35509d) => (_0x514b3c.name || '').localeCompare(_0x35509d.name || ''));
             if (_0x56029d.length === 0x0) {
                 _0x1620a4.innerHTML = "<p class=\"text-gray-500 text-center py-4\">No " + _0x9bd124 + " have been added yet.</p>";
                 return;
             }
-            _0x1620a4.innerHTML = _0x56029d.map(_0x55c723 => "\n              <div class=\"flex justify-between items-center bg-gray-50 p-3 rounded-lg\">\n                  <div>\n                      <p class=\"font-medium text-gray-800\">" + _0x55c723.name + "</p>\n                      <p class=\"text-sm text-gray-500\">\n                          " + (_0x9bd124 === "students" ? "Chest No: " + _0x55c723.chestNo + " • " : '') + "\n                          " + (_0x55c723.category || '') + "\n                          " + (_0x55c723.teamId ? "• " + appData.teams[_0x55c723.teamId]?.["name"] : '') + "\n                      </p>\n                  </div>\n                  <button class=\"delete-btn text-red-500 hover:text-red-700\" data-id=\"" + _0x55c723.id + "\" data-collection=\"" + _0x9bd124 + "\"><i class=\"fas fa-trash\"></i></button>\n              </div>\n            ").join('');
+            _0x1620a4.innerHTML = _0x56029d.map(_0x55c723 => `
+              <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                  <div>
+                      <p class="font-medium text-gray-800">${_0x55c723.name}</p>
+                      <p class="text-sm text-gray-500">
+                          ${(_0x9bd124 === "students" ? "Chest No: " + _0x55c723.chestNo + " • " : '')}
+                          ${(_0x55c723.category || '')}
+                          ${(_0x55c723.teamId ? " • " + (appData.teams[_0x55c723.teamId]?.name || 'N/A') : '')}
+                      </p>
+                  </div>
+                  <button class="delete-btn text-red-500 hover:text-red-700" data-id="${_0x55c723.id}" data-collection="${_0x9bd124}"><i class="fas fa-trash"></i></button>
+              </div>
+            `).join('');
         }
-        async function handleAdminFormChange(_0x3d8bd8) {
-            if (_0x3d8bd8.target.id === 'res-category' || _0x3d8bd8.target.id === "res-program") {
-                const _0x3e6770 = document.getElementById("res-category").value;
-                const _0x5d7c2f = document.getElementById("res-program");
-                const _0x981a89 = document.getElementById("res-student-select");
-                const _0x452725 = document.getElementById('add-participant-btn');
-                if (_0x3d8bd8.target.id === 'res-category') {
-                    if (!_0x3e6770) {
-                        _0x5d7c2f.innerHTML = "<option>Select Category First</option>";
-                        _0x5d7c2f.disabled = true;
-                    } else {
-                        const _0x24243f = getDataAsArray("programs").filter(_0x2e3ee2 => _0x2e3ee2.category === _0x3e6770);
-                        _0x5d7c2f.innerHTML = "<option value=\"\">Select Program</option>" + _0x24243f.map(_0x25025d => "<option value=\"" + _0x25025d.id + "\">" + _0x25025d.name + "</option>").join('');
-                        _0x5d7c2f.disabled = false;
-                    }
-                }
-                if (_0x3e6770 && _0x5d7c2f.value) {
-                    const _0x37f842 = getDataAsArray("students").filter(_0x3902d4 => _0x3902d4.category === _0x3e6770);
-                    _0x981a89.innerHTML = "<option value=\"\">Select Student</option>" + _0x37f842.map(_0x286366 => "<option value=\"" + _0x286366.id + "\">" + _0x286366.name + " (" + _0x286366.chestNo + ")</option>").join('');
-                    _0x981a89.disabled = false;
-                    _0x452725.disabled = false;
+        function populateProgramDropdown(categoryId) {
+            const programSelect = document.getElementById("res-program");
+            if (!categoryId) {
+                programSelect.innerHTML = "<option>Select Category First</option>";
+                programSelect.disabled = true;
+            } else {
+                const programs = getDataAsArray("programs").filter(p => p.category === categoryId);
+                programSelect.innerHTML = "<option value=\"\">Select Program</option>" + programs.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                programSelect.disabled = false;
+            }
+        }
+        function populateStudentDropdown(categoryId) {
+            const studentSelect = document.getElementById("res-student-select");
+            const addParticipantBtn = document.getElementById('add-participant-btn');
+            if (categoryId) {
+                const students = getDataAsArray("students").filter(s => s.category === categoryId);
+                studentSelect.innerHTML = "<option value=\"\">Select Student</option>" + students.map(s => `<option value="${s.id}">${s.name} (${s.chestNo})</option>`).join('');
+                studentSelect.disabled = false;
+                addParticipantBtn.disabled = false;
+            } else {
+                studentSelect.innerHTML = "<option>Select Program First</option>";
+                studentSelect.disabled = true;
+                addParticipantBtn.disabled = true;
+            }
+        }
+        async function handleAdminFormChange(e) {
+            const targetId = e.target.id;
+            if (targetId === 'res-category') {
+                const categoryId = e.target.value;
+                populateProgramDropdown(categoryId);
+                populateStudentDropdown(null);
+                document.getElementById("res-program").value = ''; 
+            } else if (targetId === 'res-program') {
+                const categoryId = document.getElementById('res-category').value;
+                const programId = e.target.value;
+                if (categoryId && programId) {
+                    populateStudentDropdown(categoryId);
                 } else {
-                    _0x981a89.innerHTML = "<option>Select Program First</option>";
-                    _0x981a89.disabled = true;
-                    _0x452725.disabled = true;
+                    populateStudentDropdown(null);
                 }
             }
         }
@@ -1046,7 +1426,6 @@
                         }
                         _0x4df59d.reset();
                         break;
-                    // --- MODIFIED: Update handler to save all three point configs ---
                     case "update-points-form":
                         const individualPoints = {
                             'first': parseInt(_0x4df59d.querySelector("#points-first").value),
@@ -1078,34 +1457,35 @@
                         }
                         break;
                     case "add-result-form":
-                        const _0x481493 = _0x4df59d.querySelector('#res-program').value;
+                        const programId = _0x4df59d.querySelector('#res-program').value;
                         const programType = _0x4df59d.querySelector('input[name="programType"]:checked').value;
-                        if (!_0x481493 || tempParticipants.length === 0x0) {
+                        if (!programId || tempParticipants.length === 0) {
                             throw new Error("Program and at least one participant are required.");
                         }
-                        const _0x1130af = appData.programs[_0x481493];
-                        const _0x3a209f = tempParticipants.map((_0x5c403a, _0x5e71be) => {
-                            const _0x4ec1a7 = document.getElementById("pos-select-" + _0x5e71be).value;
-                            const _0x431f64 = document.getElementById('grade-select-' + _0x5e71be).value;
-                            return {
-                                ..._0x5c403a,
-                                'position': _0x4ec1a7,
-                                'grade': _0x431f64
-                            };
+                        const program = appData.programs[programId];
+                        const participants = tempParticipants.map((p, i) => {
+                            const position = document.getElementById(`pos-select-${i}`).value;
+                            const grade = document.getElementById(`grade-select-${i}`).value;
+                            return { ...p, position, grade };
                         });
-                        await db.ref("results").push({
-                            'programId': _0x481493,
-                            'programName': _0x1130af.name,
-                            'category': _0x1130af.category,
-                            'programType': programType,
-                            'participants': _0x3a209f,
-                            'status': 'pending',
-                            'timestamp': Date.now()
-                        });
-                        if (_0xe7735e) {
-                            _0xe7735e.textContent = "Result uploaded successfully for review!";
+                        const resultData = {
+                            programId,
+                            programName: program.name,
+                            category: program.category,
+                            programType,
+                            participants,
+                            status: 'pending', 
+                            timestamp: Date.now()
+                        };
+
+                        if (editingResultId) {
+                            await db.ref("results/" + editingResultId).set(resultData);
+                            if(_0xe7735e) _0xe7735e.textContent = "Result updated successfully!";
+                        } else {
+                            await db.ref("results").push(resultData);
+                            if(_0xe7735e) _0xe7735e.textContent = "Result uploaded for review!";
                         }
-                        tempParticipants = [];
+                        resetResultForm();
                         break;
                     case "bulk-upload-students-form":
                     case "bulk-upload-programs-form":
@@ -1117,6 +1497,27 @@
                         }
                         _0xe7735e.textContent = "Processing file...";
                         await processBulkUpload(_0x287e74, _0x2b8214, _0xe7735e);
+                        _0x4df59d.reset();
+                        break;
+                    case "apply-penalty-form":
+                        const teamId = _0x4df59d.querySelector('#penalty-team').value;
+                        const points = parseInt(_0x4df59d.querySelector('#penalty-points').value, 10);
+                        const reason = _0x4df59d.querySelector('#penalty-reason').value;
+
+                        if (!teamId || !points || !reason || points <= 0) {
+                            throw new Error("Please fill out all fields correctly.");
+                        }
+
+                        await db.ref("teamPenalties").push({
+                            teamId,
+                            points,
+                            reason,
+                            'createdAt': Date.now()
+                        });
+
+                        if (_0xe7735e) {
+                            _0xe7735e.textContent = "Penalty applied successfully!";
+                        }
                         _0x4df59d.reset();
                         break;
                 }
@@ -1155,6 +1556,19 @@
             }
         }
         async function handleAdminListClick(_0x4cdbac) {
+            const programItem = _0x4cdbac.target.closest(".program-item-clickable");
+            if (programItem && !_0x4cdbac.target.closest('[data-no-modal-trigger]')) {
+                const resultId = programItem.dataset.resultId;
+                openPublishResultsModal(resultId);
+                return;
+            }
+
+            const editBtn = _0x4cdbac.target.closest(".edit-result-btn");
+            if (editBtn) {
+                await editResult(editBtn.dataset.id);
+                return;
+            }
+
             const _0x1faf2c = _0x4cdbac.target.closest(".delete-btn");
             const _0x64603c = _0x4cdbac.target.closest(".publish-btn");
             const _0x50dd46 = _0x4cdbac.target.closest(".unpublish-btn");
@@ -1172,7 +1586,7 @@
                 if (confirm("Are you sure you want to delete this item from " + _0x1dfd82 + "? This action cannot be undone.")) {
                     const _0x58f1c0 = appData[_0x1dfd82][_0xd03abc];
                     db.ref(_0x1dfd82 + '/' + _0xd03abc).remove().then(() => {
-                        if (_0x1dfd82 === "results" && _0x58f1c0 && _0x58f1c0.status === "published" || _0x1dfd82 === "students") {
+                        if (_0x1dfd82 === "results" && _0x58f1c0 && _0x58f1c0.status === "published" || _0x1dfd82 === "students" || _0x1dfd82 === "teamPenalties") {
                             recalculateAllPoints();
                         }
                     })["catch"](_0x9b922b => alert("Could not delete the item. " + _0x9b922b.message));
@@ -1240,16 +1654,13 @@
         }
         
         async function recalculateAllPoints() {
-            // MODIFIED FUNCTION: Separates individual points from direct-to-team points, now category-wise.
-            const studentPoints = {}; // Stores points for individual programs
-            const teamDirectPoints = {}; // Stores category-wise points for group/team programs
+            const studentPoints = {};
+            const teamDirectPoints = {}; 
 
-            // Initialize all student scores to 0
             for (const studentId in appData.students) {
                 studentPoints[studentId] = 0;
             }
 
-            // Initialize all team direct scores with category structure
             for (const teamId in appData.teams) {
                 teamDirectPoints[teamId] = {};
                 CATEGORIES.forEach(cat => {
@@ -1265,13 +1676,12 @@
                     continue;
                 }
 
-                // Select the correct points configuration based on program type
                 let pointsConfigToUse;
                 if (result.programType === 'group') {
                     pointsConfigToUse = appData.groupPointsConfig;
                 } else if (result.programType === 'team') {
                     pointsConfigToUse = appData.teamPointsConfig;
-                } else { // 'individual' or undefined (legacy)
+                } else {
                     pointsConfigToUse = appData.pointsConfig;
                 }
 
@@ -1286,7 +1696,6 @@
 
                     if (result.programType === 'group' || result.programType === 'team') {
                         const student = appData.students[participant.studentId];
-                        // NEW: Add points to the specific category for the team.
                         if (student && student.teamId && teamDirectPoints[student.teamId] && result.category) {
                            if (teamDirectPoints[student.teamId][result.category] === undefined) {
                                 teamDirectPoints[student.teamId][result.category] = 0;
@@ -1294,7 +1703,6 @@
                             teamDirectPoints[student.teamId][result.category] += points;
                         }
                     } else {
-                        // For individual events, add points to the student's personal score.
                         if (studentPoints.hasOwnProperty(participant.studentId)) {
                             studentPoints[participant.studentId] += points;
                         }
@@ -1304,12 +1712,10 @@
 
             const updates = {};
 
-            // 1. Update totalPoints for all students (from individual events only)
             for (const studentId in studentPoints) {
                 updates[`/students/${studentId}/totalPoints`] = studentPoints[studentId];
             }
             
-            // 2. Update the new teamDirectScores object for each team (with category breakdown)
             for (const teamId in teamDirectPoints) {
                 updates[`/teamDirectScores/${teamId}`] = teamDirectPoints[teamId];
             }
@@ -1462,138 +1868,325 @@
             _0x4e08f4.innerHTML = '';
         }
         function renderParticipantsList() {
-            const _0x137295 = document.getElementById('participants-list');
-            if (!_0x137295) {
-                return;
-            }
-            _0x137295.innerHTML = tempParticipants.map((_0x5ce38c, _0x535fe1) => "\n              <div class=\"p-3 bg-gray-100 rounded-lg space-y-2\">\n                  <div class=\"flex justify-between items-center\">\n                      <p class=\"font-semibold\">" + _0x5ce38c.name + "</p>\n                      <button type=\"button\" class=\"remove-participant-btn text-red-500 hover:text-red-700\" data-index=\"" + _0x535fe1 + "\"><i class=\"fas fa-times-circle\"></i></button>\n                  </div>\n                  <div class=\"flex gap-2\">\n                      <select id=\"pos-select-" + _0x535fe1 + "\" class=\"w-1/2 p-1 text-sm border-gray-300 rounded-md\">\n                          <option value=\"none\">No Position</option>\n                          <option value=\"first\">1st Place</option>\n                          <option value=\"second\">2nd Place</option>\n                          <option value=\"third\">3rd Place</option>\n                      </select>\n                      <select id=\"grade-select-" + _0x535fe1 + "\" class=\"w-1/2 p-1 text-sm border-gray-300 rounded-md\">\n                          <option value=\"none\">No Grade</option>\n                          <option value=\"a_grade\">A Grade</option>\n                          <option value=\"b_grade\">B Grade</option>\n                      </select>\n                  </div>\n              </div>\n            ").join('');
+            const listContainer = document.getElementById('participants-list');
+            if (!listContainer) return;
+            listContainer.innerHTML = tempParticipants.map((participant, index) => `
+              <div class="p-3 bg-gray-100 rounded-lg space-y-2">
+                  <div class="flex justify-between items-center">
+                      <p class="font-semibold">${participant.name}</p>
+                      <button type="button" class="remove-participant-btn text-red-500 hover:text-red-700" data-index="${index}"><i class="fas fa-times-circle"></i></button>
+                  </div>
+                  <div class="flex gap-2">
+                      <select id="pos-select-${index}" class="w-1/2 p-1 text-sm border-gray-300 rounded-md">
+                          <option value="none">No Position</option>
+                          <option value="first">1st Place</option>
+                          <option value="second">2nd Place</option>
+                          <option value="third">3rd Place</option>
+                      </select>
+                      <select id="grade-select-${index}" class="w-1/2 p-1 text-sm border-gray-300 rounded-md">
+                          <option value="none">No Grade</option>
+                          <option value="a_grade">A Grade</option>
+                          <option value="b_grade">B Grade</option>
+                      </select>
+                  </div>
+              </div>
+            `).join('');
+            
+            tempParticipants.forEach((participant, index) => {
+                document.getElementById(`pos-select-${index}`).value = participant.position || 'none';
+                document.getElementById(`grade-select-${index}`).value = participant.grade || 'none';
+            });
         }
         async function renderNotFoundPage() {
             return "<div class=\"text-center\"><h1 class=\"text-4xl font-bold\">404 - Not Found</h1><p class=\"mt-4\">The page you are looking for does not exist.</p></div>";
         }
+        
         function renderAnnounceLivePage() {
-            const _0x33df19 = getDataAsArray("results").filter(_0xce4edf => _0xce4edf.status === "ready").sort((_0x3a28ed, _0x177e33) => _0x3a28ed.category.localeCompare(_0x177e33.category) || _0x3a28ed.programName.localeCompare(_0x177e33.programName));
-            const _0x84533f = {
-                'first': "1st Place",
-                'second': "2nd Place",
-                'third': "3rd Place",
-                'a_grade': "A Grade",
-                'b_grade': "B Grade"
-            };
-            return "\n              <div class=\"page space-y-8\">\n                   <div class=\"bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md flex flex-col md:flex-row justify-between items-center gap-4\" role=\"alert\">\n                        <div>\n                            <p class=\"font-bold\">Live Announce Mode</p>\n                            <p>\"Publish Now\" makes a result public. Click \"Update All Scores\" to refresh the main leaderboards.</p>\n                        </div>\n                        <button id=\"update-all-scores-btn\" class=\"bg-red-600 text-white px-6 py-3 text-md font-bold rounded-lg hover:bg-red-700 transition-transform transform hover:scale-105 flex-shrink-0\">\n                            <i class=\"fas fa-sync-alt mr-2\"></i> Update All Scores\n                        </button>\n                   </div>\n                  <div id=\"announce-list\" class=\"space-y-6 pr-2\">\n                  " + (_0x33df19.length === 0x0 ? "<p class=\"text-gray-500 text-center py-8 text-xl\">No results are currently ready for announcement.</p>" : _0x33df19.map(_0x312dfb => "\n                      <div class=\"bg-white shadow-2xl rounded-xl p-8 border-t-4 border-indigo-500\">\n                          <div class=\"flex flex-col md:flex-row justify-between items-center gap-4\">\n                              <div class=\"text-center md:text-left\">\n                                  <p class=\"text-lg font-semibold text-indigo-600\">" + _0x312dfb.category + "</p>\n                                  <h2 class=\"text-4xl font-bold text-gray-900\">" + _0x312dfb.programName + "</h2>\n                              </div>\n                              <button class=\"publish-btn w-full md:w-auto bg-green-600 text-white px-10 py-4 text-xl font-bold rounded-lg hover:bg-green-700 transition-transform transform hover:scale-105\" data-id=\"" + _0x312dfb.id + "\">\n                                  <i class=\"fas fa-bullhorn mr-2\"></i> Publish Now\n                              </button>\n                          </div>\n                          <div class=\"mt-6 border-t pt-6\">\n                              <h3 class=\"text-2xl font-bold mb-4 text-gray-800\">Winners List</h3>\n                              <div class=\"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-lg\">\n                                  " + (_0x312dfb.participants || []).map(_0x55e33a => {
-                const _0x39534d = appData.students[_0x55e33a.studentId];
-                const _0x1322b5 = _0x39534d && appData.teams[_0x39534d.teamId] ? appData.teams[_0x39534d.teamId].name : 'N/A';
-                let _0x2e53f4 = '';
-                if (_0x55e33a.position && _0x55e33a.position !== 'none') {
-                    _0x2e53f4 += _0x84533f[_0x55e33a.position];
+            const readyResults = getDataAsArray("results").filter(result => result.status === "ready").sort((a, b) => {
+                const categoryAIndex = CATEGORIES.indexOf(a.category);
+                const categoryBIndex = CATEGORIES.indexOf(b.category);
+                if (categoryAIndex !== categoryBIndex) {
+                    return categoryAIndex - categoryBIndex;
                 }
-                if (_0x55e33a.grade && _0x55e33a.grade !== "none") {
-                    if (_0x2e53f4) {
-                        _0x2e53f4 += " • ";
-                    }
-                    _0x2e53f4 += _0x84533f[_0x55e33a.grade];
-                }
-                const displayName = _0x312dfb.programType === 'group' || _0x312dfb.programType === 'team' ? `${_0x55e33a.name} & Team` : _0x55e33a.name;
-                return "\n                                  <div class=\"bg-gray-50 p-3 rounded-md\">\n                                      <p class=\"font-bold text-gray-900\">" + displayName + " <span class=\"text-gray-500 font-medium\">(" + _0x39534d.chestNo + ")</span></p>\n                                      <p class=\"text-indigo-700 font-semibold\">" + _0x2e53f4 + "</p>\n                                      <p class=\"text-sm text-gray-600\">" + _0x1322b5 + "</p>\n                                  </div>\n                                  ";
-            }).join('') + "\n                              </div>\n                          </div>\n                      </div>\n                      ").join('')) + "\n                  </div>\n              </div>\n            ";
-        }
-        function renderProgramStatusPage(_0x188e57 = "All") {
-            const _0xee3d1d = getDataAsArray("programs").sort((_0x21c5ba, _0x22f921) => _0x21c5ba.category.localeCompare(_0x22f921.category) || _0x21c5ba.name.localeCompare(_0x22f921.name));
-            const _0x5125c9 = getDataAsArray("results");
-            let _0x138f20 = _0xee3d1d.map(_0x487c99 => {
-                const _0x1ea4fd = _0x5125c9.find(_0x5c281c => _0x5c281c.programId === _0x487c99.id);
-                let _0x16353d = "Not Entered";
-                if (_0x1ea4fd) {
-                    if (_0x1ea4fd.status === "published") {
-                        _0x16353d = "Published";
-                    } else if (_0x1ea4fd.status === "ready") {
-                        _0x16353d = "Ready to Publish";
-                    } else {
-                        _0x16353d = "Pending";
-                    }
-                }
-                return {
-                    ..._0x487c99,
-                    'status': _0x16353d
-                };
+                return a.programName.localeCompare(b.programName);
             });
-            if (_0x188e57 !== "All") {
-                _0x138f20 = _0x138f20.filter(_0x4e3e6f => _0x4e3e6f.status === _0x188e57);
+            
+            const positionLabels = {
+                'first': "1st Place", 'second': "2nd Place", 'third': "3rd Place",
+                'a_grade': "A Grade", 'b_grade': "B Grade"
+            };
+
+            const groupedResults = readyResults.reduce((acc, result) => {
+                const category = result.category;
+                if (!acc[category]) {
+                    acc[category] = [];
+                }
+                acc[category].push(result);
+                return acc;
+            }, {});
+
+            const pageHTML = `
+              <div class="page space-y-8">
+                   <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md flex flex-col md:flex-row justify-between items-center gap-4" role="alert">
+                        <div>
+                            <p class="font-bold">Live Announce Mode</p>
+                            <p>"Publish Now" makes a result public. Click "Update All Scores" to refresh the main leaderboards.</p>
+                        </div>
+                        <button id="update-all-scores-btn" class="bg-red-600 text-white px-6 py-3 text-md font-bold rounded-lg hover:bg-red-700 transition-transform transform hover:scale-105 flex-shrink-0">
+                            <i class="fas fa-sync-alt mr-2"></i> Update All Scores
+                        </button>
+                   </div>
+                   <div id="announce-list" class="pr-2">
+                       ${Object.keys(groupedResults).length === 0 
+                           ? `<p class="text-gray-500 text-center py-8 text-xl">No results are currently ready for announcement.</p>`
+                           : CATEGORIES.map(category => {
+                               if (!groupedResults[category]) return '';
+                               const resultsInCategory = groupedResults[category];
+                               return `
+                                   <div class="mb-12">
+                                       <h2 class="text-3xl font-extrabold text-gray-800 border-b-4 border-indigo-300 pb-3 mb-6">${category}</h2>
+                                       <div class="space-y-6">
+                                       ${resultsInCategory.map(result => {
+                                           return `
+                                               <div class="bg-white shadow-2xl rounded-xl p-8 border-t-4 border-indigo-500">
+                                                   <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                                                       <div class="text-center md:text-left">
+                                                          
+                                                           <h2 class="text-4xl font-bold text-gray-900">${result.programName}</h2>
+                                                       </div>
+                                                       <button class="publish-btn w-full md:w-auto bg-green-600 text-white px-10 py-4 text-xl font-bold rounded-lg hover:bg-green-700 transition-transform transform hover:scale-105" data-id="${result.id}">
+                                                           <i class="fas fa-bullhorn mr-2"></i> Publish Now
+                                                       </button>
+                                                   </div>
+                                                   <div class="mt-6 border-t pt-6">
+                                                       <h3 class="text-2xl font-bold mb-4 text-gray-800">Winners List</h3>
+                                                       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-lg">
+                                                           ${(result.participants || []).map(participant => {
+                                                               const student = appData.students[participant.studentId];
+                                                               const teamName = student && appData.teams[student.teamId] ? appData.teams[student.teamId].name : 'N/A';
+                                                               let prize = '';
+                                                               if (participant.position && participant.position !== 'none') {
+                                                                   prize += positionLabels[participant.position];
+                                                               }
+                                                               if (participant.grade && participant.grade !== "none") {
+                                                                   if (prize) prize += " • ";
+                                                                   prize += positionLabels[participant.grade];
+                                                               }
+                                                               const displayName = result.programType === 'group' || result.programType === 'team' ? `${participant.name} & Team` : participant.name;
+                                                               return `
+                                                                   <div class="bg-gray-50 p-3 rounded-md">
+                                                                       <p class="font-bold text-gray-900">${displayName} <span class="text-gray-500 font-medium">(${student.chestNo})</span></p>
+                                                                       <p class="text-indigo-700 font-semibold">${prize}</p>
+                                                                       <p class="text-sm text-gray-600">${teamName}</p>
+                                                                   </div>
+                                                               `;
+                                                           }).join('')}
+                                                       </div>
+                                                   </div>
+                                               </div>
+                                           `;
+                                       }).join('')}
+                                       </div>
+                                   </div>
+                               `;
+                           }).join('')}
+                   </div>
+              </div>
+            `;
+            return pageHTML;
+        }
+
+        function renderProgramStatusPage(statusFilter = 'All', categoryFilter = 'All') {
+            const programs = getDataAsArray("programs").sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+            const results = getDataAsArray("results");
+            
+            let programStatuses = programs.map(program => {
+                const result = results.find(r => r.programId === program.id);
+                let status = "Not Entered";
+                if (result) {
+                    if (result.status === "published") status = "Published";
+                    else if (result.status === "ready") status = "Ready to Publish";
+                    else status = "Pending";
+                }
+                return { ...program, status };
+            });
+
+            if (statusFilter !== "All") {
+                programStatuses = programStatuses.filter(p => p.status === statusFilter);
             }
-            const _0x34d5a4 = _0x4a8aad => {
-                switch (_0x4a8aad) {
-                    case "Published":
-                        return "<span class=\"text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full\">" + _0x4a8aad + "</span>";
-                    case "Ready to Publish":
-                        return "<span class=\"text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full\">" + _0x4a8aad + "</span>";
-                    case "Pending":
-                        return "<span class=\"text-xs font-semibold text-white bg-gray-500 px-2 py-1 rounded-full\">" + _0x4a8aad + "</span>";
-                    default:
-                        return "<span class=\"text-xs font-semibold text-white bg-red-500 px-2 py-1 rounded-full\">" + _0x4a8aad + "</span>";
+            if (categoryFilter !== "All") {
+                programStatuses = programStatuses.filter(p => p.category === categoryFilter);
+            }
+
+            const getStatusBadge = (status) => {
+                switch (status) {
+                    case "Published": return `<span class="text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full">${status}</span>`;
+                    case "Ready to Publish": return `<span class="text-xs font-semibold text-white bg-blue-500 px-2 py-1 rounded-full">${status}</span>`;
+                    case "Pending": return `<span class="text-xs font-semibold text-white bg-gray-500 px-2 py-1 rounded-full">${status}</span>`;
+                    default: return `<span class="text-xs font-semibold text-white bg-red-500 px-2 py-1 rounded-full">${status}</span>`;
                 }
             };
-            const _0x4948c9 = ["All", 'Published', "Ready to Publish", "Pending", "Not Entered"];
-            return "\n              <div class=\"page\">\n                  <h1 class=\"text-3xl font-bold text-gray-900 mb-6\">Program Status Overview</h1>\n                  \n                  <div id=\"status-filter-container\" class=\"mb-6 flex flex-wrap gap-2\">\n                      " + _0x4948c9.map(_0x47b7bc => "\n                      <button data-status=\"" + _0x47b7bc + "\" class=\"category-filter-btn px-4 py-2 text-sm font-medium rounded-full transition-colors " + (_0x188e57 === _0x47b7bc ? "active" : "bg-white text-gray-700") + "\">" + _0x47b7bc + "</button>\n                      ").join('') + "\n                  </div>\n\n                  <div class=\"bg-white shadow-lg rounded-xl overflow-hidden\">\n                      <div id=\"items-list\" class=\"overflow-x-auto max-h-[80vh] overflow-y-auto pr-2\">\n                          <table class=\"min-w-full divide-y divide-gray-200\">\n                               <thead class=\"bg-gray-50\">\n                                  <tr>\n                                      <th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\">Program Name</th>\n                                      <th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\">Category</th>\n                                      <th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\">Status</th>\n                                  </tr>\n                              </thead>\n                              <tbody class=\"bg-white divide-y divide-gray-200\">\n                                  " + (_0x138f20.length === 0x0 ? "<tr><td colspan=\"3\" class=\"text-center py-8 text-gray-500\">No programs match this filter.</td></tr>" : _0x138f20.map(_0x1d7004 => "\n                                  <tr class=\"hover:bg-gray-50\">\n                                      <td class=\"px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900\">" + _0x1d7004.name + "</td>\n                                      <td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-500\">" + _0x1d7004.category + "</td>\n                                      <td class=\"px-6 py-4 whitespace-nowrap text-sm\">" + _0x34d5a4(_0x1d7004.status) + "</td>\n                                  </tr>\n                                  ").join('')) + "\n                              </tbody>\n                          </table>\n                      </div>\n                  </div>\n              </div>\n            ";
+            
+            const statusFilters = ["All", 'Published', "Ready to Publish", "Pending", "Not Entered"];
+            
+            return `
+              <div class="page">
+                  <h1 class="text-3xl font-bold text-gray-900 mb-6">Program Status Overview</h1>
+                  <div id="category-filter-container" class="mb-4 flex flex-wrap gap-2">
+                      <button data-category="All" class="category-filter-btn px-4 py-2 text-sm font-medium rounded-full transition-colors ${categoryFilter === 'All' ? 'active' : 'bg-white text-gray-700'}">All Categories</button>
+                      ${CATEGORIES.map(cat => `
+                          <button data-category="${cat}" class="category-filter-btn px-4 py-2 text-sm font-medium rounded-full transition-colors ${categoryFilter === cat ? 'active' : 'bg-white text-gray-700'}">${cat}</button>
+                      `).join('')}
+                  </div>
+                  <div id="status-filter-container" class="mb-6 flex flex-wrap gap-2">
+                      ${statusFilters.map(status => `
+                      <button data-status="${status}" class="category-filter-btn px-4 py-2 text-sm font-medium rounded-full transition-colors ${statusFilter === status ? "active" : "bg-white text-gray-700"}">${status}</button>
+                      `).join('')}
+                  </div>
+
+                  <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+                      <div id="items-list" class="overflow-x-auto max-h-[70vh] overflow-y-auto pr-2">
+                          <table class="min-w-full divide-y divide-gray-200">
+                               <thead class="bg-gray-50">
+                                  <tr>
+                                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Program Name</th>
+                                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                  </tr>
+                              </thead>
+                              <tbody class="bg-white divide-y divide-gray-200">
+                                  ${(programStatuses.length === 0 ? "<tr><td colspan=\"3\" class=\"text-center py-8 text-gray-500\">No programs match this filter.</td></tr>" : programStatuses.map(p => `
+                                  <tr class="hover:bg-gray-50">
+                                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.name}</td>
+                                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.category}</td>
+                                      <td class="px-6 py-4 whitespace-nowrap text-sm">${getStatusBadge(p.status)}</td>
+                                  </tr>
+                                  `).join(''))}
+                              </tbody>
+                          </table>
+                      </div>
+                  </div>
+              </div>
+            `;
         }
-        document.addEventListener('click', _0x3d2b52 => {
-            const _0x11b895 = _0x3d2b52.target.closest("#logout-btn");
-            if (_0x11b895) {
+        
+        function openPublishResultsModal(resultId) {
+            const result = appData.results[resultId];
+            if (!result) return;
+
+            const positionLabels = {
+                'first': "1st Place", 'second': "2nd Place", 'third': "3rd Place"
+            };
+            const gradeLabels = {
+                'a_grade': "A Grade", 'b_grade': "B Grade"
+            };
+
+            const modalHTML = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-8 relative transform transition-all max-h-[90vh] flex flex-col" style="animation: fadeIn 0.3s ease-out;">
+                        <button class="close-modal-btn absolute top-4 right-4 text-gray-400 hover:text-gray-800 text-2xl">&times;</button>
+                        <div class="text-center mb-6">
+                            <p class="text-sm font-semibold uppercase text-indigo-600">${result.category}</p>
+                            <h2 class="text-3xl font-bold text-gray-900">${result.programName}</h2>
+                        </div>
+                        <div class="overflow-y-auto pr-4">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chest No</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${(result.participants || []).map(p => {
+                                        const student = appData.students[p.studentId] || {};
+                                        const team = appData.teams[student.teamId] || {};
+                                        const position = p.position !== 'none' ? positionLabels[p.position] : '-';
+                                        const grade = p.grade !== 'none' ? gradeLabels[p.grade] : '-';
+                                        return `
+                                            <tr>
+                                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${student.chestNo || 'N/A'}</td>
+                                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${p.name || 'N/A'}</td>
+                                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${team.name || 'N/A'}</td>
+                                                <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-800">${position}</td>
+                                                <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-800">${grade}</td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                    ${(result.participants || []).length === 0 ? '<tr><td colspan="5" class="text-center py-4 text-gray-500">No participants found for this result.</td></tr>' : ''}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-6 text-center">
+                            <button class="close-modal-btn bg-gray-200 text-gray-800 px-6 py-2 rounded-lg font-semibold hover:bg-gray-300">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const modalContainer = document.getElementById("modal-container");
+            modalContainer.innerHTML = modalHTML;
+            modalContainer.classList.remove("hidden");
+        }
+
+        document.addEventListener('click', e => {
+            const logoutBtn = e.target.closest("#logout-btn");
+            if (logoutBtn) {
                 auth.signOut();
             }
-            const _0x177621 = _0x3d2b52.target.closest('#mobile-menu-btn');
-            if (_0x177621) {
-                const _0x11f737 = document.getElementById('mobile-nav-container');
-                _0x11f737.classList.toggle("open");
-                if (_0x11f737.classList.contains('open')) {
-                    _0x11f737.innerHTML = "<div class=\"pt-2 pb-3 space-y-1\">" + generateNavLinks(true) + "</div>";
+            const mobileMenuBtn = e.target.closest('#mobile-menu-btn');
+            if (mobileMenuBtn) {
+                const mobileNav = document.getElementById('mobile-nav-container');
+                mobileNav.classList.toggle("open");
+                if (mobileNav.classList.contains('open')) {
+                    mobileNav.innerHTML = `<div class="pt-2 pb-3 space-y-1">${generateNavLinks(true)}</div>`;
                 }
             }
-            const _0x37f0f0 = _0x3d2b52.target.closest('.team-card-clickable');
-            if (_0x37f0f0) {
-                openTeamModal(_0x37f0f0.dataset.teamId);
+            const teamCard = e.target.closest('.team-card-clickable');
+            if (teamCard) {
+                openTeamModal(teamCard.dataset.teamId);
             }
-            const _0x2131d9 = _0x3d2b52.target.closest('.close-modal-btn');
-            if (_0x2131d9) {
+            const closeModalBtn = e.target.closest('.close-modal-btn');
+            if (closeModalBtn) {
                 closeModal();
             }
-            if (_0x3d2b52.target.closest(".nav-link") || _0x3d2b52.target.closest("#logout-btn")) {
-                document.getElementById("mobile-nav-container")?.["classList"]["remove"]('open');
+            if (e.target.closest(".nav-link") || e.target.closest("#logout-btn")) {
+                document.getElementById("mobile-nav-container")?.classList.remove('open');
             }
         });
-        document.addEventListener("submit", async _0x363938 => {
-            if (_0x363938.target.id === "login-form") {
-                _0x363938.preventDefault();
-                const _0x56b82 = _0x363938.target.email.value;
-                const _0x2d6550 = _0x363938.target.password.value;
-                const _0x56cf07 = document.getElementById("login-error");
+        document.addEventListener("submit", async e => {
+            if (e.target.id === "login-form") {
+                e.preventDefault();
+                const email = e.target.email.value;
+                const password = e.target.password.value;
+                const errorEl = document.getElementById("login-error");
                 try {
-                    _0x56cf07.textContent = '';
-                    await auth.signInWithEmailAndPassword(_0x56b82, _0x2d6550);
+                    errorEl.textContent = '';
+                    await auth.signInWithEmailAndPassword(email, password);
                     window.location.hash = "/admin";
-                } catch (_0x2c362b) {
-                    _0x56cf07.textContent = _0x2c362b.message;
+                } catch (error) {
+                    errorEl.textContent = error.message;
                 }
             }
         });
         
         function openTeamModal(_0x737574) {
             const team = appData.teams[_0x737574];
-            if (!team) {
-                return;
-            }
+            if (!team) { return; }
 
+            const teamPenalties = calculateTeamPenalties();
             const directScores = appData.teamDirectScores[_0x737574] || {};
             let totalTeamPoints = 0;
             const categoryPoints = {};
 
-            // 1. Initialize with direct scores
             CATEGORIES.forEach(cat => {
                 const points = directScores[cat] || 0;
                 categoryPoints[cat] = points;
                 totalTeamPoints += points;
             });
 
-            // 2. Add student scores
             Object.values(appData.students || {}).forEach(student => {
                 if (student.teamId === _0x737574) {
                     const studentPoints = student.totalPoints || 0;
@@ -1604,14 +2197,14 @@
                 }
             });
 
-            // Calculate rank
+            totalTeamPoints -= (teamPenalties[_0x737574] || 0);
+
             const allTeams = getDataAsArray("teams").map(t => {
                 let teamScore = appData.teamDirectScores[t.id] ? Object.values(appData.teamDirectScores[t.id]).reduce((a, b) => a + (b || 0), 0) : 0;
                 Object.values(appData.students || {}).forEach(s => {
-                    if (s.teamId === t.id) {
-                        teamScore += (s.totalPoints || 0);
-                    }
+                    if (s.teamId === t.id) { teamScore += (s.totalPoints || 0); }
                 });
+                teamScore -= (teamPenalties[t.id] || 0);
                 return { ...t, totalPoints: teamScore };
             }).sort((a, b) => b.totalPoints - a.totalPoints);
             
@@ -1645,10 +2238,72 @@
             modalContainer.classList.remove("hidden");
         }
         
+        async function editResult(resultId) {
+            activeAdminTab = 'results';
+            await renderAdminTab('results'); 
+
+            const form = document.getElementById('add-result-form');
+            if (!form) {
+                console.error("Could not find the result form to edit.");
+                return;
+            }
+            
+            editingResultId = resultId;
+            const result = appData.results[resultId];
+            if (!result) return;
+
+            document.getElementById('res-category').value = result.category;
+            populateProgramDropdown(result.category);
+
+            document.getElementById('res-program').value = result.programId;
+            populateStudentDropdown(result.category);
+
+            document.querySelector(`input[name="programType"][value="${result.programType || 'individual'}"]`).checked = true;
+
+            tempParticipants = JSON.parse(JSON.stringify(result.participants || [])); 
+            renderParticipantsList();
+            
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.textContent = 'Update Result';
+            submitBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+            submitBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
+            
+            if (!document.getElementById('cancel-edit-btn')) {
+                const cancelButton = document.createElement('button');
+                cancelButton.type = 'button';
+                cancelButton.id = 'cancel-edit-btn';
+                cancelButton.textContent = 'Cancel Edit';
+                cancelButton.className = 'w-full justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 mt-2';
+                cancelButton.onclick = resetResultForm;
+                submitBtn.insertAdjacentElement('afterend', cancelButton);
+            }
+        }
+
+        function resetResultForm() {
+            editingResultId = null;
+            tempParticipants = [];
+            const form = document.getElementById('add-result-form');
+            if (form) {
+                form.reset();
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.textContent = 'Upload for Review';
+                submitBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+                submitBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                
+                const cancelBtn = document.getElementById('cancel-edit-btn');
+                if (cancelBtn) cancelBtn.remove();
+
+                document.getElementById('res-program').disabled = true;
+                document.getElementById('res-student-select').disabled = true;
+                document.getElementById('add-participant-btn').disabled = true;
+            }
+            renderParticipantsList();
+        }
+
         function closeModal() {
-            const _0x4bb300 = document.getElementById("modal-container");
-            _0x4bb300.classList.add('hidden');
-            _0x4bb300.innerHTML = '';
+            const modalContainer = document.getElementById("modal-container");
+            modalContainer.classList.add('hidden');
+            modalContainer.innerHTML = '';
         }
         auth.onAuthStateChanged(_0xb46214 => {
             const _0x273f91 = !!currentUser !== !!_0xb46214;
@@ -1661,7 +2316,7 @@
         window.addEventListener('hashchange', () => router());
         window.addEventListener("DOMContentLoaded", syncData);
 </script>
+<script src="firebase.js"></script>
 </body>
 
 </html>
-
