@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Festive Schedule Pro</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- SheetJS/xlsx for Excel file processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Lucide Icons (Framework-agnostic version) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Tailwind's gray-50 */
+        }
+        .tab-active {
+            border-bottom-color: #4f46e5; /* Indigo-600 */
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Print-specific styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #print-area, #print-area * {
+                visibility: visible;
+            }
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                color: #000;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .printable-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 10pt;
+            }
+            .printable-table th, .printable-table td {
+                border: 1px solid #ccc;
+                padding: 8px;
+                text-align: left;
+            }
+            .printable-table th {
+                background-color: #e9ecef;
+                font-weight: 600;
+            }
+            .printable-table .group-header td {
+                background-color: #ced4da;
+                font-size: 1.1em;
+                font-weight: bold;
+                padding: 10px;
+                color: #000;
+            }
+            .printable-table .sub-header td {
+                background-color: #f1f3f5;
+                font-weight: bold;
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Main Application Container -->
+    <div id="app" class="min-h-screen">
+        
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-50 transition-opacity duration-300">
+            <div class="w-16 h-16 border-4 border-t-indigo-600 border-gray-200 rounded-full animate-spin"></div>
+            <p id="loading-text" class="mt-4 text-gray-600 font-semibold text-lg">Initializing Schedule Pro...</p>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="fixed top-5 right-5 bg-gray-800 text-white py-2 px-5 rounded-lg shadow-xl translate-x-[120%] transform transition-transform duration-500 z-50">
+            <p id="toast-message">Operation successful!</p>
+        </div>
+
+        <!-- Header -->
+        <header class="bg-white shadow-sm sticky top-0 z-30 no-print">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+                           <i data-lucide="calendar-check" class="text-white"></i>
+                        </div>
+                        <h1 class="text-2xl font-bold text-gray-800">Festive Schedule Pro</h1>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button id="print-btn" class="p-2 rounded-md hover:bg-gray-100 text-gray-600" title="Print Schedule">
+                            <i data-lucide="printer"></i>
+                        </button>
+                        <button id="settings-btn" class="p-2 rounded-md hover:bg-gray-100 text-gray-600" title="Settings">
+                            <i data-lucide="settings"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Tabs -->
+            <div class="border-b border-gray-200 no-print">
+                <nav id="tabs" class="-mb-px flex space-x-8" aria-label="Tabs">
+                    <button data-view="dashboard" class="tab-active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Dashboard</button>
+                    <button data-view="master-schedule" class="text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Master Schedule</button>
+                    <button data-view="venue-schedule" class="text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">By Venue</button>
+                    <button data-view="category-schedule" class="text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">By Category</button>
+                </nav>
+            </div>
+
+            <!-- Content Area: To be populated by JS -->
+            <div id="content-area" class="mt-8"></div>
+        </main>
+        
+        <!-- Printable Area (populated by JS) -->
+        <div id="print-area" class="hidden"></div>
+    </div>
+    
+    <!-- Modals -->
+    <!-- Add/Edit Event Modal -->
+    <div id="event-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-40 hidden">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 id="event-modal-title" class="text-2xl font-semibold text-gray-800">Add New Event</h3>
+                <button id="close-event-modal" class="p-2 rounded-full hover:bg-gray-100 -mr-2 -mt-2">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="mt-5">
+                <form id="event-form">
+                    <input type="hidden" id="event-id">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="col-span-2">
+                            <label for="event-name" class="block text-sm font-medium text-gray-700">Event Name</label>
+                            <input type="text" id="event-name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="event-category" class="block text-sm font-medium text-gray-700">Category</label>
+                            <select id="event-category" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></select>
+                        </div>
+                        <div>
+                            <label for="event-venue" class="block text-sm font-medium text-gray-700">Venue</label>
+                            <select id="event-venue" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></select>
+                        </div>
+                        <div>
+                           <label for="event-day" class="block text-sm font-medium text-gray-700">Event Day (e.g., 1, 2)</label>
+                           <input type="number" id="event-day" min="1" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+                        <div>
+                           <label for="event-duration" class="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+                           <input type="number" id="event-duration" min="5" step="5" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+                         <div class="col-span-2">
+                           <label for="event-start-time" class="block text-sm font-medium text-gray-700">Start Time</label>
+                           <input type="time" id="event-start-time" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+                    </div>
+                    <div class="flex justify-end mt-6 pt-4 border-t">
+                        <button type="button" id="cancel-event-modal" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 mr-2">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Save Event</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-40 hidden">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="text-2xl font-semibold text-gray-800">Settings</h3>
+                <button id="close-settings-modal" class="p-2 rounded-full hover:bg-gray-100 -mr-2 -mt-2">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Venues Management -->
+                <div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-3">Manage Venues</h4>
+                    <form id="venue-form" class="flex items-center space-x-2">
+                        <input type="text" id="venue-name" placeholder="New venue name" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" required>
+                        <button type="submit" class="flex-shrink-0 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm">Add</button>
+                    </form>
+                    <ul id="venue-list" class="mt-3 space-y-2 max-h-48 overflow-y-auto pr-2">
+                        <!-- Venue items will be populated here -->
+                    </ul>
+                </div>
+                <!-- Categories Management -->
+                <div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-3">Manage Categories</h4>
+                    <form id="category-form" class="flex items-center space-x-2">
+                        <input type="text" id="category-name" placeholder="New category name" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" required>
+                        <button type="submit" class="flex-shrink-0 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm">Add</button>
+                    </form>
+                    <ul id="category-list" class="mt-3 space-y-2 max-h-48 overflow-y-auto pr-2">
+                         <!-- Category items will be populated here -->
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-6 pt-4 border-t">
+                 <h4 class="text-lg font-medium text-gray-900 mb-3">Danger Zone</h4>
+                 <button id="delete-all-events-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm">Delete All Events</button>
+                 <p class="text-xs text-gray-500 mt-2">This action is irreversible and will permanently delete all scheduled events.</p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script type="module">
+        // --- Firebase Configuration ---
+        // IMPORTANT: Replace with your actual Firebase project configuration.
+        // In your Firebase project, make sure to create a REALTIME DATABASE (not Firestore).
+        const firebaseConfig = {
+            apiKey: "AIzaSyBYCiz_Ec0GeQajAKP3RrxylR1bjIr9wnQ",
+  authDomain: "nishan-8d4db.firebaseapp.com",
+  databaseURL: "https://nishan-8d4db-default-rtdb.firebaseio.com",
+  projectId: "nishan-8d4db",
+  storageBucket: "nishan-8d4db.appspot.com",
+  messagingSenderId: "856716933837",
+  appId: "1:856716933837:web:b6114e617a0c001d3f8784",
+  measurementId: "G-ZB1X291PJY" // Add your databaseURL
+        };
+        
+        // --- App State ---
+        let db;
+        let auth;
+        const appState = {
+            events: [],
+            venues: [],
+            categories: [],
+            currentView: 'dashboard',
+            isLoading: true,
+        };
+
+        // --- DOM Elements ---
+        const DOMElements = {
+            loadingOverlay: document.getElementById('loading-overlay'),
+            loadingText: document.getElementById('loading-text'),
+            contentArea: document.getElementById('content-area'),
+            tabs: document.getElementById('tabs'),
+            eventModal: {
+                modal: document.getElementById('event-modal'),
+                title: document.getElementById('event-modal-title'),
+                form: document.getElementById('event-form'),
+                id: document.getElementById('event-id'),
+                name: document.getElementById('event-name'),
+                category: document.getElementById('event-category'),
+                venue: document.getElementById('event-venue'),
+                day: document.getElementById('event-day'),
+                duration: document.getElementById('event-duration'),
+                startTime: document.getElementById('event-start-time'),
+                closeBtn: document.getElementById('close-event-modal'),
+                cancelBtn: document.getElementById('cancel-event-modal'),
+            },
+            settingsModal: {
+                modal: document.getElementById('settings-modal'),
+                closeBtn: document.getElementById('close-settings-modal'),
+                venueForm: document.getElementById('venue-form'),
+                venueName: document.getElementById('venue-name'),
+                venueList: document.getElementById('venue-list'),
+                categoryForm: document.getElementById('category-form'),
+                categoryName: document.getElementById('category-name'),
+                categoryList: document.getElementById('category-list'),
+                deleteAllEventsBtn: document.getElementById('delete-all-events-btn'),
+            },
+            printBtn: document.getElementById('print-btn'),
+            printArea: document.getElementById('print-area'),
+            settingsBtn: document.getElementById('settings-btn'),
+        };
+
+        // --- Utility Functions ---
+        const showToast = (message, isError = false) => {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            toastMessage.textContent = message;
+            toast.className = `fixed top-5 right-5 text-white py-2 px-5 rounded-lg shadow-xl translate-x-0 transform transition-transform duration-500 z-50 ${isError ? 'bg-red-600' : 'bg-gray-800'}`;
+            setTimeout(() => {
+                toast.style.transform = 'translateX(120%)';
+            }, 3000);
+        };
+
+        const formatDate = (timestamp) => {
+            if (!timestamp) return 'N/A';
+            return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        };
+
+        // --- Firebase Initialization & Auth ---
+        function initializeFirebase() {
+            if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+                DOMElements.loadingOverlay.querySelector('.animate-spin').style.display = 'none';
+                DOMElements.loadingText.innerHTML = `
+                    <div class="text-center p-4 max-w-md">
+                        <h2 class="text-xl font-bold text-red-600">Firebase Configuration Needed</h2>
+                        <p class="text-gray-600 mt-2">Please replace the placeholder Firebase config in the HTML file with your project's configuration to connect to the database.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                db = firebase.database();
+                auth = firebase.auth();
+                
+                auth.onAuthStateChanged(user => {
+                    if (user) {
+                        console.log("User signed in anonymously:", user.uid);
+                        fetchAllData();
+                    } else {
+                        auth.signInAnonymously().catch(error => {
+                            console.error("Anonymous sign-in failed:", error);
+                            if (error.code === 'auth/admin-restricted-operation') {
+                                DOMElements.loadingOverlay.querySelector('.animate-spin').style.display = 'none';
+                                DOMElements.loadingText.innerHTML = `
+                                    <div class="text-center p-4 max-w-lg">
+                                        <h2 class="text-xl font-bold text-red-600">Action Required: Enable Anonymous Sign-In</h2>
+                                        <p class="text-gray-600 mt-2 text-left">
+                                            This app uses anonymous sign-in, which is disabled in your Firebase project. To fix this:
+                                            <ol class="list-decimal list-inside mt-2 space-y-1">
+                                                <li>Go to your Firebase Console.</li>
+                                                <li>Navigate to <strong>Authentication</strong> > <strong>Sign-in method</strong> tab.</li>
+                                                <li>Find <strong>Anonymous</strong> in the provider list and enable it.</li>
+                                                <li>Refresh this page.</li>
+                                            </ol>
+                                        </p>
+                                    </div>
+                                `;
+                            } else {
+                                alert("Could not connect to the database. Please check your Firebase configuration and security rules.");
+                            }
+                        });
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                DOMElements.loadingText.innerHTML = `
+                     <div class="text-center p-4">
+                        <h2 class="text-xl font-bold text-red-600">Firebase Initialization Error</h2>
+                        <p class="text-gray-600 mt-2">There was an error initializing the application. Check the console for more details.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // --- Data Fetching ---
+        function fetchAllData() {
+            const paths = ['venues', 'categories', 'events'];
+            let loadedCount = 0;
+            
+            const checkLoadingComplete = () => {
+                loadedCount++;
+                if (loadedCount === paths.length) {
+                    appState.isLoading = false;
+                    DOMElements.loadingOverlay.classList.add('opacity-0');
+                    setTimeout(() => DOMElements.loadingOverlay.classList.add('hidden'), 300);
+                    render();
+                }
+            };
+            
+            paths.forEach(path => {
+                db.ref(path).on('value', snapshot => {
+                    const data = snapshot.val() || {};
+                    const dataArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+
+                    if (path === 'events') {
+                        appState.events = dataArray.sort((a, b) => a.startTime - b.startTime);
+                    } else {
+                        appState[path] = dataArray.sort((a, b) => a.name.localeCompare(b.name));
+                    }
+                    
+                    if (!appState.isLoading) render(); else checkLoadingComplete();
+                });
+            });
+        }
+        
+        // --- Render Functions ---
+        const render = () => {
+            switch(appState.currentView) {
+                case 'dashboard':
+                    renderDashboard();
+                    break;
+                case 'master-schedule':
+                    renderMasterSchedule();
+                    break;
+                case 'venue-schedule':
+                    renderVenueSchedule();
+                    break;
+                case 'category-schedule':
+                    renderCategorySchedule();
+                    break;
+                default:
+                    renderDashboard();
+            }
+            updateActiveTab();
+            populateSettingsLists();
+            lucide.createIcons(); // Render all new icons
+        };
+        
+        const updateActiveTab = () => {
+            DOMElements.tabs.querySelectorAll('button').forEach(tab => {
+                tab.classList.toggle('tab-active', tab.dataset.view === appState.currentView);
+                tab.classList.toggle('text-gray-500', tab.dataset.view !== appState.currentView);
+            });
+        };
+
+        const createEventCardHTML = (event) => {
+            const category = appState.categories.find(c => c.name === event.category);
+            return `
+                <div class="bg-white p-4 rounded-lg shadow-md border-l-4" style="border-color: ${category ? '#6366f1' : '#ccc'}">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-bold text-gray-800">${event.name}</p>
+                            <p class="text-sm text-gray-600">${event.category} &bull; ${event.venue}</p>
+                        </div>
+                        <div class="flex space-x-1 no-print">
+                            <button class="edit-event-btn p-1 text-gray-500 hover:text-indigo-600" data-id="${event.id}">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </button>
+                            <button class="delete-event-btn p-1 text-gray-500 hover:text-red-600" data-id="${event.id}">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex items-center text-sm text-gray-500">
+                        <i data-lucide="clock" class="w-4 h-4 mr-1.5"></i>
+                        <span>${formatDate(event.startTime)} - ${formatDate(event.endTime)} (${event.duration} mins)</span>
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderDashboard = () => {
+            const scheduledCount = appState.events.length;
+            DOMElements.contentArea.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-sm font-medium text-gray-500">Total Events Scheduled</h3>
+                        <p class="mt-1 text-3xl font-semibold text-gray-900">${scheduledCount}</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-sm font-medium text-gray-500">Total Venues</h3>
+                        <p class="mt-1 text-3xl font-semibold text-gray-900">${appState.venues.length}</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-sm font-medium text-gray-500">Total Categories</h3>
+                        <p class="mt-1 text-3xl font-semibold text-gray-900">${appState.categories.length}</p>
+                    </div>
+                </div>
+                <div class="mt-8 bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
+                    <div class="flex flex-wrap gap-4">
+                        <button id="add-event-btn" class="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                           <i data-lucide="plus" class="mr-2 w-5 h-5"></i>
+                           Add Single Event
+                        </button>
+                        <label for="excel-upload" class="cursor-pointer flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                           <i data-lucide="file-up" class="mr-2 w-5 h-5"></i>
+                           Upload from Excel
+                        </label>
+                        <input type="file" id="excel-upload" class="hidden" accept=".xlsx, .xls, .csv">
+                        <button id="download-template-btn" class="flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
+                           <i data-lucide="file-down" class="mr-2 w-5 h-5"></i>
+                           Download Template
+                        </button>
+                    </div>
+                    <div class="mt-4 p-3 bg-gray-50 rounded-md border text-sm text-gray-600">
+                        <strong>Excel Upload Instructions:</strong> Your file should have headers: <code>name</code>, <code>category</code>, <code>venue</code>, <code>day</code> (number), <code>duration</code> (minutes), <code>startTime</code> (HH:MM format).
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderMasterSchedule = () => {
+            const eventsByDay = appState.events.reduce((acc, event) => {
+                const day = event.day || 1;
+                if (!acc[day]) acc[day] = [];
+                acc[day].push(event);
+                return acc;
+            }, {});
+
+            if (appState.events.length === 0) {
+                DOMElements.contentArea.innerHTML = `<p class="text-center text-gray-500">No events scheduled yet.</p>`;
+                return;
+            }
+
+            let html = '<div class="space-y-8">';
+            Object.keys(eventsByDay).sort((a,b) => a - b).forEach(day => {
+                html += `
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Day ${day}</h2>
+                        <div class="space-y-4">
+                            ${eventsByDay[day].map(createEventCardHTML).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            DOMElements.contentArea.innerHTML = html;
+        };
+
+        const renderGroupedSchedule = (groupBy) => {
+            const collectionName = groupBy === 'category' ? 'categories' : 'venues';
+            const groups = appState[collectionName];
+            
+            if (groups.length === 0) {
+                 DOMElements.contentArea.innerHTML = `<p class="text-center text-gray-500">Please add some ${groupBy}s in Settings first.</p>`;
+                return;
+            }
+            if (appState.events.length === 0) {
+                DOMElements.contentArea.innerHTML = `<p class="text-center text-gray-500">No events scheduled yet.</p>`;
+                return;
+            }
+
+            let html = '<div class="space-y-8">';
+            groups.forEach(group => {
+                const groupEvents = appState.events.filter(e => e[groupBy] === group.name);
+                const eventsByDay = groupEvents.reduce((acc, event) => {
+                    const day = event.day || 1;
+                    if (!acc[day]) acc[day] = [];
+                    acc[day].push(event);
+                    return acc;
+                }, {});
+
+                html += `<div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 capitalize">${group.name}</h2>`;
+                
+                if (groupEvents.length > 0) {
+                    Object.keys(eventsByDay).sort((a,b) => a-b).forEach(day => {
+                        html += `
+                            <div class="mb-4">
+                                <h3 class="font-semibold text-lg text-gray-700 mb-2">Day ${day}</h3>
+                                <div class="space-y-3 pl-4 border-l-2">
+                                    ${eventsByDay[day].map(createEventCardHTML).join('')}
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                     html += `<p class="text-gray-500 pl-4">No events scheduled for this ${groupBy}.</p>`;
+                }
+
+                html += `</div>`;
+            });
+            html += '</div>';
+            DOMElements.contentArea.innerHTML = html;
+        };
+        
+        const renderVenueSchedule = () => renderGroupedSchedule('venue');
+        const renderCategorySchedule = () => renderGroupedSchedule('category');
+
+        const populateSettingsLists = () => {
+            DOMElements.settingsModal.venueList.innerHTML = appState.venues.map(v => `
+                <li class="flex justify-between items-center bg-gray-100 p-2 rounded-md">
+                    <span class="text-sm">${v.name}</span>
+                    <button class="delete-venue-btn p-1 text-gray-500 hover:text-red-600" data-id="${v.id}">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </li>`).join('');
+            
+            DOMElements.settingsModal.categoryList.innerHTML = appState.categories.map(c => `
+                 <li class="flex justify-between items-center bg-gray-100 p-2 rounded-md">
+                    <span class="text-sm">${c.name}</span>
+                    <button class="delete-category-btn p-1 text-gray-500 hover:text-red-600" data-id="${c.id}">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </li>`).join('');
+        };
+        
+        // --- Modal & Form Handling ---
+        const openEventModal = (event = null) => {
+            DOMElements.eventModal.form.reset();
+            DOMElements.eventModal.id.value = '';
+            
+            DOMElements.eventModal.category.innerHTML = appState.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            DOMElements.eventModal.venue.innerHTML = appState.venues.map(v => `<option value="${v.name}">${v.name}</option>`).join('');
+            
+            if (event) { // Editing
+                DOMElements.eventModal.title.textContent = 'Edit Event';
+                DOMElements.eventModal.id.value = event.id;
+                DOMElements.eventModal.name.value = event.name;
+                DOMElements.eventModal.category.value = event.category;
+                DOMElements.eventModal.venue.value = event.venue;
+                DOMElements.eventModal.day.value = event.day;
+                DOMElements.eventModal.duration.value = event.duration;
+                if (event.startTime) {
+                    const d = new Date(event.startTime);
+                    DOMElements.eventModal.startTime.value = d.toTimeString().slice(0, 5);
+                }
+            } else { // Adding
+                DOMElements.eventModal.title.textContent = 'Add New Event';
+            }
+            DOMElements.eventModal.modal.classList.remove('hidden');
+            lucide.createIcons();
+        };
+        const closeEventModal = () => DOMElements.eventModal.modal.classList.add('hidden');
+        
+        const handleEventFormSubmit = async (e) => {
+            e.preventDefault();
+            const id = DOMElements.eventModal.id.value;
+            const day = parseInt(DOMElements.eventModal.day.value, 10);
+            const duration = parseInt(DOMElements.eventModal.duration.value, 10);
+            const [hours, minutes] = DOMElements.eventModal.startTime.value.split(':').map(Number);
+            
+            const startDate = new Date(2024, 0, day, hours, minutes);
+            const startTime = startDate.getTime();
+            const endTime = new Date(startDate.getTime() + duration * 60000).getTime();
+
+            const eventData = {
+                name: DOMElements.eventModal.name.value,
+                category: DOMElements.eventModal.category.value,
+                venue: DOMElements.eventModal.venue.value,
+                day,
+                duration,
+                startTime,
+                endTime,
+            };
+
+            const conflict = await checkConflict(eventData, id);
+            if (conflict) {
+                showToast(`Conflict detected! The venue "${conflict.venue}" is booked at that time.`, true);
+                return;
+            }
+            
+            try {
+                if (id) {
+                    await db.ref(`events/${id}`).update(eventData);
+                    showToast('Event updated successfully!');
+                } else {
+                    await db.ref('events').push(eventData);
+                    showToast('Event added successfully!');
+                }
+                closeEventModal();
+            } catch (error) {
+                console.error("Error saving event: ", error);
+                showToast('Error saving event.', true);
+            }
+        };
+
+        const checkConflict = async (eventToCheck, ignoreId = null) => {
+            const venueQuery = db.ref('events').orderByChild('venue').equalTo(eventToCheck.venue);
+            const snapshot = await venueQuery.once('value');
+            const eventsAtVenue = snapshot.val();
+            if (!eventsAtVenue) return null;
+
+            let conflict = null;
+            Object.keys(eventsAtVenue).forEach(key => {
+                if (key === ignoreId) return;
+                const existingEvent = eventsAtVenue[key];
+                
+                if (existingEvent.day !== eventToCheck.day) return;
+                
+                const existingStart = existingEvent.startTime;
+                const existingEnd = existingEvent.endTime;
+                const newStart = eventToCheck.startTime;
+                const newEnd = eventToCheck.endTime;
+                
+                if (Math.max(existingStart, newStart) < Math.min(existingEnd, newEnd)) {
+                    conflict = existingEvent;
+                }
+            });
+            return conflict;
+        };
+
+        // --- Settings Management ---
+        const handleSettingsCrud = async (collection, formElement, nameElement) => {
+            const name = nameElement.value.trim();
+            if (!name) return;
+            try {
+                await db.ref(collection).push({ name });
+                showToast(`${collection.slice(0, -1)} added!`);
+                formElement.reset();
+            } catch (error) {
+                console.error(`Error adding ${collection}:`, error);
+                showToast(`Error adding ${collection}.`, true);
+            }
+        };
+
+        const handleDelete = async (collection, id) => {
+             if (confirm(`Are you sure you want to delete this ${collection.slice(0, -1)}?`)) {
+                 try {
+                     await db.ref(`${collection}/${id}`).remove();
+                     showToast(`${collection.slice(0, -1)} deleted.`);
+                 } catch (error) {
+                     console.error(`Error deleting ${collection}:`, error);
+                     showToast(`Error deleting.`, true);
+                 }
+             }
+        };
+
+        // --- Excel Upload & Template Download ---
+        const handleExcelUpload = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet);
+
+                if (json.length === 0) {
+                    showToast('Excel file is empty or invalid.', true);
+                    return;
+                }
+
+                DOMElements.loadingOverlay.classList.remove('hidden');
+                DOMElements.loadingOverlay.classList.remove('opacity-0');
+                
+                let successCount = 0;
+                let conflictCount = 0;
+                
+                for (const row of json) {
+                    try {
+                        if (!row.name || !row.category || !row.venue || !row.day || !row.duration || !row.startTime) {
+                            console.warn('Skipping invalid row:', row);
+                            continue;
+                        }
+                        
+                        const day = parseInt(row.day, 10);
+                        const duration = parseInt(row.duration, 10);
+                        let timeStr = row.startTime;
+                        if (typeof timeStr === 'number') {
+                           const date = XLSX.SSF.parse_date_code(timeStr);
+                           timeStr = `${String(date.H).padStart(2,'0')}:${String(date.M).padStart(2,'0')}`;
+                        }
+                        const [hours, minutes] = String(timeStr).split(':').map(Number);
+            
+                        const startDate = new Date(2024, 0, day, hours, minutes);
+                        const startTime = startDate.getTime();
+                        const endTime = new Date(startDate.getTime() + duration * 60000).getTime();
+
+                        const eventData = {
+                            name: String(row.name),
+                            category: String(row.category),
+                            venue: String(row.venue),
+                            day,
+                            duration,
+                            startTime,
+                            endTime
+                        };
+
+                        const conflict = await checkConflict(eventData);
+                        if (conflict) {
+                            conflictCount++;
+                        } else {
+                            await db.ref('events').push(eventData);
+                            successCount++;
+                        }
+                    } catch (err) {
+                        console.error('Error processing row:', row, err);
+                    }
+                }
+                DOMElements.loadingOverlay.classList.add('opacity-0');
+                setTimeout(() => DOMElements.loadingOverlay.classList.add('hidden'), 300);
+                showToast(`${successCount} events added. ${conflictCount} conflicts found and skipped.`);
+            };
+            reader.readAsArrayBuffer(file);
+            e.target.value = '';
+        };
+        
+        const handleDownloadTemplate = () => {
+            const sampleData = [
+                { name: 'Singing Competition (Solo)', category: 'Music', venue: 'Main Auditorium', day: 1, duration: 90, startTime: '09:00' },
+                { name: 'Debate Finals', category: 'Literary', venue: 'Seminar Hall 1', day: 1, duration: 120, startTime: '10:00' },
+                { name: 'Street Dance Battle', category: 'Dance', venue: 'Open Air Stage', day: 2, duration: 180, startTime: '14:30' }
+            ];
+            const worksheet = XLSX.utils.json_to_sheet(sampleData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "ScheduleData");
+            XLSX.writeFile(workbook, "schedule-template.xlsx");
+        };
+
+        // --- Print Functionality ---
+        const generatePrintableTableHTML = () => {
+            let view = appState.currentView;
+            if (view === 'dashboard') view = 'master-schedule';
+
+            if (appState.events.length === 0) return '<p>No events to print.</p>';
+
+            let tableHTML = '<table class="printable-table">';
+
+            if (view === 'master-schedule') {
+                const eventsByDay = appState.events.reduce((acc, event) => {
+                    const day = event.day || 1;
+                    if (!acc[day]) acc[day] = [];
+                    acc[day].push(event);
+                    return acc;
+                }, {});
+
+                Object.keys(eventsByDay).sort((a, b) => a - b).forEach(day => {
+                    tableHTML += `<tr class="group-header"><td colspan="5">Day ${day}</td></tr>`;
+                    tableHTML += `
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Event Name</th>
+                                <th>Category</th>
+                                <th>Venue</th>
+                                <th>Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                    `;
+                    eventsByDay[day].forEach(event => {
+                        tableHTML += `
+                            <tr>
+                                <td>${formatDate(event.startTime)} - ${formatDate(event.endTime)}</td>
+                                <td>${event.name}</td>
+                                <td>${event.category}</td>
+                                <td>${event.venue}</td>
+                                <td>${event.duration} mins</td>
+                            </tr>
+                        `;
+                    });
+                    tableHTML += '</tbody>';
+                });
+            } else if (view === 'venue-schedule') {
+                appState.venues.forEach(venue => {
+                    tableHTML += `<tr class="group-header"><td colspan="4">Venue: ${venue.name}</td></tr>`;
+                    const venueEvents = appState.events.filter(e => e.venue === venue.name);
+                    
+                    if (venueEvents.length > 0) {
+                         tableHTML += `
+                            <thead>
+                                <tr>
+                                    <th>Day</th>
+                                    <th>Time</th>
+                                    <th>Event Name</th>
+                                    <th>Category</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                        `;
+                        venueEvents.forEach(event => {
+                            tableHTML += `
+                                <tr>
+                                    <td>${event.day}</td>
+                                    <td>${formatDate(event.startTime)} - ${formatDate(event.endTime)}</td>
+                                    <td>${event.name}</td>
+                                    <td>${event.category}</td>
+                                </tr>
+                            `;
+                        });
+                        tableHTML += '</tbody>';
+                    } else {
+                         tableHTML += '<tr><td colspan="4" style="padding: 10px;">No events scheduled for this venue.</td></tr>';
+                    }
+                });
+            } else if (view === 'category-schedule') {
+                appState.categories.forEach(category => {
+                    tableHTML += `<tr class="group-header"><td colspan="4">Category: ${category.name}</td></tr>`;
+                    const categoryEvents = appState.events.filter(e => e.category === category.name);
+
+                    if (categoryEvents.length > 0) {
+                        tableHTML += `
+                            <thead>
+                                <tr>
+                                    <th>Day</th>
+                                    <th>Time</th>
+                                    <th>Event Name</th>
+                                    <th>Venue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                        `;
+                        categoryEvents.forEach(event => {
+                            tableHTML += `
+                                <tr>
+                                    <td>${event.day}</td>
+                                    <td>${formatDate(event.startTime)} - ${formatDate(event.endTime)}</td>
+                                    <td>${event.name}</td>
+                                    <td>${event.venue}</td>
+                                </tr>
+                            `;
+                        });
+                        tableHTML += '</tbody>';
+                    } else {
+                        tableHTML += '<tr><td colspan="4" style="padding: 10px;">No events scheduled for this category.</td></tr>';
+                    }
+                });
+            }
+            
+            tableHTML += '</table>';
+            return tableHTML;
+        };
+
+        const handlePrint = () => {
+             let view = appState.currentView;
+             let title = 'Program Schedule';
+             if (view === 'master-schedule' || view === 'dashboard') title = 'Master Schedule';
+             if (view === 'venue-schedule') title = 'Schedule by Venue';
+             if (view === 'category-schedule') title = 'Schedule by Category';
+             
+             const tableHTML = generatePrintableTableHTML();
+             
+             DOMElements.printArea.innerHTML = `
+                <div class="p-8">
+                    <h1 class="text-3xl font-bold mb-6 text-gray-800" style="color: #000;">${title}</h1>
+                    ${tableHTML}
+                </div>
+             `;
+             
+             DOMElements.printArea.classList.remove('hidden');
+             window.print();
+        };
+
+        // --- Event Listeners ---
+        const setupEventListeners = () => {
+            DOMElements.tabs.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    appState.currentView = e.target.dataset.view;
+                    render();
+                }
+            });
+
+            DOMElements.contentArea.addEventListener('click', (e) => {
+                if (e.target.closest('#add-event-btn')) {
+                    openEventModal();
+                } else if (e.target.closest('#download-template-btn')) {
+                    handleDownloadTemplate();
+                } else if (e.target.closest('.edit-event-btn')) {
+                    const id = e.target.closest('.edit-event-btn').dataset.id;
+                    const event = appState.events.find(ev => ev.id === id);
+                    openEventModal(event);
+                } else if (e.target.closest('.delete-event-btn')) {
+                    const id = e.target.closest('.delete-event-btn').dataset.id;
+                    if (confirm('Are you sure you want to delete this event?')) {
+                        db.ref(`events/${id}`).remove()
+                          .then(() => showToast('Event deleted.'))
+                          .catch(err => showToast('Error deleting event.', true));
+                    }
+                }
+            });
+            // Handle file input change via delegation
+            DOMElements.contentArea.addEventListener('change', e => {
+                if (e.target.id === 'excel-upload') {
+                    handleExcelUpload(e);
+                }
+            });
+
+            DOMElements.eventModal.form.addEventListener('submit', handleEventFormSubmit);
+            DOMElements.eventModal.closeBtn.addEventListener('click', closeEventModal);
+            DOMElements.eventModal.cancelBtn.addEventListener('click', closeEventModal);
+            
+            DOMElements.settingsBtn.addEventListener('click', () => {
+                DOMElements.settingsModal.modal.classList.remove('hidden');
+                lucide.createIcons();
+            });
+            DOMElements.settingsModal.closeBtn.addEventListener('click', () => DOMElements.settingsModal.modal.classList.add('hidden'));
+            DOMElements.settingsModal.venueForm.addEventListener('submit', e => {
+                e.preventDefault();
+                handleSettingsCrud('venues', DOMElements.settingsModal.venueForm, DOMElements.settingsModal.venueName);
+            });
+             DOMElements.settingsModal.categoryForm.addEventListener('submit', e => {
+                e.preventDefault();
+                handleSettingsCrud('categories', DOMElements.settingsModal.categoryForm, DOMElements.settingsModal.categoryName);
+            });
+            DOMElements.settingsModal.modal.addEventListener('click', e => {
+                if (e.target.closest('.delete-venue-btn')) {
+                    handleDelete('venues', e.target.closest('.delete-venue-btn').dataset.id);
+                }
+                if (e.target.closest('.delete-category-btn')) {
+                    handleDelete('categories', e.target.closest('.delete-category-btn').dataset.id);
+                }
+            });
+            DOMElements.settingsModal.deleteAllEventsBtn.addEventListener('click', async () => {
+                if(confirm('ARE YOU ABSOLUTELY SURE? This will delete every single scheduled event and cannot be undone.')) {
+                    await db.ref('events').remove();
+                    showToast('All events have been deleted.', true);
+                }
+            });
+            
+            DOMElements.printBtn.addEventListener('click', handlePrint);
+            
+            window.addEventListener('afterprint', () => {
+                DOMElements.printArea.classList.add('hidden');
+            });
+        };
+        
+        // --- App Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initializeFirebase();
+            setupEventListeners();
+        });
+    </script>
+
+</body>
+</html>
+
