@@ -4,18 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Program Registration Portal</title>
-    
-    <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts: Inter for a clean UI -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -25,11 +18,11 @@
             box-shadow: 0 0 0 3px #4f46e5;
             transform: scale(1.02);
         }
-        .admin-tab.active { 
-            border-color: #4f46e5; 
-            color: #4f46e5; 
-            background-color: #eef2ff; 
-        }
+        .admin-tab.active {
+             border-color: #4f46e5;
+             color: #4f46e5;
+             background-color: #eef2ff;
+         }
         /* Print Styles */
         @media print {
             body > *:not(#print-area) {
@@ -58,6 +51,7 @@
          .detail-view.visible {
             max-height: 1500px; /* Adjust as needed */
         }
+        /* --- NEW: MODAL STYLE --- */
         #modal-container.hidden { display: none; }
 
         /* Toggle Switch Styles */
@@ -73,13 +67,10 @@
 <body class="antialiased text-gray-800">
 
     <div id="app" class="min-h-screen">
-        <!-- App content will be rendered here -->
-    </div>
-    
-    <!-- Hidden container for printing -->
+        </div>
+
     <div id="print-area" class="hidden"></div>
 
-    <!-- Firebase SDKs (Version 8.10.0) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
@@ -95,7 +86,7 @@
             appId: "1:248274428739:web:fc30dd9eb1ef83f610c5f6",
             measurementId: "G-ZXZCK9BW7T"
         };
-        
+
         // --- TEAM & ADMIN PASSWORDS ---
         const ACCESS_CODES = {
             "738842A": { type: "team", teamName: "Terenova" },
@@ -137,7 +128,7 @@
                 <div id="modal-container" class="hidden"></div>
             </div>
         `;
-        
+
         // --- HELPER FUNCTIONS ---
         function getDataAsArray(entity) {
             if (!appData[entity]) return [];
@@ -158,12 +149,12 @@
             } else if (currentUser.type === 'team') {
                 content = renderTeamPortal();
             }
-            
+
             const mainContentContainer = document.getElementById('main-content');
-            if(mainContentContainer) {
+            if (mainContentContainer) {
                 mainContentContainer.innerHTML = `<div class="max-w-7xl mx-auto sm:px-6 lg:px-8 px-6">${content}</div>`;
             } else {
-                 appContainer.innerHTML = AppShell(content);
+                appContainer.innerHTML = AppShell(content);
             }
         }
 
@@ -173,7 +164,7 @@
                     <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
                         <div class="flex flex-col items-center">
                             <i class="fas fa-edit text-4xl text-indigo-600"></i>
-                            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Iteam Registration Portal</h2>
+                            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Item Registration Portal</h2>
                             <p class="mt-2 text-center text-sm text-gray-600">Enter your Team or Admin access code.</p>
                         </div>
                         <form id="login-form" class="mt-8 space-y-6">
@@ -189,7 +180,7 @@
                 </div>
             `;
         }
-        
+
         function renderAdminPortal() {
             let content = '';
             switch(activeAdminTab) {
@@ -238,7 +229,7 @@
                             <h3 class="text-2xl font-bold">Registrations for: ${program.name}</h3>
                             <button id="print-registrations-btn" data-program-id="${selectedProgramId}" class="bg-gray-600 text-white px-4 py-2 text-sm font-semibold rounded-md hover:bg-gray-700"><i class="fas fa-print mr-2"></i>Print List</button>
                         </div>
-                        
+
                         <h4 class="text-lg font-semibold mb-2 text-green-700">Registered Teams (${registeredTeamNames.length})</h4>
                         <div class="space-y-3 mb-6">
                         ${teams.filter(t => registeredTeamNames.includes(t.name)).map(team => {
@@ -295,7 +286,7 @@
                 </div>
             `;
         }
-        
+
         function renderAdminSettings() {
             const allPrograms = getDataAsArray('programs').sort((a,b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
             const activeRegProgramIds = Object.keys(appData.registrationPrograms || {});
@@ -326,8 +317,8 @@
                                      <div class="flex items-center pt-5">
                                         <label for="reg-toggle-${p.id}" class="text-sm font-medium text-gray-700">Registration On</label>
                                         <div class="relative inline-block w-10 ml-2 align-middle select-none transition duration-200 ease-in">
-                                            <input type="checkbox" name="reg-toggle" id="reg-toggle-${p.id}" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" 
-                                                data-program-id="${p.id}" ${isActive ? 'checked' : ''}/>
+                                            <input type="checkbox" name="reg-toggle" id="reg-toggle-${p.id}" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                                                 data-program-id="${p.id}" ${isActive ? 'checked' : ''}/>
                                             <label for="reg-toggle-${p.id}" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
                                         </div>
                                     </div>
@@ -348,7 +339,7 @@
                 name: category,
                 programs: registrationPrograms.filter(p => p.category === category)
              })).filter(c => c.programs.length > 0);
-             
+
              let registrationContent = '';
              if(selectedProgramId) {
                 const program = appData.programs[selectedProgramId];
@@ -357,7 +348,7 @@
                 const existingRegistrations = getDataAsArray('registrations').filter(r => r.programId === selectedProgramId);
                 const teamRegistrations = existingRegistrations.filter(r => r.teamName === teamName);
                 const teamRegistrationCount = teamRegistrations.length;
-                
+
                 const registeredStudentIds = new Set(teamRegistrations.map(r => r.studentId));
                 const availableStudents = studentsForProgram.filter(s => !registeredStudentIds.has(s.id));
 
@@ -367,7 +358,7 @@
                 } else {
                     let formFields = '';
                     const regType = program.registrationType || 'full';
-                
+
                     if (regType === 'full' || regType === 'titleOnly' || regType === 'titleAndLink') {
                         formFields += `
                             <div>
@@ -442,7 +433,6 @@
                     </div>
                 `;
              }
-
              return `
                  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <header class="flex justify-between items-center mb-8">
@@ -452,8 +442,8 @@
                         </div>
                     </header>
                     <main>
-                       ${categoriesWithPrograms.length === 0 
-                         ? `<div class="bg-white p-8 rounded-lg shadow-md text-center"><p class="text-gray-600">No programs are currently open for registration. Please check back later.</p></div>`
+                       ${categoriesWithPrograms.length === 0
+                          ? `<div class="bg-white p-8 rounded-lg shadow-md text-center"><p class="text-gray-600">No programs are currently open for registration. Please check back later.</p></div>`
                          : categoriesWithPrograms.map(cat => `
                             <div class="mb-8">
                                 <details class="bg-white rounded-lg shadow" ${selectedCategory === cat.name ? 'open' : ''}>
@@ -479,6 +469,79 @@
              `;
         }
         
+        // --- NEW: MODAL FUNCTIONS FOR EDITING ---
+        function openEditModal(regId) {
+            const registration = appData.registrations[regId];
+            if (!registration) {
+                alert('Registration not found!');
+                return;
+            }
+            const program = appData.programs[registration.programId];
+            const teamId = Object.keys(appData.teams).find(key => appData.teams[key].name === registration.teamName);
+
+            // Students from the same team and category
+            const studentsForProgram = getDataAsArray('students').filter(s =>
+                s.teamId === teamId && s.category === program.category
+            );
+            // Get student IDs already registered for this program by this team, EXCLUDING the one being edited
+            const registeredStudentIds = new Set(
+                getDataAsArray('registrations')
+                .filter(r => r.programId === registration.programId && r.id !== regId && r.teamName === registration.teamName)
+                .map(r => r.studentId)
+            );
+            // An available student is one not already in another entry for this program
+            const availableStudents = studentsForProgram.filter(s => !registeredStudentIds.has(s.id));
+            
+            // Conditionally build form fields based on program's registration type
+            const regType = program.registrationType || 'full';
+            let formFields = '';
+            if (regType === 'full' || regType === 'titleOnly' || regType === 'titleAndLink') {
+                formFields += `<div><label class="block text-sm font-medium text-gray-700">Title of Piece</label><input type="text" name="pieceTitle" value="${registration.pieceTitle || ''}" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm"></div>`;
+            }
+            if (regType === 'full') {
+                 formFields += `<div><label class="block text-sm font-medium text-gray-700">First Line of Piece</label><input type="text" name="firstLine" value="${registration.firstLine || ''}" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm"></div>`;
+            }
+             if (regType === 'full' || regType === 'titleAndLink') {
+                formFields += `<div><label class="block text-sm font-medium text-gray-700">YouTube Link (Optional)</label><input type="url" name="youtubeLink" value="${registration.youtubeLink || ''}" class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm" placeholder="https://youtube.com/..."></div>`;
+            }
+
+            const modalHTML = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg">
+                        <div class="p-6 border-b flex justify-between items-center">
+                            <h3 class="text-xl font-bold">Edit Registration: ${program.name}</h3>
+                            <button class="close-modal-btn text-2xl font-bold text-gray-500 hover:text-gray-800">&times;</button>
+                        </div>
+                        <form id="edit-registration-form" class="p-6 space-y-4">
+                            <input type="hidden" name="registrationId" value="${regId}">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Participant</label>
+                                <select name="studentId" required class="mt-1 block w-full p-2 border-gray-300 rounded-md shadow-sm">
+                                    <option value="${registration.studentId}">${registration.studentName}</option>
+                                    ${availableStudents.map(s => `<option value="${s.id}" ${s.id === registration.studentId ? 'selected' : ''}>${s.name} (${s.chestNo})</option>`).join('')}
+                                </select>
+                            </div>
+                            ${formFields}
+                            <div class="pt-4 flex justify-end">
+                                <button type="button" class="close-modal-btn bg-gray-200 text-gray-800 px-4 py-2 rounded-md mr-2 hover:bg-gray-300">Cancel</button>
+                                <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-indigo-700">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.innerHTML = modalHTML;
+            modalContainer.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.innerHTML = '';
+            modalContainer.classList.add('hidden');
+        }
+
+        // --- PRINTING FUNCTIONS ---
         function printRegistrations(programId) {
             const program = appData.programs[programId];
             if (!program) return;
@@ -536,7 +599,78 @@
             window.print();
             printArea.innerHTML = '';
         }
-        
+
+        // --- NEW: PRINT ALL FUNCTION ---
+        function printAllRegistrations() {
+            const activeRegProgramIds = Object.keys(appData.registrationPrograms || {});
+            const activePrograms = getDataAsArray('programs')
+                .filter(p => activeRegProgramIds.includes(p.id))
+                .sort((a,b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+
+            if (activePrograms.length === 0) {
+                alert('No active programs to print.');
+                return;
+            }
+
+            let allPagesHTML = '';
+            activePrograms.forEach(program => {
+                const registrations = getDataAsArray('registrations')
+                    .filter(r => r.programId === program.id)
+                    .sort((a, b) => a.teamName.localeCompare(b.teamName) || a.studentName.localeCompare(b.studentName));
+
+                if (registrations.length > 0) {
+                     allPagesHTML += `
+                        <div class="print-page" style="font-family: Arial, sans-serif; width: 210mm; padding: 1.5cm; box-sizing: border-box;">
+                            <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 1rem; margin-bottom: 1rem;">
+                                <h1 style="font-size: 22pt; margin: 0;">Program Registration List</h1>
+                            </div>
+                            <div style="margin-bottom: 2rem;">
+                                <h3 style="font-size: 16pt; margin: 0 0 0.5rem 0; font-weight: bold;">${program.name}</h3>
+                                <p style="font-size: 12pt; margin: 0 0 1rem 0; color: #333;">Category: ${program.category}</p>
+                            </div>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 10pt;">
+                                <thead>
+                                    <tr style="background-color: #eee; text-align: left;">
+                                        <th style="padding: 8px; border: 1px solid #ccc;">Team</th>
+                                        <th style="padding: 8px; border: 1px solid #ccc;">Student Name</th>
+                                        <th style="padding: 8px; border: 1px solid #ccc;">Chest No</th>
+                                        <th style="padding: 8px; border: 1px solid #ccc;">Piece Title</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${registrations.map(reg => {
+                                        const student = appData.students[reg.studentId];
+                                        const chestNo = student ? student.chestNo : 'N/A';
+                                        return `
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 8px; border: 1px solid #ccc;">${reg.teamName}</td>
+                                            <td style="padding: 8px; border: 1px solid #ccc;">${reg.studentName}</td>
+                                            <td style="padding: 8px; border: 1px solid #ccc;">${chestNo}</td>
+                                            <td style="padding: 8px; border: 1px solid #ccc;">${reg.pieceTitle}</td>
+                                        </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                            <div style="position: absolute; bottom: 1cm; right: 1.5cm; font-size: 9pt; color: #666;">
+                                Generated on: ${new Date().toLocaleString()}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            if (allPagesHTML === '') {
+                alert('There are no registrations for any active program.');
+                return;
+            }
+
+            const printArea = document.getElementById('print-area');
+            printArea.innerHTML = allPagesHTML;
+            window.print();
+            printArea.innerHTML = '';
+        }
+
         // --- EVENT LISTENERS ---
         document.addEventListener('submit', async (e) => {
             if (e.target.id === 'login-form') {
@@ -553,6 +687,7 @@
                     errorEl.textContent = "Invalid access code.";
                 }
             }
+
             if (e.target.id === 'registration-form') {
                 e.preventDefault();
                 const form = e.target;
@@ -574,7 +709,7 @@
                     youtubeLink: form.elements.youtubeLink?.value || '',
                     timestamp: Date.now()
                 };
-                
+
                 try {
                     await db.ref('registrations').push(registrationData);
                     messageEl.textContent = 'Registration successful!';
@@ -589,7 +724,9 @@
                     setTimeout(() => messageEl.textContent = '', 3000);
                 }
             }
-            if(e.target.id === 'edit-registration-form') {
+            
+            // --- NEW: EDIT FORM SUBMISSION HANDLER ---
+            if (e.target.id === 'edit-registration-form') {
                 e.preventDefault();
                 const form = e.target;
                 const regId = form.elements.registrationId.value;
@@ -599,15 +736,15 @@
                 const updatedData = {
                     studentId: studentId,
                     studentName: student.name,
-                    pieceTitle: form.elements.pieceTitle.value,
-                    firstLine: form.elements.firstLine.value,
-                    youtubeLink: form.elements.youtubeLink.value || ''
+                    pieceTitle: form.elements.pieceTitle?.value || '',
+                    firstLine: form.elements.firstLine?.value || '',
+                    youtubeLink: form.elements.youtubeLink?.value || ''
                 };
-                
+
                 try {
                     await db.ref('registrations/' + regId).update(updatedData);
                     closeModal();
-                } catch(err) {
+                } catch (err) {
                     alert('Error updating registration: ' + err.message);
                 }
             }
@@ -632,16 +769,22 @@
             if (e.target.id === 'print-registrations-btn') {
                 printRegistrations(selectedProgramId);
             }
+            // --- NEW: PRINT ALL BUTTON HANDLER ---
+            if (e.target.id === 'print-all-registrations-btn') {
+                printAllRegistrations();
+            }
+            // --- NEW: EDIT BUTTON HANDLER ---
             const editButton = e.target.closest('.edit-reg-btn');
             if(editButton) {
                 openEditModal(editButton.dataset.regId);
             }
+            // --- NEW: CLOSE MODAL HANDLER ---
             const closeModalBtn = e.target.closest('.close-modal-btn');
             if (closeModalBtn) {
                 closeModal();
             }
         });
-        
+
         document.addEventListener('change', e => {
             if (e.target.matches('.toggle-checkbox[name="reg-toggle"]')) {
                 const programId = e.target.dataset.programId;
@@ -677,9 +820,8 @@
                 renderApp();
             });
         }
-        
+
         initializeApp();
     </script>
 </body>
 </html>
-
