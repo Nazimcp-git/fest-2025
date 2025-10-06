@@ -39,7 +39,7 @@
             }
             @page {
                 size: A4;
-                margin: 2cm;
+                margin: 1cm;
             }
         }
         /* Animation for detail view */
@@ -542,6 +542,7 @@
         }
 
         // --- PRINTING FUNCTIONS ---
+        // --- PRINTING FUNCTIONS ---
         function printRegistrations(programId) {
             const program = appData.programs[programId];
             if (!program) return;
@@ -556,7 +557,7 @@
             }
 
             const printHTML = `
-                <div style="font-family: Arial, sans-serif; width: 210mm; padding: 1.5cm; box-sizing: border-box;">
+                <div class="print-page" style="font-family: Arial, sans-serif; box-sizing: border-box;">
                     <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 1rem; margin-bottom: 1rem;">
                         <h1 style="font-size: 22pt; margin: 0;">Program Registration List</h1>
                         <p style="font-size: 12pt; margin: 0.5rem 0;">Generated on: ${new Date().toLocaleString()}</p>
@@ -565,14 +566,15 @@
                         <h3 style="font-size: 16pt; margin: 0 0 0.5rem 0; font-weight: bold;">${program.name}</h3>
                         <p style="font-size: 12pt; margin: 0 0 1rem 0; color: #333;">Category: ${program.category}</p>
                     </div>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 10pt;">
+                    
+                    <table style="width: 100%; border-collapse: collapse; font-size: 9pt; table-layout: fixed;">
                         <thead>
                             <tr style="background-color: #eee; text-align: left;">
-                                <th style="padding: 8px; border: 1px solid #ccc;">Team</th>
-                                <th style="padding: 8px; border: 1px solid #ccc;">Student Name</th>
-                                <th style="padding: 8px; border: 1px solid #ccc;">Chest No</th>
-                                <th style="padding: 8px; border: 1px solid #ccc;">Piece Title</th>
-                                <th style="padding: 8px; border: 1px solid #ccc;">First Line</th>
+                                <th style="padding: 6px; border: 1px solid #ccc; width: 15%;">Team</th>
+                                <th style="padding: 6px; border: 1px solid #ccc; width: 20%;">Student Name</th>
+                                <th style="padding: 6px; border: 1px solid #ccc; width: 10%;">Chest No</th>
+                                <th style="padding: 6px; border: 1px solid #ccc; width: 27.5%;">Piece Title</th>
+                                <th style="padding: 6px; border: 1px solid #ccc; width: 27.5%;">First Line</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -581,11 +583,11 @@
                                 const chestNo = student ? student.chestNo : 'N/A';
                                 return `
                                 <tr style="border-bottom: 1px solid #eee;">
-                                    <td style="padding: 8px; border: 1px solid #ccc;">${reg.teamName}</td>
-                                    <td style="padding: 8px; border: 1px solid #ccc;">${reg.studentName}</td>
-                                    <td style="padding: 8px; border: 1px solid #ccc;">${chestNo}</td>
-                                    <td style="padding: 8px; border: 1px solid #ccc;">${reg.pieceTitle}</td>
-                                    <td style="padding: 8px; border: 1px solid #ccc;">${reg.firstLine}</td>
+                                    <td style="padding: 6px; border: 1px solid #ccc; word-break: break-all;">${reg.teamName}</td>
+                                    <td style="padding: 6px; border: 1px solid #ccc; word-break: break-all;">${reg.studentName}</td>
+                                    <td style="padding: 6px; border: 1px solid #ccc; word-break: break-all;">${chestNo}</td>
+                                    <td style="padding: 6px; border: 1px solid #ccc; word-break: break-all;">${reg.pieceTitle}</td>
+                                    <td style="padding: 6px; border: 1px solid #ccc; word-break: break-all;">${reg.firstLine}</td>
                                 </tr>
                                 `;
                             }).join('')}
@@ -600,7 +602,6 @@
             printArea.innerHTML = '';
         }
 
-        // --- NEW: PRINT ALL FUNCTION ---
         function printAllRegistrations() {
             const activeRegProgramIds = Object.keys(appData.registrationPrograms || {});
             const activePrograms = getDataAsArray('programs')
@@ -620,7 +621,7 @@
 
                 if (registrations.length > 0) {
                      allPagesHTML += `
-                        <div class="print-page" style="font-family: Arial, sans-serif; width: 210mm; padding: 1.5cm; box-sizing: border-box;">
+                        <div class="print-page" style="font-family: Arial, sans-serif; box-sizing: border-box;">
                             <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 1rem; margin-bottom: 1rem;">
                                 <h1 style="font-size: 22pt; margin: 0;">Program Registration List</h1>
                             </div>
@@ -628,13 +629,14 @@
                                 <h3 style="font-size: 16pt; margin: 0 0 0.5rem 0; font-weight: bold;">${program.name}</h3>
                                 <p style="font-size: 12pt; margin: 0 0 1rem 0; color: #333;">Category: ${program.category}</p>
                             </div>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 10pt;">
+
+                            <table style="width: 100%; border-collapse: collapse; font-size: 9pt; table-layout: fixed;">
                                 <thead>
                                     <tr style="background-color: #eee; text-align: left;">
-                                        <th style="padding: 8px; border: 1px solid #ccc;">Team</th>
-                                        <th style="padding: 8px; border: 1px solid #ccc;">Student Name</th>
-                                        <th style="padding: 8px; border: 1px solid #ccc;">Chest No</th>
-                                        <th style="padding: 8px; border: 1px solid #ccc;">Piece Title</th>
+                                        <th style="padding: 6px; border: 1px solid #ccc; width: 20%;">Team</th>
+                                        <th style="padding: 6px; border: 1px solid #ccc; width: 30%;">Student Name</th>
+                                        <th style="padding: 6px; border: 1px solid #ccc; width: 15%;">Chest No</th>
+                                        <th style="padding: 6px; border: 1px solid #ccc; width: 35%;">Piece Title</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -643,16 +645,16 @@
                                         const chestNo = student ? student.chestNo : 'N/A';
                                         return `
                                         <tr style="border-bottom: 1px solid #eee;">
-                                            <td style="padding: 8px; border: 1px solid #ccc;">${reg.teamName}</td>
-                                            <td style="padding: 8px; border: 1px solid #ccc;">${reg.studentName}</td>
-                                            <td style="padding: 8px; border: 1px solid #ccc;">${chestNo}</td>
-                                            <td style="padding: 8px; border: 1px solid #ccc;">${reg.pieceTitle}</td>
+                                            <td style="padding: 6px; border: 1px solid #ccc; word-break: break-all;">${reg.teamName}</td>
+                                            <td style="padding: 6px; border: 1px solid #ccc; word-break: break-all;">${reg.studentName}</td>
+                                            <td style="padding: 6px; border: 1px solid #ccc; word-break: break-all;">${chestNo}</td>
+                                            <td style="padding: 6px; border: 1px solid #ccc; word-break: break-all;">${reg.pieceTitle}</td>
                                         </tr>
                                         `;
                                     }).join('')}
                                 </tbody>
                             </table>
-                            <div style="position: absolute; bottom: 1cm; right: 1.5cm; font-size: 9pt; color: #666;">
+                            <div style="position: absolute; bottom: 1cm; right: 2cm; font-size: 8pt; color: #666;">
                                 Generated on: ${new Date().toLocaleString()}
                             </div>
                         </div>
