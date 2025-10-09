@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Realtime DB Backup Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .lds-ring {
+          display: inline-block;
+          position: relative;
+          width: 20px;
+          height: 20px;
+        }
+        .lds-ring div {
+          box-sizing: border-box;
+          display: block;
+          position: absolute;
+          width: 16px;
+          height: 16px;
+          margin: 2px;
+          border: 2px solid #fff;
+          border-radius: 50%;
+          animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+          border-color: #fff transparent transparent transparent;
+        }
+        .lds-ring div:nth-child(1) {
+          animation-delay: -0.45s;
+        }
+        .lds-ring div:nth-child(2) {
+          animation-delay: -0.3s;
+        }
+        .lds-ring div:nth-child(3) {
+          animation-delay: -0.15s;
+        }
+        @keyframes lds-ring {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-2xl mx-auto p-4 sm:p-6 md:p-8">
+        <div class="bg-white rounded-2xl shadow-lg p-8">
+            <header class="text-center mb-8">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clip-rule="evenodd" />
+                </svg>
+                <h1 class="text-3xl font-bold text-gray-900 mt-2">Realtime Database Downloader</h1>
+                <p class="text-gray-500 mt-2">A secure, client-side tool to back up your Firebase Realtime Database.</p>
+            </header>
+
+            <!-- Security Warning -->
+            <div class="bg-blue-50 border-l-4 border-blue-400 text-blue-800 p-4 rounded-md mb-6" role="alert">
+                <h3 class="font-semibold">Your Privacy is Protected</h3>
+                <p class="text-sm">This tool runs entirely in your browser. Your Firebase config and data are <strong class="font-semibold">never</strong> sent to any server.</p>
+            </div>
+
+            <!-- Step 1: Configuration -->
+            <div class="mb-6">
+                <label for="firebaseConfig" class="block text-sm font-medium text-gray-700 mb-2">1. Paste your Firebase Config Object</label>
+                <textarea id="firebaseConfig" rows="8" class="w-full p-3 bg-gray-100 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm font-mono" placeholder="{\n  apiKey: 'AIza...', \n  authDomain: 'project-id.firebaseapp.com',\n  databaseURL: 'https://project-id-default-rtdb.firebaseio.com',\n  projectId: 'project-id',\n  storageBucket: 'project-id.appspot.com',\n  messagingSenderId: '...',\n  appId: '...'\n}"></textarea>
+            </div>
+
+            <!-- Step 2: Connect Button -->
+            <div class="flex justify-center mb-4">
+                <button id="connectBtn" class="w-full sm:w-auto flex items-center justify-center bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition-all duration-300 ease-in-out shadow-md hover:shadow-lg">
+                    <span id="connectBtnText">Connect & Fetch Data</span>
+                    <div id="loader" class="lds-ring hidden ml-2"><div></div><div></div><div></div><div></div></div>
+                </button>
+            </div>
+
+            <!-- Status Display -->
+            <div id="status" class="text-center text-sm text-gray-500 h-5 mb-6"></div>
+
+            <!-- Step 3: Download Button -->
+            <div class="text-center">
+                 <button id="downloadBtn" disabled class="w-full sm:w-auto bg-green-600 text-white font-bold py-3 px-8 rounded-lg transition-all duration-300 ease-in-out cursor-not-allowed opacity-50 shadow-md">
+                    Download Backup (.json)
+                </button>
+            </div>
+        </div>
+
+        <footer class="text-center mt-6 text-xs text-gray-400">
+            <p>&copy; 2025 DB Backup Tools. Created with safety and security in mind.</p>
+        </footer>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+
+        // --- DOM Elements ---
+        const firebaseConfigInput = document.getElementById('firebaseConfig');
+        const connectBtn = document.getElementById('connectBtn');
+        const connectBtnText = document.getElementById('connectBtnText');
+        const loader = document.getElementById('loader');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const statusDiv = document.getElementById('status');
+        
+        let databaseBackupData = null;
+        let firebaseApp = null;
+
+        // --- Event Listener for Connect Button ---
+        connectBtn.addEventListener('click', async () => {
+            let configText = firebaseConfigInput.value.trim();
+            if (!configText) {
+                updateStatus('Please paste your Firebase config.', 'error');
+                return;
+            }
+
+            let config;
+            try {
+                // --- Start of new robust parsing logic ---
+
+                // 1. Ensure the text is wrapped in curly braces if the user forgets them.
+                if (!configText.startsWith('{')) {
+                    configText = '{' + configText;
+                }
+                if (!configText.endsWith('}')) {
+                    configText = configText + '}';
+                }
+
+                // 2. Add quotes to unquoted keys (like apiKey:) to make it valid JSON.
+                // This regex safely finds keys and adds quotes without affecting values (like URLs).
+                let jsonString = configText.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');
+                
+                // 3. Remove trailing commas before a closing brace `}` which are invalid in JSON.
+                jsonString = jsonString.replace(/,(?=\s*})/g, '');
+                
+                // 4. Parse the cleaned-up, now valid JSON string.
+                config = JSON.parse(jsonString);
+                
+                // --- End of new robust parsing logic ---
+
+            } catch (error) {
+                updateStatus('Invalid config format. Please copy the object correctly.', 'error');
+                console.error("Config Parsing Error:", error);
+                return;
+            }
+
+            if (!config.databaseURL) {
+                updateStatus('Config is missing the `databaseURL` property.', 'error');
+                return;
+            }
+
+            setLoading(true);
+            updateStatus('Connecting to Firebase...', 'info');
+            databaseBackupData = null;
+            disableDownload();
+
+            try {
+                // Initialize Firebase
+                if (firebaseApp) {
+                  // This just prevents an error if the user clicks connect multiple times.
+                }
+                firebaseApp = initializeApp(config);
+                const db = getDatabase(firebaseApp);
+                const dbRef = ref(db, '/');
+
+                updateStatus('Fetching database snapshot...', 'info');
+
+                // Fetch all data from the root
+                const snapshot = await get(dbRef);
+
+                if (snapshot.exists()) {
+                    databaseBackupData = snapshot.val();
+                    updateStatus(`Success! Fetched data for project: ${config.projectId}`, 'success');
+                    enableDownload();
+                } else {
+                    updateStatus('Database is empty or not accessible.', 'warning');
+                }
+
+            } catch (error) {
+                console.error("Firebase Error:", error);
+                updateStatus('Connection failed. Check console and security rules.', 'error');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // --- Event Listener for Download Button ---
+        downloadBtn.addEventListener('click', () => {
+            if (!databaseBackupData) {
+                updateStatus('No data to download.', 'error');
+                return;
+            }
+
+            try {
+                // Convert the JSON object to a string with pretty printing
+                const dataStr = JSON.stringify(databaseBackupData, null, 2);
+                
+                // Create a Blob (file-like object)
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                
+                // Create a temporary link to trigger the download
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+
+                // Create a filename with the current date
+                const date = new Date();
+                const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                a.download = `firebase-rtdb-backup-${dateString}.json`;
+
+                document.body.appendChild(a);
+                a.click();
+
+                // Clean up the temporary URL and link
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                updateStatus('Download initiated.', 'success');
+
+            } catch (error) {
+                console.error("Download Error:", error);
+                updateStatus('Failed to create download file.', 'error');
+            }
+        });
+
+        // --- UI Helper Functions ---
+        function updateStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.classList.remove('text-red-500', 'text-green-500', 'text-yellow-500', 'text-gray-500');
+            switch (type) {
+                case 'error':
+                    statusDiv.classList.add('text-red-500');
+                    break;
+                case 'success':
+                    statusDiv.classList.add('text-green-500');
+                    break;
+                case 'warning':
+                    statusDiv.classList.add('text-yellow-500');
+                    break;
+                default:
+                    statusDiv.classList.add('text-gray-500');
+            }
+        }
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                connectBtn.disabled = true;
+                connectBtn.classList.add('opacity-70', 'cursor-not-allowed');
+                connectBtnText.textContent = "Connecting...";
+                loader.classList.remove('hidden');
+            } else {
+                connectBtn.disabled = false;
+                connectBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+                connectBtnText.textContent = "Connect & Fetch Data";
+                loader.classList.add('hidden');
+            }
+        }
+
+        function enableDownload() {
+            downloadBtn.disabled = false;
+            downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            downloadBtn.classList.add('hover:bg-green-700', 'focus:outline-none', 'focus:ring-4', 'focus:ring-green-300', 'hover:shadow-lg');
+        }
+
+        function disableDownload() {
+            downloadBtn.disabled = true;
+            downloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            downloadBtn.classList.remove('hover:bg-green-700', 'focus:outline-none', 'focus:ring-4', 'focus:ring-green-300', 'hover:shadow-lg');
+        }
+    </script>
+</body>
+</html>
+
