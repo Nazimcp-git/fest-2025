@@ -439,9 +439,7 @@ body::before {
 </style>
 <body>
 
-  <div class="preloader">
-      <img src="prelogo.png" alt="Poru '25 Logo">
-  </div>
+ 
 
   
   
@@ -558,18 +556,14 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('load', () => {
         // Wait for the intro animation to mostly complete
         setTimeout(() => {
-            if (preloader) {
-                preloader.classList.add('preloader-hiding');
-            }
+            
             if (mainHeader) {
                 mainHeader.classList.add('is-visible');
             }
             
             // Remove preloader from DOM after transition
             setTimeout(() => {
-                if (preloader) {
-                    preloader.style.display = 'none';
-                }
+                
             }, 500);
 
         }, 2500); // This duration should match the CSS animation
