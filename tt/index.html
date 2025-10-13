@@ -13,14 +13,14 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
-        .filter-btn, .view-btn, .admin-btn, .action-btn {
+        .filter-btn, .admin-btn, .action-btn {
             transition: all 0.2s ease-in-out;
         }
-        .filter-btn.active, .view-btn.active {
+        .filter-btn.active {
             background-color: #4f46e5;
             color: white;
         }
-        .filter-btn:not(.active):hover, .view-btn:not(.active):hover {
+        .filter-btn:not(.active):hover {
             background-color: #e0e7ff;
         }
         .date-group {
@@ -58,24 +58,6 @@
             .event-venue { grid-column: 2 / 3; grid-row: 2 / 3; text-align: right;}
             .event-category { display: none; }
         }
-
-        /* Timeline Styles */
-        #timeline-view { background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); padding: 1.5rem; overflow-x: auto; }
-        .timeline-container { display: flex; position: relative; min-width: 800px; }
-        .time-axis { padding-right: 1rem; font-size: 0.75rem; color: #6b7280; position: relative; }
-        .time-label { position: absolute; transform: translateY(-50%); white-space: nowrap; }
-        .time-label::after { content: ''; position: absolute; left: 50px; right: -2000px; top: 50%; height: 1px; background-color: #e5e7eb; z-index: 0; }
-        .venues-container { display: flex; flex-grow: 1; }
-        .venue-col { flex: 1; border-left: 1px solid #e5e7eb; position: relative; padding: 0 0.5rem; }
-        .venue-header { text-align: center; padding-bottom: 0.5rem; margin-bottom: 1rem; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; }
-        .timeline-event { position: absolute; left: 0.5rem; right: 0.5rem; border-radius: 0.375rem; padding: 0.5rem; font-size: 0.8rem; color: #1e1b4b; cursor: pointer; z-index: 10; overflow: hidden; border-left-width: 4px; }
-        .timeline-event:hover { opacity: 0.8; }
-        .current-time-line { position: absolute; width: 100%; height: 2px; background-color: #ef4444; z-index: 20; left:0; }
-        .current-time-line::before { content: 'Now'; position: absolute; left: -35px; top: -8px; background-color: #ef4444; color: white; padding: 0px 5px; border-radius: 4px; font-size: 0.75rem; }
-
-        /* Modal Styles */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background-color: white; padding: 2rem; border-radius: 0.75rem; max-width: 500px; width: 90%; }
         
         /* Admin Panel Styles */
         #admin-panel { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out; }
@@ -118,39 +100,26 @@
             </div>
         </div>
 
-        <!-- Controls: Filters & View Switcher -->
+        <!-- Search Bar -->
+        <div class="mb-4 p-4 bg-white rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Search Program:</h3>
+            <input type="search" id="program-search" placeholder="Enter program name..." class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
+        
+        <!-- Controls: Filters -->
         <div class="mb-8 p-4 bg-white rounded-lg shadow-md space-y-4">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
-                 <div><h3 class="text-lg font-semibold text-gray-700 mb-2">Filter by Date:</h3><div id="date-filters" class="flex flex-wrap gap-2"></div></div>
-                 <div class="mt-4 md:mt-0 md:ml-6"><h3 class="text-lg font-semibold text-gray-700 mb-2">View:</h3><div id="view-switcher" class="flex gap-2"><button class="view-btn active px-4 py-2 rounded-md text-sm font-medium border" data-view="list">List</button><button class="view-btn px-4 py-2 rounded-md text-sm font-medium border" data-view="timeline">Timeline</button></div></div>
-            </div>
-            <div>
-                <h3 class="text-lg font-semibold text-gray-700 mb-2">Search Program:</h3>
-                <input type="search" id="program-search" placeholder="Enter program name..." class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-            </div>
-             <div>
-                <h3 class="text-lg font-semibold text-gray-700 mb-2">Filter by Time:</h3>
-                <div class="flex items-center gap-2">
-                    <input type="time" id="time-filter" class="block w-40 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <button id="clear-time-btn" class="text-sm text-gray-600 hover:text-indigo-600">Clear</button>
-                </div>
-            </div>
+             <div><h3 class="text-lg font-semibold text-gray-700 mb-2">Filter by Date:</h3><div id="date-filters" class="flex flex-wrap gap-2"></div></div>
+             
             <div><h3 class="text-lg font-semibold text-gray-700 mb-2">Filter by Category:</h3><div id="category-filters" class="flex flex-wrap gap-2"></div></div>
             <div><h3 class="text-lg font-semibold text-gray-700 mb-2">Filter by Venue:</h3><div id="venue-filters" class="flex flex-wrap gap-2"></div></div>
         </div>
 
         <!-- Schedule Container -->
         <div id="schedule-list-view"></div>
-        <div id="timeline-view" class="hidden"></div>
         <div id="loading-spinner" class="text-center py-12"><p class="text-lg text-gray-500">Loading Schedule...</p></div>
-        <div id="no-results" class="hidden text-center py-12"><p class="text-xl text-gray-500">No events found for the selected filters.</p></div>
+       
     </div>
     
-    <!-- Modal -->
-    <div id="event-modal" class="modal-overlay hidden">
-        <div class="modal-content"><h2 id="modal-title" class="text-2xl font-bold text-gray-800 mb-2"></h2><p id="modal-category" class="text-lg text-indigo-600 font-semibold mb-4"></p><p class="text-gray-600 mb-2"><span class="font-semibold">Time:</span> <span id="modal-time"></span></p><p class="text-gray-600 mb-4"><span class="font-semibold">Venue:</span> <span id="modal-venue"></span></p><button id="modal-close" class="mt-4 w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700">Close</button></div>
-    </div>
-
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -171,8 +140,6 @@
         let activeVenueFilter = 'all';
         let activeTimeFilter = null;
         let searchQuery = '';
-        let currentView = 'list';
-        let currentTimeInterval;
 
         // --- DOM Elements ---
         const dateFiltersContainer = document.getElementById('date-filters');
@@ -182,11 +149,8 @@
         const clearTimeBtn = document.getElementById('clear-time-btn');
         const searchInput = document.getElementById('program-search');
         const scheduleListView = document.getElementById('schedule-list-view');
-        const timelineView = document.getElementById('timeline-view');
-        const viewSwitcher = document.getElementById('view-switcher');
         const noResults = document.getElementById('no-results');
         const loadingSpinner = document.getElementById('loading-spinner');
-        const modal = document.getElementById('event-modal');
         const adminToggleBtn = document.getElementById('admin-toggle-btn');
         const adminPanel = document.getElementById('admin-panel');
         
@@ -225,12 +189,9 @@
             dateFiltersContainer.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { activeDateFilter = e.target.dataset.filter; updateActiveButton(dateFiltersContainer, e.target); render(); } });
             categoryFiltersContainer.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { activeCategoryFilter = e.target.dataset.filter; updateActiveButton(categoryFiltersContainer, e.target); render(); } });
             venueFiltersContainer.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { activeVenueFilter = e.target.dataset.filter; updateActiveButton(venueFiltersContainer, e.target); render(); } });
-            viewSwitcher.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { currentView = e.target.dataset.view; updateActiveButton(viewSwitcher, e.target); render(); } });
             timeFilterInput.addEventListener('change', () => { activeTimeFilter = timeFilterInput.value; render(); });
             clearTimeBtn.addEventListener('click', () => { activeTimeFilter = null; timeFilterInput.value = ''; render(); });
             searchInput.addEventListener('input', () => { searchQuery = searchInput.value; render(); });
-            document.getElementById('modal-close').addEventListener('click', () => modal.classList.add('hidden'));
-            modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
             adminToggleBtn.addEventListener('click', () => { adminPanel.style.maxHeight = adminPanel.style.maxHeight ? null : adminPanel.scrollHeight + "px"; });
             document.getElementById('add-program-form').addEventListener('submit', handleAddProgram);
             document.getElementById('download-template-btn').addEventListener('click', handleDownloadTemplate);
@@ -239,15 +200,7 @@
         
         // --- Rendering Logic ---
         function render() {
-            if (currentView === 'list') {
-                scheduleListView.classList.remove('hidden');
-                timelineView.classList.add('hidden');
-                renderScheduleListView();
-            } else {
-                scheduleListView.classList.add('hidden');
-                timelineView.classList.remove('hidden');
-                renderTimelineView();
-            }
+            renderScheduleListView();
         }
         
         // --- Filter Creation ---
@@ -327,57 +280,10 @@
             }
             noResults.classList.toggle('hidden', !hasAnyEvents);
         }
-
-        // --- Timeline View Logic ---
-        const timelineStartHour = 6, timelineEndHour = 22;
-        function renderTimelineView() {
-            timelineView.innerHTML = '';
-            if (activeDateFilter === 'all') { timelineView.innerHTML = `<div class="text-center p-8 text-gray-600">Please select a single date to see the timeline view.</div>`; return; }
-            const daySchedule = liveScheduleData[activeDateFilter];
-            if (!daySchedule) { timelineView.innerHTML = `<div class="text-center p-8 text-gray-600">No schedule available for this date.</div>`; return; }
-            const venues = new Set();
-            Object.values(daySchedule).forEach(cat => Object.values(cat).forEach(evt => venues.add(evt.venue)));
-            let sortedVenues = activeVenueFilter === 'all' ? Array.from(venues).sort((a, b) => a - b) : [parseInt(activeVenueFilter)];
-            if (sortedVenues.length === 0 || (activeVenueFilter !=='all' && !venues.has(parseInt(activeVenueFilter)))) { timelineView.innerHTML = `<div class="text-center p-8 text-gray-600">No events for selected venue.</div>`; return; }
-
-            const timelineContainer = document.createElement('div'); timelineContainer.className = 'timeline-container';
-            const timeAxis = document.createElement('div'); timeAxis.className = 'time-axis';
-            for (let h = timelineStartHour; h <= timelineEndHour; h++) { timeAxis.innerHTML += `<div class="time-label" style="top: ${((h - timelineStartHour) / (timelineEndHour - timelineStartHour)) * 100}%">${h % 12 || 12} ${h >= 12 ? 'PM' : 'AM'}</div>`; }
-            const venuesContainer = document.createElement('div'); venuesContainer.className = 'venues-container';
-            sortedVenues.forEach(v => { venuesContainer.innerHTML += `<div class="venue-col"><div class="venue-header">Venue ${v}</div></div>`; });
-            timelineContainer.append(timeAxis, venuesContainer);
-            timelineView.appendChild(timelineContainer);
-            
-            let hasEvents = false;
-            const filteredCategories = activeCategoryFilter === 'all' ? Object.keys(daySchedule) : [activeCategoryFilter];
-            filteredCategories.forEach(category => {
-                if (!daySchedule[category]) return;
-                Object.values(daySchedule[category]).forEach(event => {
-                    if (activeVenueFilter !== 'all' && event.venue != activeVenueFilter) return;
-                    hasEvents = true;
-                    const range = getEventTimeRange(event.time);
-                    const top = timeToPercentage(range.start);
-                    const height = Math.max(timeToPercentage(range.end) - top, 2);
-                    const eventEl = document.createElement('div');
-                    const style = categoryStyles[category] || categoryStyles.default;
-                    eventEl.className = `timeline-event ${style.bg}`;
-                    eventEl.style.cssText = `top:${top}%; height:${height}%; border-left-color: ${style.hex};`;
-                    eventEl.innerHTML = `<p class="font-bold truncate">${event.program}</p><p>${category}</p>`;
-                    eventEl.addEventListener('click', () => showModal(event, category, activeDateFilter));
-                    const venueIndex = sortedVenues.indexOf(event.venue);
-                    if (venueIndex !== -1) venuesContainer.children[venueIndex].appendChild(eventEl);
-                });
-            });
-            noResults.classList.toggle('hidden', !hasEvents);
-            if (!hasEvents) timelineView.innerHTML = `<div class="text-center p-8 text-gray-600">No events found.</div>`;
-            clearInterval(currentTimeInterval); updateCurrentTimeIndicator(); currentTimeInterval = setInterval(updateCurrentTimeIndicator, 60000);
-        }
         
         // --- Helper functions ---
         function parseTimeToMinutes(timeStr) { if(!timeStr) return 0; const firstTime = timeStr.split('-')[0].trim(); let time = firstTime.replace(/\s/g, '').toUpperCase(); const period = time.includes('PM') ? 'PM' : 'AM'; let [hour, minute] = time.replace('AM', '').replace('PM', '').split(/[:.]/).map(s => parseInt(s) || 0); if (isNaN(hour)) return 0; if (period === 'PM' && hour !== 12) hour += 12; if (period === 'AM' && hour === 12) hour = 0; return hour * 60 + (minute || 0); }
         function getEventTimeRange(timeStr) { if (!timeStr) return { start: 0, end: 0 }; const parts = timeStr.split('-').map(s => s.trim()); const startMinutes = parseTimeToMinutes(parts[0]); let endMinutes; if (parts.length > 1) { const startWasPM = parts[0].toUpperCase().includes('PM'); let endStr = parts[1]; if (!endStr.toUpperCase().includes('AM') && !endStr.toUpperCase().includes('PM')) { endStr += startWasPM ? " PM" : " AM"; } endMinutes = parseTimeToMinutes(endStr); if (endMinutes < startMinutes) endMinutes += 12 * 60; } else { endMinutes = startMinutes + 45; } return { start: startMinutes, end: endMinutes }; }
-        function timeToPercentage(minutes) { const totalMinutes = (timelineEndHour - timelineStartHour) * 60; const eventMinutes = minutes - (timelineStartHour * 60); return (eventMinutes / totalMinutes) * 100; }
-        function showModal(event, category, date) { document.getElementById('modal-title').textContent = event.program; document.getElementById('modal-category').textContent = category; document.getElementById('modal-time').textContent = `${event.time} on ${date.split(' ')[0]}`; document.getElementById('modal-venue').textContent = event.venue; modal.classList.remove('hidden'); }
         
         // --- Admin and Upload Functions ---
         function handleAddProgram(e){ e.preventDefault(); const dateInput = document.getElementById("event-date").value; const category = document.getElementById("event-category").value; const program = document.getElementById("event-program").value; const time = document.getElementById("event-time").value; const venue = document.getElementById("event-venue").value; if(!dateInput || !category || !program || !time || !venue){ showAdminNotification("Please fill all fields.","red"); return; } const dateObj = new Date(dateInput + 'T00:00:00'); const day = dateObj.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase(); const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getFullYear()} ${day}`; const newProgram = { program, time, venue: parseInt(venue), order: Date.now() }; database.ref(`schedule/${formattedDate}/${category}`).push(newProgram).then(() => { showAdminNotification('Program added successfully!', 'green'); document.getElementById('add-program-form').reset(); }).catch(error => showAdminNotification(`Error: ${error.message}`, 'red')); }
@@ -471,31 +377,6 @@
                 }
             };
             reader.readAsArrayBuffer(file);
-        }
-
-        function updateCurrentTimeIndicator() {
-            const now = new Date();
-            const todayKey = Object.keys(liveScheduleData).find(key => {
-                const [day, month, year] = key.split(' ')[0].split('-').map(Number);
-                const scheduleDate = new Date(year, month - 1, day);
-                return now.toDateString() === scheduleDate.toDateString();
-            });
-
-            let existingLine = document.querySelector(".current-time-line");
-            if (existingLine) existingLine.remove();
-
-            if ((activeDateFilter === todayKey || (activeDateFilter === 'all' && todayKey))) {
-                const position = timeToPercentage(now.getHours() * 60 + now.getMinutes());
-                if (position >= 0 && position <= 100) {
-                    const timelineContainer = document.querySelector("#timeline-view .timeline-container");
-                    if (timelineContainer) {
-                        const timeLine = document.createElement('div');
-                        timeLine.className = 'current-time-line';
-                        timeLine.style.top = `${position}%`;
-                        timelineContainer.appendChild(timeLine);
-                    }
-                }
-            }
         }
 
         // --- Start the app ---
