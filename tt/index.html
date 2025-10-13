@@ -75,7 +75,7 @@
         </header>
 
         <!-- Admin Section -->
-        <div class="mb-8 bg-white rounded-lg shadow-md">
+        <div class="mb-8 bg-white rounded-lg shadow-md" style="display: none;">
             <button id="admin-toggle-btn" class="admin-btn w-full p-3 text-left font-semibold text-gray-700 hover:bg-gray-50 rounded-t-lg">Admin Panel</button>
             <div id="admin-panel" class="p-4 border-t border-gray-200">
                 <div id="admin-notification" class="mb-4 hidden p-3 rounded-md text-white"></div>
@@ -109,7 +109,6 @@
         <!-- Controls: Filters -->
         <div class="mb-8 p-4 bg-white rounded-lg shadow-md space-y-4">
              <div><h3 class="text-lg font-semibold text-gray-700 mb-2">Filter by Date:</h3><div id="date-filters" class="flex flex-wrap gap-2"></div></div>
-             
             <div><h3 class="text-lg font-semibold text-gray-700 mb-2">Filter by Category:</h3><div id="category-filters" class="flex flex-wrap gap-2"></div></div>
             <div><h3 class="text-lg font-semibold text-gray-700 mb-2">Filter by Venue:</h3><div id="venue-filters" class="flex flex-wrap gap-2"></div></div>
         </div>
@@ -117,7 +116,7 @@
         <!-- Schedule Container -->
         <div id="schedule-list-view"></div>
         <div id="loading-spinner" class="text-center py-12"><p class="text-lg text-gray-500">Loading Schedule...</p></div>
-       
+        <div id="no-results" class="hidden text-center py-12"><p class="text-xl text-gray-500">No events found for the selected filters.</p></div>
     </div>
     
     <!-- Firebase SDK -->
@@ -138,15 +137,12 @@
         let activeDateFilter = 'all';
         let activeCategoryFilter = 'all';
         let activeVenueFilter = 'all';
-        let activeTimeFilter = null;
         let searchQuery = '';
 
         // --- DOM Elements ---
         const dateFiltersContainer = document.getElementById('date-filters');
         const categoryFiltersContainer = document.getElementById('category-filters');
         const venueFiltersContainer = document.getElementById('venue-filters');
-        const timeFilterInput = document.getElementById('time-filter');
-        const clearTimeBtn = document.getElementById('clear-time-btn');
         const searchInput = document.getElementById('program-search');
         const scheduleListView = document.getElementById('schedule-list-view');
         const noResults = document.getElementById('no-results');
@@ -189,8 +185,6 @@
             dateFiltersContainer.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { activeDateFilter = e.target.dataset.filter; updateActiveButton(dateFiltersContainer, e.target); render(); } });
             categoryFiltersContainer.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { activeCategoryFilter = e.target.dataset.filter; updateActiveButton(categoryFiltersContainer, e.target); render(); } });
             venueFiltersContainer.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { activeVenueFilter = e.target.dataset.filter; updateActiveButton(venueFiltersContainer, e.target); render(); } });
-            timeFilterInput.addEventListener('change', () => { activeTimeFilter = timeFilterInput.value; render(); });
-            clearTimeBtn.addEventListener('click', () => { activeTimeFilter = null; timeFilterInput.value = ''; render(); });
             searchInput.addEventListener('input', () => { searchQuery = searchInput.value; render(); });
             adminToggleBtn.addEventListener('click', () => { adminPanel.style.maxHeight = adminPanel.style.maxHeight ? null : adminPanel.scrollHeight + "px"; });
             document.getElementById('add-program-form').addEventListener('submit', handleAddProgram);
@@ -233,7 +227,6 @@
             scheduleListView.innerHTML = '';
             let hasAnyEvents = false;
             const filteredDates = activeDateFilter === 'all' ? Object.keys(liveScheduleData).sort() : [activeDateFilter];
-            const filterTimeInMinutes = activeTimeFilter ? parseTimeToMinutes(activeTimeFilter) : null;
             const lowerCaseSearchQuery = searchQuery.toLowerCase();
 
             for (const date of filteredDates) {
@@ -242,11 +235,9 @@
                 for (const category in liveScheduleData[date]) {
                     for (const eventId in liveScheduleData[date][category]) {
                         const event = liveScheduleData[date][category][eventId];
-                        const eventTimeRange = getEventTimeRange(event.time);
                         // Apply filters
                         if ((activeCategoryFilter === 'all' || category === activeCategoryFilter) &&
                             (activeVenueFilter === 'all' || event.venue == activeVenueFilter) &&
-                            (filterTimeInMinutes === null || (filterTimeInMinutes >= eventTimeRange.start && filterTimeInMinutes < eventTimeRange.end)) &&
                             (lowerCaseSearchQuery === '' || event.program.toLowerCase().includes(lowerCaseSearchQuery))) {
                             dailyEvents.push({ ...event, category });
                         }
@@ -280,10 +271,6 @@
             }
             noResults.classList.toggle('hidden', !hasAnyEvents);
         }
-        
-        // --- Helper functions ---
-        function parseTimeToMinutes(timeStr) { if(!timeStr) return 0; const firstTime = timeStr.split('-')[0].trim(); let time = firstTime.replace(/\s/g, '').toUpperCase(); const period = time.includes('PM') ? 'PM' : 'AM'; let [hour, minute] = time.replace('AM', '').replace('PM', '').split(/[:.]/).map(s => parseInt(s) || 0); if (isNaN(hour)) return 0; if (period === 'PM' && hour !== 12) hour += 12; if (period === 'AM' && hour === 12) hour = 0; return hour * 60 + (minute || 0); }
-        function getEventTimeRange(timeStr) { if (!timeStr) return { start: 0, end: 0 }; const parts = timeStr.split('-').map(s => s.trim()); const startMinutes = parseTimeToMinutes(parts[0]); let endMinutes; if (parts.length > 1) { const startWasPM = parts[0].toUpperCase().includes('PM'); let endStr = parts[1]; if (!endStr.toUpperCase().includes('AM') && !endStr.toUpperCase().includes('PM')) { endStr += startWasPM ? " PM" : " AM"; } endMinutes = parseTimeToMinutes(endStr); if (endMinutes < startMinutes) endMinutes += 12 * 60; } else { endMinutes = startMinutes + 45; } return { start: startMinutes, end: endMinutes }; }
         
         // --- Admin and Upload Functions ---
         function handleAddProgram(e){ e.preventDefault(); const dateInput = document.getElementById("event-date").value; const category = document.getElementById("event-category").value; const program = document.getElementById("event-program").value; const time = document.getElementById("event-time").value; const venue = document.getElementById("event-venue").value; if(!dateInput || !category || !program || !time || !venue){ showAdminNotification("Please fill all fields.","red"); return; } const dateObj = new Date(dateInput + 'T00:00:00'); const day = dateObj.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase(); const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getFullYear()} ${day}`; const newProgram = { program, time, venue: parseInt(venue), order: Date.now() }; database.ref(`schedule/${formattedDate}/${category}`).push(newProgram).then(() => { showAdminNotification('Program added successfully!', 'green'); document.getElementById('add-program-form').reset(); }).catch(error => showAdminNotification(`Error: ${error.message}`, 'red')); }
