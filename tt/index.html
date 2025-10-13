@@ -183,8 +183,7 @@
         const modal = document.getElementById('event-modal');
         const adminToggleBtn = document.getElementById('admin-toggle-btn');
         const adminPanel = document.getElementById('admin-panel');
-        // ... other admin elements ...
-
+        
         const categoryStyles = {
             "BIDAYA":     { bg: 'bg-red-200', border: 'border-red-500', hex: '#ef4444' },
             "ULA":        { bg: 'bg-blue-200', border: 'border-blue-500', hex: '#3b82f6' },
@@ -245,11 +244,23 @@
         }
         
         // --- Filter Creation ---
+        function createDateFilters() {
+            const dates = ['all', ...Object.keys(liveScheduleData).sort()];
+            dateFiltersContainer.innerHTML = dates.map(date => `<button class="filter-btn ${date === activeDateFilter ? 'active' : ''} px-4 py-2 rounded-md text-sm font-medium border" data-filter="${date}">${date === 'all' ? 'All Dates' : date.split(' ')[0]}</button>`).join('');
+        }
+        
+        function createCategoryFilters() {
+            const categories = new Set(['all']);
+            Object.values(liveScheduleData).forEach(day => Object.keys(day).forEach(cat => categories.add(cat)));
+            const sortedCategories = Array.from(categories).sort((a, b) => a === 'all' ? -1 : b === 'all' ? 1 : a.localeCompare(b));
+            categoryFiltersContainer.innerHTML = sortedCategories.map(category => `<button class="filter-btn ${category === activeCategoryFilter ? 'active' : ''} px-4 py-2 rounded-md text-sm font-medium border" data-filter="${category}">${category.charAt(0).toUpperCase() + category.slice(1)}</button>`).join('');
+        }
+
         function createVenueFilters() {
             const venues = new Set(['all']);
             Object.values(liveScheduleData).forEach(day => Object.values(day).forEach(cat => Object.values(cat).forEach(event => venues.add(event.venue))));
             const sortedVenues = Array.from(venues).sort((a, b) => a === 'all' ? -1 : b === 'all' ? 1 : a - b);
-            document.getElementById('venue-filters').innerHTML = sortedVenues.map(venue => `<button class="filter-btn ${venue == activeVenueFilter ? 'active' : ''} px-4 py-2 rounded-md text-sm font-medium border" data-filter="${venue}">${venue === 'all' ? 'All Venues' : `Venue ${venue}`}</button>`).join('');
+            venueFiltersContainer.innerHTML = sortedVenues.map(venue => `<button class="filter-btn ${venue == activeVenueFilter ? 'active' : ''} px-4 py-2 rounded-md text-sm font-medium border" data-filter="${venue}">${venue === 'all' ? 'All Venues' : `Venue ${venue}`}</button>`).join('');
         }
 
         function updateActiveButton(container, activeButton) {
@@ -310,7 +321,6 @@
         // --- Timeline View Logic ---
         const timelineStartHour = 6, timelineEndHour = 22;
         function renderTimelineView() {
-            // ... (Implementation is largely unchanged but uses new categoryStyles)
             timelineView.innerHTML = '';
             if (activeDateFilter === 'all') { timelineView.innerHTML = `<div class="text-center p-8 text-gray-600">Please select a single date to see the timeline view.</div>`; return; }
             const daySchedule = liveScheduleData[activeDateFilter];
@@ -357,17 +367,114 @@
         function parseTimeToMinutes(timeStr) { if(!timeStr) return 0; const firstTime = timeStr.split('-')[0].trim(); let time = firstTime.replace(/\s/g, '').toUpperCase(); const period = time.includes('PM') ? 'PM' : 'AM'; let [hour, minute] = time.replace('AM', '').replace('PM', '').split(/[:.]/).map(s => parseInt(s) || 0); if (isNaN(hour)) return 0; if (period === 'PM' && hour !== 12) hour += 12; if (period === 'AM' && hour === 12) hour = 0; return hour * 60 + (minute || 0); }
         function getEventTimeRange(timeStr) { if (!timeStr) return { start: 0, end: 0 }; const parts = timeStr.split('-').map(s => s.trim()); const startMinutes = parseTimeToMinutes(parts[0]); let endMinutes; if (parts.length > 1) { const startWasPM = parts[0].toUpperCase().includes('PM'); let endStr = parts[1]; if (!endStr.toUpperCase().includes('AM') && !endStr.toUpperCase().includes('PM')) { endStr += startWasPM ? " PM" : " AM"; } endMinutes = parseTimeToMinutes(endStr); if (endMinutes < startMinutes) endMinutes += 12 * 60; } else { endMinutes = startMinutes + 45; } return { start: startMinutes, end: endMinutes }; }
         function timeToPercentage(minutes) { const totalMinutes = (timelineEndHour - timelineStartHour) * 60; const eventMinutes = minutes - (timelineStartHour * 60); return (eventMinutes / totalMinutes) * 100; }
-        function updateCurrentTimeIndicator() { /* ... same as before ... */ }
         function showModal(event, category, date) { document.getElementById('modal-title').textContent = event.program; document.getElementById('modal-category').textContent = category; document.getElementById('modal-time').textContent = `${event.time} on ${date.split(' ')[0]}`; document.getElementById('modal-venue').textContent = event.venue; modal.classList.remove('hidden'); }
         
-        // --- Unchanged Functions ---
-        function handleAddProgram(e){e.preventDefault();const t=document.getElementById("event-date").value,n=document.getElementById("event-category").value,o=document.getElementById("event-program").value,a=document.getElementById("event-time").value,d=document.getElementById("event-venue").value;if(!t||!n||!o||!a||!d)return void showAdminNotification("Please fill all fields.","red");const i=new Date(t+"T00:00:00"),l=i.toLocaleDateString("en-GB",{weekday:"long"}).toUpperCase(),s=`${i.getDate().toString().padStart(2,"0")}-${(i.getMonth()+1).toString().padStart(2,"0")}-${i.getFullYear()} ${l}`,r={program:o,time:a,venue:parseInt(d)};database.ref(`schedule/${s}/${n}`).push(r).then(()=>{showAdminNotification("Program added successfully!","green"),document.getElementById("add-program-form").reset()}).catch(e=>showAdminNotification(`Error: ${e.message}`,"red"))}
-        function showAdminNotification(e,t){const n=document.getElementById("admin-notification");n.className=`mb-4 p-3 rounded-md text-white bg-${t}-500`,n.textContent=e,n.classList.remove("hidden"),setTimeout(()=>n.classList.add("hidden"),4e3)}
-        function handleDownloadTemplate(){const e=[{Date:"25-10-2025",Category:"BIDAYA","Program Name":"Sample Program",Time:"9-10 AM",Venue:1}],t=XLSX.utils.json_to_sheet(e),n=XLSX.utils.book_new();XLSX.utils.book_append_sheet(n,t,"Schedule"),XLSX.writeFile(n,"schedule_template.xlsx")}
-        function handleUploadSchedule(){const e=document.getElementById("excel-file-input"),t=e.files[0];if(!t)return void showAdminNotification("Please select an Excel file first.","red");const n=document.getElementById("upload-schedule-btn");n.disabled=!0,n.textContent="Processing...";const o=new FileReader;o.onload=t=>{try{const o=new Uint8Array(t.target.result),a=XLSX.read(o,{type:"array"}),d=a.SheetNames[0],i=a.Sheets[d],l=XLSX.utils.sheet_to_json(i);if(0===l.length)throw new Error("Excel file is empty.");const s=["Date","Category","Program Name","Time","Venue"],r=l[0];for(const c of s)if(!r.hasOwnProperty(c))throw new Error(`Missing column: "${c}".`);const m={};l.forEach(e=>{const t=String(e.Date);if(!/^\d{2}-\d{2}-\d{4}$/.test(t))return;const n=new Date(t.split("-").reverse().join("-")+"T00:00:00");if(isNaN(n.getTime()))return;const o=n.toLocaleDateString("en-GB",{weekday:"long"}).toUpperCase(),a=`${t} ${o}`,d=String(e.Category).trim(),i={program:String(e["Program Name"]).trim(),time:String(e.Time).trim(),venue:parseInt(e.Venue,10)};if(!d||!i.program||!i.time||isNaN(i.venue))return;m[a]||(m[a]={}),m[a][d]||(m[a][d]={});const l=database.ref().push().key;m[a][d][l]=i}),scheduleRef.set(m).then(()=>showAdminNotification("Schedule successfully uploaded!","green")).catch(e=>{throw e})}catch(e){showAdminNotification(`Upload failed: ${e.message}`,"red")}finally{n.disabled=!1,n.textContent="Upload and Replace Schedule",e.value=""}},o.readAsArrayBuffer(t)}
-        function createDateFilters(){const e=["all",...Object.keys(liveScheduleData).sort()];dateFiltersContainer.innerHTML=e.map(e=>`<button class="filter-btn ${e===activeDateFilter?"active":""} px-4 py-2 rounded-md text-sm font-medium border" data-filter="${e}">${"all"===e?"All Dates":e.split(" ")[0]}</button>`).join("")}
-        function createCategoryFilters(){const e=new Set(["all"]);Object.values(liveScheduleData).forEach(t=>Object.keys(t).forEach(t=>e.add(t)));const t=Array.from(e).sort((e,t)=>"all"===e?-1:"all"===t?1:e.localeCompare(t));categoryFiltersContainer.innerHTML=t.map(e=>`<button class="filter-btn ${e===activeCategoryFilter?"active":""} px-4 py-2 rounded-md text-sm font-medium border" data-filter="${e}">${e.charAt(0).toUpperCase()+e.slice(1)}</button>`).join("")}
-        function updateCurrentTimeIndicator(){const e=new Date,t=Object.keys(liveScheduleData).find(t=>{const[n,o,a]=t.split(" ")[0].split("-").map(Number);return e.toDateString()===new Date(a,o-1,n).toDateString()});let n=document.querySelector(".current-time-line");n&&n.remove(),(activeDateFilter===t||"all"===activeDateFilter&&t)&&timeToPercentage(60*e.getHours()+e.getMinutes())>=0&&timeToPercentage(60*e.getHours()+e.getMinutes())<=100&&(document.querySelector(".timeline-container").innerHTML+=`<div class="current-time-line" style="top: ${timeToPercentage(60*e.getHours()+e.getMinutes())}%"></div>`)}
+        // --- Admin and Upload Functions ---
+        function handleAddProgram(e){ e.preventDefault(); const dateInput = document.getElementById("event-date").value; const category = document.getElementById("event-category").value; const program = document.getElementById("event-program").value; const time = document.getElementById("event-time").value; const venue = document.getElementById("event-venue").value; if(!dateInput || !category || !program || !time || !venue){ showAdminNotification("Please fill all fields.","red"); return; } const dateObj = new Date(dateInput + 'T00:00:00'); const day = dateObj.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase(); const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getFullYear()} ${day}`; const newProgram = { program, time, venue: parseInt(venue) }; database.ref(`schedule/${formattedDate}/${category}`).push(newProgram).then(() => { showAdminNotification('Program added successfully!', 'green'); document.getElementById('add-program-form').reset(); }).catch(error => showAdminNotification(`Error: ${error.message}`, 'red')); }
+        function showAdminNotification(message, color){ const notification = document.getElementById("admin-notification"); notification.className = `mb-4 p-3 rounded-md text-white bg-${color}-500`; notification.textContent = message; notification.classList.remove("hidden"); setTimeout(() => notification.classList.add("hidden"), 4000); }
+        function handleDownloadTemplate(){ const sampleData = [{ Date: '25-10-2025', Category: 'BIDAYA', 'Program Name': 'Sample Program', Time: '9-10 AM', Venue: 1 }]; const worksheet = XLSX.utils.json_to_sheet(sampleData); const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, worksheet, "Schedule"); XLSX.writeFile(workbook, "schedule_template.xlsx"); }
+        
+        function handleUploadSchedule() {
+            const fileInput = document.getElementById("excel-file-input");
+            const file = fileInput.files[0];
+            if (!file) {
+                showAdminNotification("Please select an Excel file first.", "red");
+                return;
+            }
+            const uploadBtn = document.getElementById("upload-schedule-btn");
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = "Processing...";
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: "array" });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    // This is the key change: `cellDates: true` will parse dates into JS Date objects
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { cellDates: true });
+
+                    if (jsonData.length === 0) throw new Error("Excel file is empty.");
+                    
+                    const requiredColumns = ['Date', 'Category', 'Program Name', 'Time', 'Venue'];
+                    if (!requiredColumns.every(col => jsonData[0].hasOwnProperty(col))) {
+                        throw new Error(`Missing required columns. Please use the template.`);
+                    }
+
+                    const newSchedule = {};
+                    jsonData.forEach((row, index) => {
+                        const dateObj = row.Date;
+                        // Strict validation: Ensure the Date column is a valid JavaScript Date
+                        if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+                            console.warn(`Skipping row #${index + 2} due to invalid date format.`);
+                            return; // Skips this row
+                        }
+
+                        const day = dateObj.getDate().toString().padStart(2, '0');
+                        const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+                        const year = dateObj.getFullYear();
+                        const formattedDateStr = `${day}-${month}-${year}`;
+                        const dayOfWeek = dateObj.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase();
+                        const formattedDateKey = `${formattedDateStr} ${dayOfWeek}`;
+
+                        const category = String(row.Category || '').trim();
+                        const programData = {
+                            program: String(row['Program Name'] || '').trim(),
+                            time: String(row.Time || '').trim(),
+                            venue: parseInt(row.Venue, 10)
+                        };
+
+                        if (!category || !programData.program || !programData.time || isNaN(programData.venue)) {
+                            console.warn(`Skipping row #${index + 2} due to missing data.`);
+                            return; // Skips this row
+                        }
+
+                        if (!newSchedule[formattedDateKey]) newSchedule[formattedDateKey] = {};
+                        if (!newSchedule[formattedDateKey][category]) newSchedule[formattedDateKey][category] = {};
+                        
+                        const programId = database.ref().push().key;
+                        newSchedule[formattedDateKey][category][programId] = programData;
+                    });
+                    
+                    scheduleRef.set(newSchedule)
+                        .then(() => showAdminNotification('Schedule successfully uploaded!', 'green'))
+                        .catch(error => { throw error; });
+
+                } catch (error) {
+                    showAdminNotification(`Upload failed: ${error.message}`, 'red');
+                } finally {
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = 'Upload and Replace Schedule';
+                    fileInput.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function updateCurrentTimeIndicator() {
+            const now = new Date();
+            const todayKey = Object.keys(liveScheduleData).find(key => {
+                const [day, month, year] = key.split(' ')[0].split('-').map(Number);
+                const scheduleDate = new Date(year, month - 1, day);
+                return now.toDateString() === scheduleDate.toDateString();
+            });
+
+            let existingLine = document.querySelector(".current-time-line");
+            if (existingLine) existingLine.remove();
+
+            if ((activeDateFilter === todayKey || (activeDateFilter === 'all' && todayKey))) {
+                const position = timeToPercentage(now.getHours() * 60 + now.getMinutes());
+                if (position >= 0 && position <= 100) {
+                    const timelineContainer = document.querySelector("#timeline-view .timeline-container");
+                    if (timelineContainer) {
+                        const timeLine = document.createElement('div');
+                        timeLine.className = 'current-time-line';
+                        timeLine.style.top = `${position}%`;
+                        timelineContainer.appendChild(timeLine);
+                    }
+                }
+            }
+        }
 
         // --- Start the app ---
         document.addEventListener('DOMContentLoaded', initialize);
