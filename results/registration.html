@@ -713,7 +713,7 @@
                     if (participantIds.length > 0) {
                         const participantRows = participantIds.map(studentId => {
                             const student = appData.students[studentId];
-                            return `<tr><td>${student?.chestNo || 'N/A'}</td><td>${student?.name || 'Unknown'}</td><td></td><td></td></tr>`;
+                            return `<tr><td>${student?.chestNo || 'N/A'}</td><td>${student?.name || 'Unknown'}</td><td></td><td></td><td></td></tr>`;
                         }).join('');
 
                         printHTML += `
@@ -993,4 +993,3 @@
     </script>
 </body>
 </html>
-
