@@ -124,6 +124,10 @@
                  <div><h3 class="text-lg font-semibold text-gray-700 mb-2">Filter by Date:</h3><div id="date-filters" class="flex flex-wrap gap-2"></div></div>
                  <div class="mt-4 md:mt-0 md:ml-6"><h3 class="text-lg font-semibold text-gray-700 mb-2">View:</h3><div id="view-switcher" class="flex gap-2"><button class="view-btn active px-4 py-2 rounded-md text-sm font-medium border" data-view="list">List</button><button class="view-btn px-4 py-2 rounded-md text-sm font-medium border" data-view="timeline">Timeline</button></div></div>
             </div>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Search Program:</h3>
+                <input type="search" id="program-search" placeholder="Enter program name..." class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
              <div>
                 <h3 class="text-lg font-semibold text-gray-700 mb-2">Filter by Time:</h3>
                 <div class="flex items-center gap-2">
@@ -166,6 +170,7 @@
         let activeCategoryFilter = 'all';
         let activeVenueFilter = 'all';
         let activeTimeFilter = null;
+        let searchQuery = '';
         let currentView = 'list';
         let currentTimeInterval;
 
@@ -175,6 +180,7 @@
         const venueFiltersContainer = document.getElementById('venue-filters');
         const timeFilterInput = document.getElementById('time-filter');
         const clearTimeBtn = document.getElementById('clear-time-btn');
+        const searchInput = document.getElementById('program-search');
         const scheduleListView = document.getElementById('schedule-list-view');
         const timelineView = document.getElementById('timeline-view');
         const viewSwitcher = document.getElementById('view-switcher');
@@ -222,6 +228,7 @@
             viewSwitcher.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { currentView = e.target.dataset.view; updateActiveButton(viewSwitcher, e.target); render(); } });
             timeFilterInput.addEventListener('change', () => { activeTimeFilter = timeFilterInput.value; render(); });
             clearTimeBtn.addEventListener('click', () => { activeTimeFilter = null; timeFilterInput.value = ''; render(); });
+            searchInput.addEventListener('input', () => { searchQuery = searchInput.value; render(); });
             document.getElementById('modal-close').addEventListener('click', () => modal.classList.add('hidden'));
             modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
             adminToggleBtn.addEventListener('click', () => { adminPanel.style.maxHeight = adminPanel.style.maxHeight ? null : adminPanel.scrollHeight + "px"; });
@@ -274,6 +281,7 @@
             let hasAnyEvents = false;
             const filteredDates = activeDateFilter === 'all' ? Object.keys(liveScheduleData).sort() : [activeDateFilter];
             const filterTimeInMinutes = activeTimeFilter ? parseTimeToMinutes(activeTimeFilter) : null;
+            const lowerCaseSearchQuery = searchQuery.toLowerCase();
 
             for (const date of filteredDates) {
                 if (!liveScheduleData[date]) continue;
@@ -285,7 +293,8 @@
                         // Apply filters
                         if ((activeCategoryFilter === 'all' || category === activeCategoryFilter) &&
                             (activeVenueFilter === 'all' || event.venue == activeVenueFilter) &&
-                            (filterTimeInMinutes === null || (filterTimeInMinutes >= eventTimeRange.start && filterTimeInMinutes < eventTimeRange.end))) {
+                            (filterTimeInMinutes === null || (filterTimeInMinutes >= eventTimeRange.start && filterTimeInMinutes < eventTimeRange.end)) &&
+                            (lowerCaseSearchQuery === '' || event.program.toLowerCase().includes(lowerCaseSearchQuery))) {
                             dailyEvents.push({ ...event, category });
                         }
                     }
@@ -293,7 +302,8 @@
                 
                 if (dailyEvents.length > 0) {
                     hasAnyEvents = true;
-                    dailyEvents.sort((a, b) => parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time));
+                    // Sort by original Excel order
+                    dailyEvents.sort((a, b) => a.order - b.order);
                     
                     const dateGroup = document.createElement('div');
                     dateGroup.className = 'date-group';
@@ -370,7 +380,7 @@
         function showModal(event, category, date) { document.getElementById('modal-title').textContent = event.program; document.getElementById('modal-category').textContent = category; document.getElementById('modal-time').textContent = `${event.time} on ${date.split(' ')[0]}`; document.getElementById('modal-venue').textContent = event.venue; modal.classList.remove('hidden'); }
         
         // --- Admin and Upload Functions ---
-        function handleAddProgram(e){ e.preventDefault(); const dateInput = document.getElementById("event-date").value; const category = document.getElementById("event-category").value; const program = document.getElementById("event-program").value; const time = document.getElementById("event-time").value; const venue = document.getElementById("event-venue").value; if(!dateInput || !category || !program || !time || !venue){ showAdminNotification("Please fill all fields.","red"); return; } const dateObj = new Date(dateInput + 'T00:00:00'); const day = dateObj.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase(); const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getFullYear()} ${day}`; const newProgram = { program, time, venue: parseInt(venue) }; database.ref(`schedule/${formattedDate}/${category}`).push(newProgram).then(() => { showAdminNotification('Program added successfully!', 'green'); document.getElementById('add-program-form').reset(); }).catch(error => showAdminNotification(`Error: ${error.message}`, 'red')); }
+        function handleAddProgram(e){ e.preventDefault(); const dateInput = document.getElementById("event-date").value; const category = document.getElementById("event-category").value; const program = document.getElementById("event-program").value; const time = document.getElementById("event-time").value; const venue = document.getElementById("event-venue").value; if(!dateInput || !category || !program || !time || !venue){ showAdminNotification("Please fill all fields.","red"); return; } const dateObj = new Date(dateInput + 'T00:00:00'); const day = dateObj.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase(); const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getFullYear()} ${day}`; const newProgram = { program, time, venue: parseInt(venue), order: Date.now() }; database.ref(`schedule/${formattedDate}/${category}`).push(newProgram).then(() => { showAdminNotification('Program added successfully!', 'green'); document.getElementById('add-program-form').reset(); }).catch(error => showAdminNotification(`Error: ${error.message}`, 'red')); }
         function showAdminNotification(message, color){ const notification = document.getElementById("admin-notification"); notification.className = `mb-4 p-3 rounded-md text-white bg-${color}-500`; notification.textContent = message; notification.classList.remove("hidden"); setTimeout(() => notification.classList.add("hidden"), 4000); }
         function handleDownloadTemplate(){ const sampleData = [{ Date: '2025-10-25', Category: 'BIDAYA', 'Program Name': 'Sample Program', Time: '9-10 AM', Venue: 1 }]; const worksheet = XLSX.utils.json_to_sheet(sampleData); const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, worksheet, "Schedule"); XLSX.writeFile(workbook, "schedule_template.xlsx"); }
         
@@ -428,7 +438,8 @@
                         const programData = {
                             program: String(row['Program Name'] || '').trim(),
                             time: String(row.Time || '').trim(),
-                            venue: parseInt(row.Venue, 10)
+                            venue: parseInt(row.Venue, 10),
+                            order: index
                         };
 
                         if (!category || !programData.program || !programData.time || isNaN(programData.venue)) {
