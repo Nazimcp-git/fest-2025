@@ -372,7 +372,7 @@
         // --- Admin and Upload Functions ---
         function handleAddProgram(e){ e.preventDefault(); const dateInput = document.getElementById("event-date").value; const category = document.getElementById("event-category").value; const program = document.getElementById("event-program").value; const time = document.getElementById("event-time").value; const venue = document.getElementById("event-venue").value; if(!dateInput || !category || !program || !time || !venue){ showAdminNotification("Please fill all fields.","red"); return; } const dateObj = new Date(dateInput + 'T00:00:00'); const day = dateObj.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase(); const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getFullYear()} ${day}`; const newProgram = { program, time, venue: parseInt(venue) }; database.ref(`schedule/${formattedDate}/${category}`).push(newProgram).then(() => { showAdminNotification('Program added successfully!', 'green'); document.getElementById('add-program-form').reset(); }).catch(error => showAdminNotification(`Error: ${error.message}`, 'red')); }
         function showAdminNotification(message, color){ const notification = document.getElementById("admin-notification"); notification.className = `mb-4 p-3 rounded-md text-white bg-${color}-500`; notification.textContent = message; notification.classList.remove("hidden"); setTimeout(() => notification.classList.add("hidden"), 4000); }
-        function handleDownloadTemplate(){ const sampleData = [{ Date: '25-10-2025', Category: 'BIDAYA', 'Program Name': 'Sample Program', Time: '9-10 AM', Venue: 1 }]; const worksheet = XLSX.utils.json_to_sheet(sampleData); const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, worksheet, "Schedule"); XLSX.writeFile(workbook, "schedule_template.xlsx"); }
+        function handleDownloadTemplate(){ const sampleData = [{ Date: '2025-10-25', Category: 'BIDAYA', 'Program Name': 'Sample Program', Time: '9-10 AM', Venue: 1 }]; const worksheet = XLSX.utils.json_to_sheet(sampleData); const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, worksheet, "Schedule"); XLSX.writeFile(workbook, "schedule_template.xlsx"); }
         
         function handleUploadSchedule() {
             const fileInput = document.getElementById("excel-file-input");
@@ -389,10 +389,9 @@
             reader.onload = (e) => {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: "array" });
+                    const workbook = XLSX.read(data, { type: "array", cellDates: true });
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    // This is the key change: `cellDates: true` will parse dates into JS Date objects
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { cellDates: true });
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
                     if (jsonData.length === 0) throw new Error("Excel file is empty.");
                     
@@ -403,11 +402,19 @@
 
                     const newSchedule = {};
                     jsonData.forEach((row, index) => {
-                        const dateObj = row.Date;
-                        // Strict validation: Ensure the Date column is a valid JavaScript Date
-                        if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
-                            console.warn(`Skipping row #${index + 2} due to invalid date format.`);
-                            return; // Skips this row
+                        const dateValue = row.Date;
+                        let dateObj;
+
+                        if (dateValue instanceof Date) {
+                            dateObj = dateValue;
+                        } 
+                        else if (typeof dateValue === 'string') {
+                            dateObj = new Date(dateValue + 'T00:00:00'); 
+                        }
+
+                        if (!dateObj || isNaN(dateObj.getTime())) {
+                            console.warn(`Skipping row #${index + 2} due to invalid date format: "${row.Date}"`);
+                            return; 
                         }
 
                         const day = dateObj.getDate().toString().padStart(2, '0');
@@ -426,7 +433,7 @@
 
                         if (!category || !programData.program || !programData.time || isNaN(programData.venue)) {
                             console.warn(`Skipping row #${index + 2} due to missing data.`);
-                            return; // Skips this row
+                            return;
                         }
 
                         if (!newSchedule[formattedDateKey]) newSchedule[formattedDateKey] = {};
@@ -436,6 +443,10 @@
                         newSchedule[formattedDateKey][category][programId] = programData;
                     });
                     
+                     if (Object.keys(newSchedule).length === 0 && jsonData.length > 0) {
+                        throw new Error("Could not process any valid rows. Please check file for errors, especially in the 'Date' column.");
+                    }
+
                     scheduleRef.set(newSchedule)
                         .then(() => showAdminNotification('Schedule successfully uploaded!', 'green'))
                         .catch(error => { throw error; });
