@@ -857,7 +857,7 @@ function printTeamRegistrations() {
 
             return `
             <div class="print-page" style="
-                font-family: 'Segoe UI', Arial, sans-serif; 
+                font-family: 'Inter', Arial, sans-serif; 
                 box-sizing: border-box; 
                 page-break-inside: avoid;
                 width: 29.7cm; /* A4 Landscape Width */
@@ -873,15 +873,27 @@ function printTeamRegistrations() {
                     padding-bottom: 12px; 
                     margin-bottom: 25px;
                 ">
-                    <div>
-                        <h1 style="font-size: 26pt; margin: 0; font-weight: 800; color: #4338CA;">POUR 2k25</h1>
-                        <h2 style="font-size: 18pt; margin: 8px 0 0 0; color: #1F2937; font-weight: 700;">${program.name}</h2>
-                        <p style="font-size: 14pt; margin: 6px 0 0 0; color: #6B7280; font-weight: 500;">Category: ${program.category}</p>
-                    </div>
-                    <div style="text-align: right; font-size: 14pt; color: #4B5563;">
-                        <p style="margin: 0; font-weight: 600;">Registration List</p>
-                        <p style="margin: 5px 0 0 0;">Generated: ${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</p>
-                    </div>
+                    <div style="display: flex; align-items: center;">
+        <!-- Logo -->
+        <img src='https://poru.live/prelogo.png' alt='Logo' style="height: 150px; width: auto; margin-right: 20px;" />
+
+        <!-- Text Info -->
+        <div>
+            <h1 style="font-size: 26pt; margin: 0; font-weight: 800; color: #4338CA;">POUR 2K25</h1>
+            <h2 style="font-size: 18pt; margin: 6px 0 0 0; color: #1F2937; font-weight: 700;">${program.name}</h2>
+            <p style="font-size: 14pt; margin: 4px 0 0 0; color: #6B7280; font-weight: 500;">
+                Category: ${program.category}
+            </p>
+        </div>
+    </div>
+
+    <!-- Right: Registration Info -->
+    <div style="text-align: right; font-size: 14pt; color: #4B5563;">
+        <p style="margin: 0; font-weight: 600;">Registration List</p>
+        <p style="margin: 5px 0 0 0;">
+            Generated: ${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+        </p>
+    </div>
                 </header>
                 
                 <table style="width: 100%; border-collapse: collapse; font-size: 14pt;">
