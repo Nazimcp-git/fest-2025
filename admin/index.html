@@ -862,6 +862,21 @@
         async function renderDashboardPage() {
             const { teamsArray, studentsArray } = calculateAllScoresInternal();
 
+            const classScores = {};
+            studentsArray.forEach(student => {
+                if (student.class && student.class.trim() !== '') {
+                    const className = student.class.trim().toUpperCase();
+                    if (!classScores[className]) {
+                        classScores[className] = 0;
+                    }
+                    classScores[className] += student.totalPoints || 0;
+                }
+            });
+
+            const classLeaderboard = Object.entries(classScores)
+                .map(([className, totalPoints]) => ({ className, totalPoints }))
+                .sort((a, b) => b.totalPoints - a.totalPoints);
+
             const teamsHtml = teamsArray.length === 0 ? "<p class=\"text-gray-500 col-span-full\">No teams data yet.</p>" : teamsArray.map((team, index) => {
                 const medalClasses = ["text-yellow-400", "text-gray-400", "text-yellow-600", "text-blue-400"];
                 const medalIcons = ["fa-crown", "fa-medal", "fa-award", "fa-star"];
@@ -886,8 +901,36 @@
                 </tr>
             `).join('');
 
+            const aclassLeaderboardHtml = `
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900 mb-6">Best Class Award</h2>
+                    <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${classLeaderboard.length === 0 ? `<tr><td colspan="3" class="text-center py-8 text-gray-500">No class points recorded yet.</td></tr>` : classLeaderboard.slice(0, 10).map((item, index) => `
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">${item.className}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-extrabold text-gray-800">${item.totalPoints}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
             return `
-                <div class="page space-y-12">
+                <div class="page space-y-12" style="margin-bottom: 40px;">
                     <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md" role="alert">
                         <p class="font-bold">Internal Dashboard</p>
                         <p>This is a live view of all scores, including pending, ready, and published results. This is NOT the public score.</p>
@@ -920,20 +963,172 @@
                         </div>
                     </div>
                 </div>
+                ${aclassLeaderboardHtml}
             `;
         }
 
         function renderScorePreviewPage() {
-            const {
-                teamsArray: _0xe7e004,
-                studentsArray: _0x33d2fd
-            } = getProvisionalScores();
-            return "\n              <div class=\"page space-y-12\">\n                  <div class=\"bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md\" role=\"alert\">\n                      <p class=\"font-bold\">Score Preview Mode</p>\n                      <p>This page shows the projected scores including results that are 'Ready to Publish'. These are not the live public scores.</p>\n                  </div>\n                  <div>\n                      <h1 class=\"text-3xl font-bold text-gray-900 mb-6\">Provisional Team Standings</h1>\n                      <div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6\">\n                          " + _0xe7e004.map((_0x39e398, _0x21eeab) => {
-                const _0x5c8066 = ['text-yellow-400', "text-gray-400", "text-yellow-600", 'text-blue-400'];
-                const _0x37b30b = ["fa-crown", 'fa-medal', 'fa-award', "fa-star"];
-                return "\n                          <div class=\"bg-white shadow-lg rounded-xl p-6\">\n                              <div class=\"flex items-center justify-between\">\n                                  <h2 class=\"text-xl font-bold text-gray-800\">" + _0x39e398.name + "</h2>\n                                  " + (_0x21eeab < 0x4 ? "<i class=\"fas " + _0x37b30b[_0x21eeab] + " text-2xl " + _0x5c8066[_0x21eeab] + "\"></i>" : '') + "\n                              </div>\n                              <p class=\"text-5xl font-extrabold text-indigo-600 mt-4\">" + _0x39e398.totalPoints + "</p>\n                              <p class=\"text-gray-500 mt-1\">Total Points</p>\n                          </div>";
-            }).join('') + "\n                      </div>\n                  </div>\n                  <div>\n                      <h2 class=\"text-3xl font-bold text-gray-900 mb-6\">Provisional Category-wise Scores</h2>\n                      <div class=\"bg-white shadow-lg rounded-xl overflow-x-auto\">\n                         <table class=\"min-w-full divide-y divide-gray-200\">\n                              <thead class=\"bg-gray-50\">\n                                  <tr>\n                                      <th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\">Team</th>\n                                      " + CATEGORIES.map(_0x50ba94 => "<th class=\"px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider\">" + _0x50ba94 + "</th>").join('') + "\n                                  </tr>\n                              </thead>\n                              <tbody class=\"bg-white divide-y divide-gray-200\">\n                                  " + _0xe7e004.map(_0x45eef5 => "\n                                  <tr>\n                                      <td class=\"px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900\">" + _0x45eef5.name + "</td>\n                                      " + CATEGORIES.map(_0x540f74 => "<td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center\">" + (_0x45eef5.categoryPoints[_0x540f74] || 0x0) + "</td>").join('') + "\n                                  </tr>\n                                  ").join('') + "\n                              </tbody>\n                         </table>\n                      </div>\n                  </div>\n                  <div>\n                      <h2 class=\"text-3xl font-bold text-gray-900 mb-6\">Provisional Top Scorers</h2>\n                           <div class=\"bg-white shadow-lg rounded-xl overflow-hidden\">\n                                <div class=\"overflow-x-auto\">\n                                    <table class=\"min-w-full divide-y divide-gray-200\">\n                                          <thead class=\"bg-gray-50\">\n                                              <tr>\n                                                  <th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\">Rank</th>\n                                                  <th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\">Student</th>\n                                                  <th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\">Team</th>\n                                                  <th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\">Category</th>\n                                                  <th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\">Points</th>\n                                              </tr>\n                                         </thead>\n                                         <tbody class=\"bg-white divide-y divide-gray-200\">\n                                             " + _0x33d2fd.slice(0x0, 0x64).map((_0xa220e, _0x1541d1) => "\n                                             <tr class=\"hover:bg-gray-50\">\n                                                 <td class=\"px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900\">" + (_0x1541d1 + 0x1) + "</td>\n                                                 <td class=\"px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600\"><a href=\"#/student/" + _0xa220e.id + "\" class=\"hover:underline\">" + _0xa220e.name + "</a></td>\n                                                 <td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-500\">" + (appData.teams[_0xa220e.teamId]?.["name"] || "N/A") + "</td>\n                                                 <td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-500\">" + _0xa220e.category + "</td>\n                                                 <td class=\"px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900\">" + (_0xa220e.totalPoints || 0x0) + "</td>\n                                             </tr>\n                                             ").join('') + "\n                                         </tbody>\n                                    </table>\n                                </div>\n                           </div>\n                  </div>\n              </div>\n            ";
-        }
+  const { teamsArray, studentsArray } = getProvisionalScores();
+
+  const classScores = {};
+            studentsArray.forEach(student => {
+                if (student.class && student.class.trim() !== '') {
+                    const className = student.class.trim().toUpperCase();
+                    if (!classScores[className]) {
+                        classScores[className] = 0;
+                    }
+                    classScores[className] += student.totalPoints || 0;
+                }
+            });
+
+            const classLeaderboard = Object.entries(classScores)
+                .map(([className, totalPoints]) => ({ className, totalPoints }))
+                .sort((a, b) => b.totalPoints - a.totalPoints);
+
+
+
+  return `
+    <div class="page space-y-12">
+
+      <!-- Alert Section -->
+      <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md" role="alert">
+        <p class="font-bold">Score Preview Mode</p>
+        <p>This page shows the projected scores including results that are 'Ready to Publish'. These are not the live public scores.</p>
+      </div>
+
+      <!-- Team Standings -->
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">Provisional Team Standings</h1>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          ${teamsArray
+            .map((team, index) => {
+              const colors = ['text-yellow-400', 'text-gray-400', 'text-yellow-600', 'text-blue-400'];
+              const icons = ['fa-crown', 'fa-medal', 'fa-award', 'fa-star'];
+
+              return `
+                <div class="bg-white shadow-lg rounded-xl p-6">
+                  <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-800">${team.name}</h2>
+                    ${index < 4 ? `<i class="fas ${icons[index]} text-2xl ${colors[index]}"></i>` : ''}
+                  </div>
+                  <p class="text-5xl font-extrabold text-indigo-600 mt-4">${team.totalPoints}</p>
+                  <p class="text-gray-500 mt-1">Total Points</p>
+                </div>
+              `;
+            })
+            .join('')}
+        </div>
+      </div>
+
+      <!-- Category-wise Scores -->
+      <div>
+        <h2 class="text-3xl font-bold text-gray-900 mb-6">Provisional Category-wise Scores</h2>
+        <div class="bg-white shadow-lg rounded-xl overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
+                ${CATEGORIES.map(
+                  category => `<th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">${category}</th>`
+                ).join('')}
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              ${teamsArray
+                .map(
+                  team => `
+                    <tr>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${team.name}</td>
+                      ${CATEGORIES.map(
+                        category => `
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                            ${team.categoryPoints[category] || 0}
+                          </td>
+                        `
+                      ).join('')}
+                    </tr>
+                  `
+                )
+                .join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Top Scorers -->
+      <div style="margin-bottom: 60px;">
+        <h2 class="text-3xl font-bold text-gray-900 mb-6">Provisional Top Scorers</h2>
+        <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                ${studentsArray
+                  .slice(0, 100)
+                  .map(
+                    (student, index) => `
+                      <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">
+                          <a href="#/student/${student.id}" class="hover:underline">${student.name}</a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          ${appData.teams[student.teamId]?.name || 'N/A'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.category}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">${student.totalPoints || 0}</td>
+                      </tr>
+                    `
+                  )
+                  .join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+
+    </div>
+<div style="margin-top: 30px;">
+
+    </div>
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900 mb-6">Best Class Award</h2>
+                    <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${classLeaderboard.length === 0 ? `<tr><td colspan="3" class="text-center py-8 text-gray-500">No class points recorded yet.</td></tr>` : classLeaderboard.slice(0, 10).map((item, index) => `
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">${item.className}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-extrabold text-gray-800">${item.totalPoints}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            
+  `;
+}
+
         async function renderAdminPage() {
             if (!currentUser) {
                 return "\n              <div class=\"page flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8\">\n                  <div class=\"max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg\">\n                      <div><h2 class=\"mt-6 text-center text-3xl font-extrabold text-gray-900\">Admin Portal Login</h2></div>\n                      <form id=\"login-form\" class=\"mt-8 space-y-6\">\n                          <div class=\"rounded-md shadow-sm -space-y-px\">\n                              <div><input id=\"email\" name=\"email\" type=\"email\" autocomplete=\"email\" required class=\"appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm\" placeholder=\"Email address\"></div>\n                              <div><input id=\"password\" name=\"password\" type=\"password\" autocomplete=\"current-password\" required class=\"appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm\" placeholder=\"Password\"></div>\n                          </div>\n                          <div><button type=\"submit\" class=\"group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500\">Sign in</button></div>\n                          <p id=\"login-error\" class=\"text-red-500 text-sm mt-2 text-center\"></p>\n                      </form>\n                  </div>\n              </div>\n            ";
